@@ -1,0 +1,10 @@
+# Community skills the workflow uses, installed globally with the `skills` CLI.
+# One source per line: <owner/repo> <skill> [<skill>...]
+product-on-purpose/pm-skills define-problem-statement develop-solution-brief deliver-prd
+deanpeters/Product-Manager-Skills user-story-mapping-workshop workshop-facilitation user-story-mapping
+riekelt/technical-writer technical-writing writing-design-docs
+citypaul/.dotfiles specification story-splitting find-gaps acceptance-review
+addyosmani/agent-skills test-driven-development incremental-implementation code-review-and-quality ci-cd-and-automation
+davidlee/doctrine pair
+obra/superpowers finishing-a-development-branch receiving-code-review
+softaworks/agent-toolkit lesson-learned

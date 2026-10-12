@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "deny": [
+      "Skill(engineering:architecture)",
+      "Skill(engineering:code-review)",
+      "Skill(engineering:debug)",
+      "Skill(engineering:testing-strategy)",
+      "Skill(anthropic-skills:frontend-design)",
+      "Skill(productivity:memory-management)"
+    ]
+  },
+  "skillOverrides": {
+    "define-problem-statement": "user-invocable-only",
+    "develop-solution-brief": "user-invocable-only",
+    "user-story-mapping-workshop": "user-invocable-only",
+    "user-story-mapping": "user-invocable-only",
+    "deliver-prd": "user-invocable-only",
+    "technical-writing": "user-invocable-only",
+    "writing-design-docs": "user-invocable-only",
+    "specification": "user-invocable-only",
+    "story-splitting": "user-invocable-only",
+    "find-gaps": "user-invocable-only",
+    "acceptance-review": "user-invocable-only",
+    "test-driven-development": "user-invocable-only",
+    "incremental-implementation": "user-invocable-only",
+    "code-review-and-quality": "user-invocable-only",
+    "ci-cd-and-automation": "user-invocable-only",
+    "finishing-a-development-branch": "user-invocable-only",
+    "pair": "user-invocable-only"
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true,
+    "mattpocock-skills@claude-plugins-official": false,
+    "qodo@synced": false
+  },
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      },
+      "autoUpdate": true
+    }
+  }
+}

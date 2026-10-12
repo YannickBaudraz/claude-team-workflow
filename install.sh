@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Install the team workflow for Claude Code on this machine.
+#   1. Link this repo's skills into ~/.claude/skills.
+#   2. Install the community skills listed in install/community-skills.txt.
+#   3. Install Matt Pocock's plugin from his own marketplace.
+#   4. Merge install/settings-fragment.json into ~/.claude/settings.json, after showing the diff.
+#   5. Check the registry against the result.
+# Safe to re-run. Needs: claude, npx (skills CLI), jq, python3.
+set -euo pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_DIR="$HOME/.claude/skills"
+SETTINGS="$HOME/.claude/settings.json"
+
+for tool in claude npx jq python3; do
+  command -v "$tool" >/dev/null || { echo "Missing tool: $tool"; exit 1; }
+done
+
+echo "== 1. Linking this repo's skills"
+mkdir -p "$SKILLS_DIR"
+for skill_path in "$REPO"/skills/*/; do
+  name="$(basename "$skill_path")"
+  target="$SKILLS_DIR/$name"
+  if [ -L "$target" ]; then
+    ln -sfn "${skill_path%/}" "$target"
+  elif [ -e "$target" ]; then
+    echo "  $target exists and is not a link; move it away, then re-run."
+    exit 1
+  else
+    ln -s "${skill_path%/}" "$target"
+  fi
+  echo "  $name -> ${skill_path%/}"
+done
+
+echo "== 2. Installing community skills"
+grep -v -E '^\s*(#|$)' "$REPO/install/community-skills.txt" | while read -r source skills; do
+  args=()
+  for skill in $skills; do args+=(-s "$skill"); done
+  (cd /tmp && npx --yes skills add "$source" -g -y -a claude-code "${args[@]}" >/dev/null </dev/null)
+  echo "  $source: $skills"
+done
+
+echo "== 3. Installing Matt Pocock's plugin from his marketplace"
+INSTALLED="$HOME/.claude/plugins/installed_plugins.json"
+MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
+if [ -f "$MARKETPLACES" ] && jq -e '.mattpocock' "$MARKETPLACES" >/dev/null; then
+  echo "  marketplace mattpocock already known"
+else
+  claude plugin marketplace add mattpocock/skills >/dev/null </dev/null
+  echo "  marketplace mattpocock added"
+fi
+if [ -f "$INSTALLED" ] && jq -e '.plugins["mattpocock-skills@mattpocock"]' "$INSTALLED" >/dev/null; then
+  echo "  mattpocock-skills@mattpocock already installed"
+else
+  claude plugin install mattpocock-skills@mattpocock >/dev/null </dev/null
+  echo "  mattpocock-skills@mattpocock installed"
+fi
+claude plugin disable mattpocock-skills@claude-plugins-official >/dev/null 2>&1 </dev/null || true
+
+echo "== 4. Merging the settings fragment"
+[ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+merged="$(mktemp)"
+jq -s '.[0] as $current | .[1] as $fragment
+  | ($current * $fragment)
+  | .permissions.deny = (($current.permissions.deny // []) + (($fragment.permissions.deny // []) - ($current.permissions.deny // [])))' \
+  "$SETTINGS" "$REPO/install/settings-fragment.json" > "$merged"
+if diff -u <(jq -S . "$SETTINGS") <(jq -S . "$merged"); then
+  echo "  settings already up to date"
+else
+  read -r -p "  Apply these changes to $SETTINGS? [y/N] " answer || answer=""
+  if [ "$answer" = "y" ]; then
+    cp "$SETTINGS" "$SETTINGS.bak-$(date +%Y%m%d-%H%M%S)"
+    cp "$merged" "$SETTINGS"
+    echo "  applied (previous file kept as a .bak)"
+  else
+    echo "  skipped"
+  fi
+fi
+rm -f "$merged"
+
+echo "== 5. Checking the registry"
+python3 "$SKILLS_DIR/ask-team/scripts/check-registry.py"
