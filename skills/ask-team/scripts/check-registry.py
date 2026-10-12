@@ -25,6 +25,8 @@ PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plu
 OVERRIDES = SETTINGS.get("skillOverrides", {})
 DENIED = set(SETTINGS.get("permissions", {}).get("deny", []))
 ENABLED = SETTINGS.get("enabledPlugins", {})
+MARKETPLACES = json.load(open(f"{HOME}/.claude/plugins/known_marketplaces.json"))
+THIS_REPO = "YannickBaudraz/claude-team-workflow"
 
 
 def rows():
@@ -49,26 +51,56 @@ def bare(command):
     return command.lstrip("/").split(":")[-1]
 
 
-def enabled_plugin_path(plugin):
-    for plugin_id, entries in PLUGINS.items():
-        if plugin_id.split("@")[0] == plugin and ENABLED.get(plugin_id):
-            return entries[0]["installPath"]
-    return None
+def community_sources():
+    """Skill name -> the repo install/community-skills.txt installs it from."""
+    sources = {}
+    path = os.path.join(REPO, "install", "community-skills.txt")
+    for line in open(path) if os.path.exists(path) else []:
+        if line.strip() and not line.startswith("#"):
+            repo, *skills = line.split()
+            sources.update({skill: repo for skill in skills})
+    return sources
+
+
+COMMUNITY = community_sources()
+
+
+def marketplace_plugin_paths(repo, plugin=None):
+    """Install paths of the enabled plugins from the marketplace hosted in `repo`."""
+    for market, info in MARKETPLACES.items():
+        if info.get("source", {}).get("repo") != repo:
+            continue
+        for plugin_id, entries in PLUGINS.items():
+            name, _, plugin_market = plugin_id.partition("@")
+            if plugin_market == market and ENABLED.get(plugin_id) and plugin in (None, name):
+                yield entries[0]["installPath"]
 
 
 def skill_file(row):
-    name, source = bare(row["command"]), row["source"]
-    if source in ("ours", "personal"):
-        candidates = [f"{HOME}/.claude/skills/{name}/SKILL.md"]
-    elif source == "matt" or source.startswith("plugin:"):
-        root = enabled_plugin_path("mattpocock-skills" if source == "matt" else source.split(":")[1])
-        candidates = glob.glob(f"{root}/skills/**/{name}/SKILL.md", recursive=True) if root else []
-    elif source == "synced:anthropic-skills":
-        candidates = glob.glob(f"{HOME}/.claude/skills/synced/*/{name}/SKILL.md")
-    elif source.startswith("synced:"):
-        candidates = glob.glob(f"{HOME}/.claude/plugins/synced/*/{source.split(':')[1]}/skills/{name}/SKILL.md")
-    else:
+    """Where the skill's SKILL.md is installed from its Source, "" when missing, None when built in.
+    Also records a problem when the skill is installed from somewhere other than its Source."""
+    command, source = row["command"].lstrip("/"), row["source"].strip("`")
+    name, plugin = bare(command), command.split(":")[0] if ":" in command else None
+    if source == "Claude Code":
         return None
+    if source == "anthropics/knowledge-work-plugins":
+        candidates = [path for path in glob.glob(f"{HOME}/.claude/plugins/synced/*/{plugin}/skills/{name}/SKILL.md")
+                      if any(json.load(open(meta)).get("marketplace_name") == source.split("/")[1]
+                             for meta in glob.glob(f"{path.split('/skills/')[0]}*.meta.json"))]
+    elif source == "anthropics/skills":
+        candidates = glob.glob(f"{HOME}/.claude/skills/synced/*/{name}/SKILL.md")
+    else:
+        # A plugin from the marketplace in that repo, or else a skill installed in ~/.claude/skills.
+        candidates = [path for root in marketplace_plugin_paths(source, plugin)
+                      for path in glob.glob(f"{root}/skills/**/{name}/SKILL.md", recursive=True)]
+        if plugin or candidates:
+            return candidates[0] if candidates else ""
+        candidates = [f"{HOME}/.claude/skills/{name}/SKILL.md"]
+        link = os.path.realpath(f"{HOME}/.claude/skills/{name}")
+        if source == THIS_REPO and not link.startswith(REPO + os.sep):
+            problems.append(f"{row['command']}: Source is this repo, but ~/.claude/skills/{name} is not linked to it")
+        elif name in COMMUNITY and COMMUNITY[name] != source:
+            problems.append(f"{row['command']}: Source says {source}, install/community-skills.txt says {COMMUNITY[name]}")
     found = [c for c in candidates if os.path.exists(c)]
     return found[0] if found else ""
 
@@ -81,8 +113,10 @@ def command_only(path):
 
 problems, table = [], {}
 for row in rows():
-    table[bare(row["command"])] = row
-for name, row in table.items():
+    # Keyed by the full name: engineering:code-review and code-review are different skills.
+    table[row["command"].lstrip("/")] = row
+for key, row in table.items():
+    name = bare(key)
     if row["does"] == "":
         problems.append(f"{row['command']}: no Does line")
     visibility = row["visibility"]
@@ -115,7 +149,7 @@ for token in re.findall(r"`([^`]+)`", open(SKILL).read().split("## Maintenance")
     if first.startswith("/") or re.fullmatch(r"[a-z][a-z0-9-]*(:[a-z0-9-]+)?", token):
         named.add(first)
 for command in sorted(named):
-    if bare(command) not in table:
+    if command.lstrip("/") not in table:
         problems.append(f"SKILL.md names {command}, which is missing from the registry")
 
 if os.path.exists(BUILD_PAGE):
