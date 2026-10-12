@@ -1,1 +1,4 @@
 __pycache__/
+# Built by docs/build-workflow.py; GitHub Actions publishes it.
+docs/workflow.html
+_site/

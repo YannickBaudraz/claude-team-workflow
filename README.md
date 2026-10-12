@@ -4,6 +4,8 @@ My personal workflow for new projects with Claude Code, run the way an engineeri
 
 `/ask-team` is the entry point. It reads where the project stands and prints the next command to run, in which session, and what has to be approved before moving on. It routes across my own skills, Matt Pocock's plugin and a set of community skills, each picked for the step it does best.
 
+The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-workflow/
+
 ## Contents
 
 | Path | What it is |
@@ -15,6 +17,8 @@ My personal workflow for new projects with Claude Code, run the way an engineeri
 | `install/community-skills.txt` | The community skills the workflow installs |
 | `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace |
 | `install.sh` | Installs all of the above on a machine |
+| `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
+| `.github/workflows/pages.yml` | Builds that page and publishes it to GitHub Pages on every push to `main` |
 
 The community skills are installed from their authors' repositories, not copied here: their licences stay with them, and updates come from them.
 
@@ -29,7 +33,8 @@ The script links this repo's skills into `~/.claude/skills`, so edits here are l
 
 ## Maintenance
 
-- After installing, removing or updating a skill the workflow uses, update `skills/ask-team/REGISTRY.md` (and `install/` when the list changes), then run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`.
+- After installing, removing or updating a skill the workflow uses, update `skills/ask-team/REGISTRY.md`, its Does line included (and `install/` when the list changes), then run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`.
+- The workflow page follows `SKILL.md` and the registry on its own: every push to `main` rebuilds and publishes it. To preview it, run `python3 docs/build-workflow.py` and open `docs/workflow.html`.
 - Community skills: `npx skills update -g`. Matt Pocock's plugin updates itself from his marketplace.
 
 ## Credits

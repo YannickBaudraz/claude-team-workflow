@@ -53,4 +53,4 @@ One role per session, as on a team: product (steps 1 to 5), tech lead per epic (
 
 ## Maintenance
 
-After installing, removing or updating a skill of this workflow, update [REGISTRY.md](REGISTRY.md) and run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`. It checks that every command named here exists, that each skill's visibility matches the settings, and that no skill calls one Claude cannot load.
+After installing, removing or updating a skill of this workflow, or changing this file, update [REGISTRY.md](REGISTRY.md), its Does line included, and run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`. It checks that every skill named here is in the registry, that each skill's visibility matches the settings, that no skill calls one Claude cannot load, and that the workflow page can still be built from this file and the registry. GitHub publishes that page on every push to `main`.

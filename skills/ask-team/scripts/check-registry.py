@@ -2,17 +2,24 @@
 """Check REGISTRY.md against what is installed and configured.
 
 For every skill row: the skill exists on disk (or is built in), its visibility
-matches its frontmatter and ~/.claude/settings.json, and every skill it calls
-can actually be called. Exit code 1 when anything is wrong.
+matches its frontmatter and ~/.claude/settings.json, every skill it calls can
+actually be called, and it says what it does. Every skill SKILL.md names is in
+the registry, and the workflow page can still be built from SKILL.md and the
+registry. Exit code 1 when anything is wrong.
 """
 import glob
 import json
 import os
 import re
+import subprocess
 import sys
 
 HOME = os.path.expanduser("~")
 REGISTRY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "REGISTRY.md")
+SKILL = os.path.join(os.path.dirname(REGISTRY), "SKILL.md")
+# The repo this skill is linked from: <repo>/skills/ask-team/scripts/check-registry.py
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+BUILD_PAGE = os.path.join(REPO, "docs", "build-workflow.py")
 SETTINGS = json.load(open(f"{HOME}/.claude/settings.json"))
 PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
@@ -21,11 +28,21 @@ ENABLED = SETTINGS.get("enabledPlugins", {})
 
 
 def rows():
+    """The skill rows of every table, keyed by the table's column headers."""
+    header = None
     for line in open(REGISTRY):
-        if line.startswith("| `"):
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            yield {"command": cells[0].strip("`"), "source": cells[1],
-                   "visibility": cells[2], "calls": cells[4] if len(cells) > 5 else ""}
+        line = line.strip()
+        if not line.startswith("|"):
+            header = None
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if header is None:
+            header = [c.lower() for c in cells]
+        elif cells[0].startswith("`"):
+            row = dict(zip(header, cells))
+            yield {"command": cells[0].strip("`"), "source": row["source"],
+                   "visibility": row["visibility"], "calls": row.get("calls", ""),
+                   "does": row.get("does")}
 
 
 def bare(command):
@@ -66,6 +83,8 @@ problems, table = [], {}
 for row in rows():
     table[bare(row["command"])] = row
 for name, row in table.items():
+    if row["does"] == "":
+        problems.append(f"{row['command']}: no Does line")
     visibility = row["visibility"]
     path = skill_file(row)
     if path == "":
@@ -88,6 +107,21 @@ for name, row in table.items():
             problems.append(f"{row['command']}: calls {callee}, which is missing from the registry")
         elif table[callee]["visibility"] not in ("auto", "built-in"):
             problems.append(f"{row['command']}: calls {callee}, which is {table[callee]['visibility']} and cannot be called")
+
+# Every command, and every bare skill name, that the router names (Maintenance is about this repo).
+named = set()
+for token in re.findall(r"`([^`]+)`", open(SKILL).read().split("## Maintenance")[0]):
+    first = token.split(" ")[0]
+    if first.startswith("/") or re.fullmatch(r"[a-z][a-z0-9-]*(:[a-z0-9-]+)?", token):
+        named.add(first)
+for command in sorted(named):
+    if bare(command) not in table:
+        problems.append(f"SKILL.md names {command}, which is missing from the registry")
+
+if os.path.exists(BUILD_PAGE):
+    page = subprocess.run([sys.executable, BUILD_PAGE, "--check"], capture_output=True, text=True)
+    if page.returncode:
+        problems.append((page.stdout or page.stderr).strip())
 
 print(f"{len(table)} skills checked")
 for problem in problems:
