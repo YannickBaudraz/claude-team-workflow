@@ -60,9 +60,9 @@ GROUP_TITLES = {'start': 'Start here', 'in': 'Other ways in', 'any': 'Any time',
 LIGHT = dict(paper='#F2F4F7', surface='#FFFFFF', ink='#16202C', muted='#5B6778',
              rule='#D3DAE2', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
              review='#7445C2', you='#C02E48', on_role='#FFFFFF')
-DARK = dict(paper='#0F141A', surface='#17202A', ink='#E4E9EF', muted='#97A3B2',
-            rule='#2B3644', product='#E3A64B', lead='#3FC2B3', dev='#82A5F6',
-            review='#B898F2', you='#F27389', on_role='#0F141A')
+DARK = dict(paper='#18191B', surface='#212225', ink='#E8E9EB', muted='#A0A4AA',
+            rule='#34363A', product='#D6A45E', lead='#64B5A7', dev='#93A9E2',
+            review='#B7A2E0', you='#E98A93', on_role='#18191B')
 
 # One variable woff2 per family, latin subset: (family, file, weight range).
 FACES = [('Bricolage Grotesque', 'bricolage-grotesque.woff2', '600 700'),
@@ -197,7 +197,7 @@ def read_registry(path, steps):
     workflow = [t for t in tables if t and 'does' in t[0]]
     need(len(workflow) == 1, 'REGISTRY.md should have one table with a Does column')
 
-    groups = {}
+    groups, kinds = {}, {}
     for row in workflow[0]:
         name, used, does = row['command'].strip('`'), row.get('used at', ''), row.get('does', '')
         need(does, f'REGISTRY.md: {name} has no Does')
@@ -213,8 +213,9 @@ def read_registry(path, steps):
             else:
                 key, tag = 'other', used
         groups.setdefault(key, []).append((name, tag, does))
+        kinds[name] = row.get('visibility', '')
     need('start' in groups, 'REGISTRY.md has no "entry point" skill')
-    return groups
+    return groups, kinds
 
 
 # ---- Drawing ------------------------------------------------------------------
@@ -334,7 +335,9 @@ a{{color:inherit;text-underline-offset:.2em}}
 .bar ul{{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0;min-height:var(--bar);font-size:.9375rem;font-weight:600}}
 .bar a{{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--muted);padding:7px 12px;border-radius:7px;white-space:nowrap}}
 .bar a:hover{{color:var(--ink);background:var(--paper)}}
-.bar a[aria-current]{{color:var(--ink);background:var(--paper);box-shadow:inset 0 -2px 0 var(--dev)}}
+.bar a{{position:relative}}
+.bar a[aria-current]{{color:var(--ink);background:none}}
+.bar a[aria-current]::after{{content:"";position:absolute;left:12px;right:12px;bottom:-10px;height:2px;background:var(--ink)}}
 .bar .home{{margin-right:8px}}
 .bar .home a{{font-family:var(--display);font-size:1.0625rem;font-weight:700;color:var(--ink);padding-left:0}}
 .bar .home a:hover{{background:none}}
@@ -372,9 +375,7 @@ a{{color:inherit;text-underline-offset:.2em}}
 .fork-note{{grid-column:1/-1;color:var(--muted);font-size:.875rem;margin:-8px 0 0}}
 .band{{display:grid;gap:12px}}
 .flow{{display:flex;align-items:stretch}}
-.flow-rev{{flex-direction:row-reverse}}
 .arr{{flex:0 0 var(--gap);display:flex;justify-content:center;align-items:center;color:var(--muted)}}
-.flow-rev > .arr .ai{{transform:rotate(180deg)}}
 .card{{flex:1 1 0;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 13px;display:flex;flex-direction:column;gap:8px}}
 .card.optional{{border-style:dashed;border-color:var(--muted)}}
 .card:target{{box-shadow:0 0 0 2px var(--c),0 6px 18px -8px var(--c)}}
@@ -396,11 +397,10 @@ a{{color:inherit;text-underline-offset:.2em}}
 .cols4{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:var(--gap)}}
 .joint{{padding:8px 0;color:var(--muted);font-weight:700}}
 .joint span{{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}}
+.joint .down{{grid-column:1 / span 2;justify-content:flex-start;padding-left:14px;font-size:.875rem}}
 .joint .down .ai{{transform:rotate(90deg)}}
-.joint .up{{grid-column:4;color:var(--ink);font-size:.9375rem}}
-.joint .up .ai{{transform:rotate(-90deg);color:var(--muted)}}
 .into-epic{{margin:-14px 0;padding-inline:21.5px;color:var(--muted);font-weight:700}}
-.into-epic span{{grid-column:4;display:grid;justify-items:center;gap:2px;font-size:.875rem;line-height:1.3}}
+.into-epic span{{grid-column:1;justify-self:start;display:grid;justify-items:center;gap:2px;font-size:.875rem;line-height:1.3}}
 .into-epic .ai{{transform:rotate(90deg);margin:8px 0}}
 .ticket-row{{display:flex;align-items:stretch}}
 .ticket-row > .card{{flex:1 1 0}}
@@ -422,12 +422,27 @@ a{{color:inherit;text-underline-offset:.2em}}
 .rules .dia{{margin-top:8px}}
 .section{{border-top:1px solid var(--rule);padding-top:36px;display:grid;gap:14px}}
 .section > h2{{font-size:clamp(1.75rem,3.4vw,2.125rem)}}
-.groups{{columns:3 300px;column-gap:40px;margin-top:10px}}
+.phase{{border-top:1px solid var(--rule);padding-top:18px}}
+.phase-title{{font-size:1.25rem;margin-bottom:6px}}
+/* Three columns in reading order. The script sets each block's row span from its
+   height, so a long block leaves no gap under a short one; Tab still follows the steps. */
+.groups{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:40px;align-items:start;margin-top:10px}}
+.groups.packed{{grid-auto-rows:4px}}
+.tag.step-tag{{background:var(--c);border-color:var(--c);color:var(--on-role)}}
+.group-by{{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;border:0;padding:0;margin:8px 0 4px}}
+.group-by legend{{float:left;font-weight:700;font-size:1rem}}
+.group-by .seg{{display:inline-flex;border:1px solid var(--rule);border-radius:8px;background:var(--surface);overflow:hidden}}
+.group-by label{{position:relative;cursor:pointer;padding:7px 16px;font-weight:600;font-size:.9375rem;color:var(--muted)}}
+.group-by label + label{{border-left:1px solid var(--rule)}}
+.group-by input{{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}}
+.group-by label:hover{{color:var(--ink)}}
+.group-by label:has(:checked){{color:var(--ink);font-weight:700;box-shadow:inset 0 -3px 0 var(--ink)}}
+.group-by label:has(:focus-visible){{outline:2px solid var(--dev);outline-offset:-4px}}
 .group{{break-inside:avoid;margin:0 0 24px;padding:10px 12px;margin-inline:-12px;border-radius:10px}}
 .group:target{{background:var(--surface);box-shadow:0 0 0 2px var(--c,var(--rule))}}
 .group-head{{display:flex;align-items:baseline;gap:9px;margin-bottom:10px}}
-.group h3{{font-size:1.25rem;display:flex;flex-wrap:wrap;align-items:center;gap:4px 9px}}
-.group h3 .role{{flex-basis:100%;order:3}}
+.group h4{{font-size:1.25rem;display:flex;flex-wrap:wrap;align-items:center;gap:4px 9px}}
+.group h4 .role{{flex-basis:100%;order:3}}
 .group .num{{width:24px;height:24px;font-size:.75rem;border-radius:5px}}
 .back{{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:.875rem;font-weight:600;color:var(--muted);text-decoration:none}}
 .back .ai{{width:16px;height:16px;transform:rotate(-90deg)}}
@@ -447,7 +462,7 @@ a{{color:inherit;text-underline-offset:.2em}}
 .p-product{{--c:var(--product)}} .p-lead{{--c:var(--lead)}} .p-dev{{--c:var(--dev)}} .p-review{{--c:var(--review)}} .p-you{{--c:var(--you)}}
 @media (max-width: 1100px){{
   .wrap,.bar-in{{max-width:calc(720px + 2 * clamp(16px,4vw,40px))}}
-  .flow,.flow-rev,.ticket-row{{flex-direction:column}}
+  .flow,.ticket-row{{flex-direction:column}}
   .flow > .arr,.ticket-row > .arr{{height:34px;flex-basis:auto}}
   .flow > .arr .ai,.ticket-row > .arr .ai{{transform:rotate(90deg)}}
   .joint{{display:none}}
@@ -456,6 +471,7 @@ a{{color:inherit;text-underline-offset:.2em}}
   .into-epic span{{grid-column:1}}
   .ticket{{margin:12px 0 0}}
   .router,.fork,.panels{{grid-template-columns:minmax(0,1fr)}}
+  .groups{{grid-template-columns:minmax(0,1fr)}}
   .fork-note{{margin:0}}
   .bar .home a{{font-size:.9375rem}}
   .cmd-text code{{white-space:nowrap}}
@@ -479,10 +495,61 @@ function mark() {
   links.forEach((a, i) => i === current ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current'));
 }
 addEventListener('scroll', mark, {passive: true});
-mark();"""
+mark();
+
+// Skills: group them by role (the default), moment, step or kind, and pack the columns.
+const byStep = document.getElementById('by-step'), byKind = document.getElementById('by-kind');
+const blocks = [...byStep.querySelectorAll('section.group')];
+const switcher = document.querySelector('.group-by');
+function pack() {
+  // Block i goes to column i mod n, straight under the previous block there: rows read
+  // left to right in step order, and no column waits for a taller neighbour.
+  document.querySelectorAll('.groups').forEach(g => {
+    g.classList.remove('packed');
+    [...g.children].forEach(c => c.style.gridArea = '');
+    const n = getComputedStyle(g).gridTemplateColumns.split(' ').length;
+    const items = [...g.children].map(c => [c, c.getBoundingClientRect().height + parseFloat(getComputedStyle(c).marginBottom)]);
+    if (n < 2) return;
+    g.classList.add('packed');
+    const next = Array(n).fill(1);
+    items.forEach(([c, h], i) => {
+      const col = i % n, span = Math.ceil(h / 4);
+      c.style.gridArea = `${next[col]} / ${col + 1} / span ${span}`;
+      next[col] += span;
+    });
+  });
+}
+function group(by) {
+  byKind.hidden = by !== 'kind';
+  byStep.hidden = by === 'kind';
+  if (by !== 'kind') {
+    const names = [...new Set(blocks.map(b => b.dataset[by]))];
+    byStep.replaceChildren(...names.map(name => {
+      const phase = document.createElement('div'), list = document.createElement('div');
+      phase.className = 'phase'; list.className = 'groups';
+      const h = document.createElement('h3');
+      h.className = 'phase-title'; h.textContent = name;
+      phase.append(h);
+      list.append(...blocks.filter(b => b.dataset[by] === name));
+      phase.append(list);
+      return phase;
+    }));
+  }
+  try { localStorage.setItem('group-by', by); } catch (e) {}
+  pack();
+}
+switcher.hidden = false;
+switcher.addEventListener('change', e => group(e.target.value));
+let saved = 'role';
+try { saved = localStorage.getItem('group-by') || 'role'; } catch (e) {}
+const choice = switcher.querySelector(`input[value="${saved}"]`);
+if (choice) { choice.checked = true; group(saved); } else pack();
+addEventListener('resize', pack);
+document.fonts.ready.then(pack);
+document.addEventListener('toggle', pack, true);"""
 
 
-def build(router, groups, digest):
+def build(router, groups, kinds, digest):
     r = router
     steps = r['steps']
     start = groups['start'][0][0]
@@ -528,13 +595,13 @@ def build(router, groups, digest):
         if isinstance(key, int):
             s = steps[key]
             role = ROLE_NAMES[s['role']]
-            head = (f'<div class="group-head"><h3><span class="num">{key}</span>{esc(s["name"])}'
-                    f'<span class="role">{esc(role)}</span></h3></div>')
+            head = (f'<div class="group-head"><h4><span class="num">{key}</span>{esc(s["name"])}'
+                    f'<span class="role">{esc(role)}</span></h4></div>')
             back = (f'<a class="back" href="#step-{key}"><i class="ai"></i>'
                     f'Back to step {key}</a>')
             cls = f' p-{s["role"]}'
         else:
-            head = f'<div class="group-head"><h3>{esc(GROUP_TITLES[key])}</h3></div>'
+            head = f'<div class="group-head"><h4>{esc(GROUP_TITLES[key])}</h4></div>'
             cls, back = '', ''
 
         def item(n, t, d):
@@ -560,7 +627,32 @@ def build(router, groups, digest):
             folded += (f'<details><summary>Loaded by {who} ({count})</summary>'
                        f'<ul>{"".join(item(*e) for e in entries)}</ul></details>')
         items = ''.join(item(*e) for e in top)
-        blocks.append(f'<section class="group{cls}" id="skills-{key}">{head}<ul>{items}</ul>{folded}{back}</section>')
+        phase = ('Once per project' if key in r['project'] else 'Per epic' if key in r['lead'] or key == r['close']
+                 else 'Per ticket' if key in r['ticket'] else GROUP_TITLES['other'])
+        role = ROLE_NAMES[steps[key]['role']] if isinstance(key, int) else GROUP_TITLES['other']
+        where = f'Step {key}' if isinstance(key, int) else GROUP_TITLES['other']
+        tone = steps[key]['role'] if isinstance(key, int) else ''
+        blocks.append(dict(role=role, phase=phase, skills=[(n, where, d, tone) for n, _, d in groups[key]],
+                           html=f'<section class="group{cls}" id="skills-{key}" data-role="{esc(role)}" '
+                                f'data-moment="{esc(phase)}">{head}<ul>{items}</ul>{folded}{back}</section>'))
+
+    def grouped(field):
+        return ''.join(f'<div class="phase"><h3 class="phase-title">{esc(g)}</h3><div class="groups">'
+                       + ''.join(b['html'] for b in blocks if b[field] == g) + '</div></div>'
+                       for g in dict.fromkeys(b[field] for b in blocks))
+    # By kind, the same skills sorted by who can start them, each tagged with its step.
+    kind_of = {'typed': 'You start it', 'hidden': 'You start it', 'auto': 'Claude may load it',
+               'built-in': 'Built into Claude Code'}
+    by_kind = {}
+    for b in blocks:
+        for n, where, d, tone in b['skills']:
+            step = f'<span class="tag step-tag p-{tone}">{esc(where)}</span>' if tone else f'<span class="tag">{esc(where)}</span>'
+            by_kind.setdefault(kind_of.get(kinds.get(n), 'You start it'), []).append(
+                f'<li><code>{esc(n)}</code>{step}<p>{md(d)}</p></li>')
+    by_kind = ''.join(f'<section class="group"><div class="group-head"><h4>{esc(k)}</h4></div><ul>{"".join(by_kind[k])}</ul></section>'
+                      for k in dict.fromkeys(kind_of.values()) if k in by_kind)
+    group_by = ''.join(f'<label><input type="radio" name="group-by" value="{v}"{" checked" if v == "role" else ""}>{t}</label>'
+                       for v, t in (('role', 'Role'), ('moment', 'Moment'), ('kind', 'Kind')))
     names = ('<li><code>/name</code><span>you type it</span></li>'
              '<li><code>name</code><span>Claude loads it when it fits; you can type it too</span></li>'
              '<li><span class="tag">tag</span><span>when it is used</span></li>')
@@ -614,8 +706,8 @@ def build(router, groups, digest):
 <div class="into-epic cols4" aria-hidden="true"><span>Each epic starts here{AI}</span></div>
 <section class="frame" aria-labelledby="band-epic">
 <h2 class="kicker" id="band-epic">Per epic</h2>
-{flow_html(r, r['lead'], 'flow flow-rev')}
-<div class="joint cols4" aria-hidden="true"><span class="down">{AI}</span><span class="up">{AI}Next epic</span></div>
+{flow_html(r, r['lead'])}
+<div class="joint cols4" aria-hidden="true"><span class="down">{AI}Then, for each ticket: {r['ticket'][0]} to {r['ticket'][-1]}</span></div>
 <div class="joint phone" aria-hidden="true"><span class="down">{AI}</span></div>
 <div class="ticket-row">
 <section class="ticket" aria-labelledby="band-ticket"><h3 class="kicker" id="band-ticket">Per ticket</h3>
@@ -629,8 +721,8 @@ def build(router, groups, digest):
 <span>About {r['epics']} epics per roadmap, never more than {r['most']}.</span></p>
 </section>
 <section class="panels" style="--n:2" aria-label="Beside the flow">
-<div><h2>Other ways in</h2><ul>{ways}</ul></div>
 <div><h2>Any time</h2><ul>{any_time}</ul></div>
+<div><h2>Other ways in</h2><ul>{ways}</ul></div>
 </section>
 <section class="section" id="rules" aria-labelledby="rules-title">
 <h2 id="rules-title">Rules</h2>
@@ -641,9 +733,11 @@ def build(router, groups, digest):
 </div>
 </section>
 <section class="section" id="skills" aria-labelledby="skills-title">
-<h2 id="skills-title">Every skill, step by step</h2>
+<h2 id="skills-title">Every skill</h2>
 <ul class="legend" aria-label="How to read a skill name">{names}</ul>
-<div class="groups">{''.join(blocks)}</div>
+<fieldset class="group-by" hidden><legend>Group by</legend><span class="seg">{group_by}</span></fieldset>
+<div class="grouping" id="by-step">{grouped('role')}</div>
+<div class="grouping" id="by-kind" hidden><div class="phase"><div class="groups">{by_kind}</div></div></div>
 <p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources version {digest}.</p>
 </section>
 </main>
@@ -659,7 +753,7 @@ def main():
     args = sys.argv[1:]
     try:
         router = read_router(SKILL)
-        groups = read_registry(REGISTRY, router['steps'])
+        groups, kinds = read_registry(REGISTRY, router['steps'])
         for _, file, _ in FACES:
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as e:
@@ -672,7 +766,7 @@ def main():
     out_dir = os.path.dirname(os.path.abspath(out))
     os.makedirs(out_dir, exist_ok=True)
     with open(out, 'w', encoding='utf-8') as f:
-        f.write(build(router, groups, digest))
+        f.write(build(router, groups, kinds, digest))
     if out_dir != os.path.dirname(FONTS):
         shutil.copytree(FONTS, os.path.join(out_dir, 'fonts'), dirs_exist_ok=True)
     print(f'wrote {out}')
