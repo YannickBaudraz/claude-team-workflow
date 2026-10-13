@@ -259,8 +259,8 @@ def page_css():
     return faces + f"""
 /* Layout: one column of bands. The epic loop is a dashed frame whose rows snake,
    design to tickets leftwards and build to retro rightwards, so the retro sits under
-   the first epic step. Below 1100px the flow stacks in reading order, and below 980px
-   the router, sizes and panels do too. */
+   the first epic step. Below 1100px the flow stacks in reading order, in a centred column
+   narrow enough to read, and below 980px the router, sizes and panels do too. */
 :root{{ {tokens(LIGHT)}
   --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --body:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
@@ -306,7 +306,7 @@ a:focus-visible{{outline:2px solid var(--dev);outline-offset:2px;border-radius:3
 .card.optional{{border-style:dashed;border-color:var(--muted)}}
 .card-head{{display:flex;align-items:center;gap:9px}}
 .num{{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:.8125rem;flex:none;font-variant-numeric:tabular-nums}}
-.role{{font-size:.7188rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}}
+.role{{font-size:.7188rem;line-height:1.3;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}}
 .card .title{{font-size:1.0625rem;font-weight:700}}
 .card .title a{{text-decoration:none}}
 .card .title a:hover{{text-decoration:underline}}
@@ -359,8 +359,11 @@ a:focus-visible{{outline:2px solid var(--dev);outline-offset:2px;border-radius:3
   .joint.phone{{display:flex;justify-content:center}}
   .into-epic{{justify-content:center;padding-right:0;margin:-18px 0}}
   .ticket{{margin:12px 0 0}}
+  .band,.into-epic,.frame{{width:100%;max-width:680px;justify-self:center}}
 }}
-@media (min-width: 1101px){{ .joint.phone{{display:none}} }}
+/* Side by side, a role label may wrap to two lines: every head keeps room for two,
+   so the titles of a row line up. */
+@media (min-width: 1101px){{ .joint.phone{{display:none}} .card-head{{min-height:1.875rem}} }}
 @media (max-width: 980px){{
   .router{{grid-template-columns:minmax(0,1fr)}}
   .beats{{flex-direction:column}}
@@ -447,18 +450,18 @@ def build(router, groups, digest):
 <ol class="beats">{beats}</ol>
 </section>
 <section class="fork" aria-label="Size of the request">{fork}</section>
-<section class="band" aria-label="Once per project">
-<h2 class="kicker">Once per project</h2>
+<section class="band" aria-labelledby="band-project">
+<h2 class="kicker" id="band-project">Once per project</h2>
 {flow_html(r, r['project'])}
 </section>
 <div class="into-epic" aria-hidden="true">↓</div>
-<section class="frame" aria-label="Per epic">
-<h2 class="kicker">Per epic · about {r['epics']} per roadmap, never more than {r['most']}</h2>
+<section class="frame" aria-labelledby="band-epic">
+<h2 class="kicker" id="band-epic">Per epic · about {r['epics']} per roadmap, never more than {r['most']}</h2>
 {flow_html(r, r['lead'], 'flow flow-rev')}
 <div class="joint" aria-hidden="true"><span>↓</span><span class="up">↑ Next epic</span></div>
 <div class="joint phone" aria-hidden="true"><span>↓</span></div>
 <div class="ticket-row">
-<section class="ticket" aria-label="Per ticket"><h3 class="kicker">Per ticket</h3>
+<section class="ticket" aria-labelledby="band-ticket"><h3 class="kicker" id="band-ticket">Per ticket</h3>
 {flow_html(r, r['ticket'], level=4)}
 <p class="loop-note">Changes requested at {r['review']} go back to {r['ticket'][0]}</p>
 </section>
