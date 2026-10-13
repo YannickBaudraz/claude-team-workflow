@@ -30,8 +30,7 @@
   },
   "enabledPlugins": {
     "mattpocock-skills@mattpocock": true,
-    "mattpocock-skills@claude-plugins-official": false,
-    "qodo@synced": false
+    "mattpocock-skills@claude-plugins-official": false
   },
   "extraKnownMarketplaces": {
     "mattpocock": {

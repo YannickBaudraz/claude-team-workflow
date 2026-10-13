@@ -24,8 +24,10 @@ The community skills are installed from their authors' repositories, not copied 
 
 ## Install
 
+Needs Claude Code (`claude`), Node.js for `npx`, `jq` and `python3`.
+
 ```bash
-git clone git@github.com:YannickBaudraz/claude-team-workflow.git ~/Dev/claude-team-workflow
+git clone https://github.com/YannickBaudraz/claude-team-workflow.git ~/Dev/claude-team-workflow
 ~/Dev/claude-team-workflow/install.sh
 ```
 
