@@ -122,14 +122,12 @@ a{color:inherit;text-underline-offset:.2em}
 .cols4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:var(--gap)}
 .joint{padding:8px 0;color:var(--muted);font-weight:700}
 .joint > span{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}
-/* A downward arrow sits on the centre line of the first column's card, its words after it;
-   17px is half the arrow's turned box plus its margin. */
-.joint .down{grid-column:1 / span 2;justify-content:flex-start;padding-left:calc((100% - var(--gap)) / 4 - 17px);font-size:.875rem;white-space:nowrap}
+.joint .down{grid-column:1 / span 2;justify-content:flex-start;padding-left:14px;font-size:.875rem}
 .joint .down .ai{transform:rotate(90deg)}
 .into-epic .link,.joint .link{margin-inline:4px}
 .into-epic{margin:-14px 0;padding-inline:21.5px;color:var(--muted);font-weight:700}
 /* Read like the ticket loop's cue: the arrow down, then what it leads into. */
-.into-epic > span{grid-column:1;display:flex;align-items:center;gap:4px;min-height:30px;padding-left:calc(50% - 17px);font-size:.875rem;line-height:1.3;white-space:nowrap}
+.into-epic > span{grid-column:1;justify-self:start;display:flex;align-items:center;gap:4px;min-height:30px;font-size:.875rem;line-height:1.3}
 .into-epic .ai{transform:rotate(90deg)}
 .ticket-row{display:flex;align-items:stretch}
 .ticket-row > .card{flex:1 1 0}
@@ -241,8 +239,7 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
   .flow > .arr,.ticket-row > .arr{height:34px;flex-basis:auto}
   .flow > .arr .ai,.ticket-row > .arr .ai{transform:rotate(90deg)}
   .joint{display:none}
-  .joint.phone{display:flex}
-  .joint.phone .down{flex:1;padding-left:calc(50% - 17px);white-space:normal}
+  .joint.phone{display:flex;justify-content:center}
   .into-epic{grid-template-columns:minmax(0,1fr);margin:-12px 0}
   .into-epic > span{grid-column:1}
   .ticket{margin:12px 0 0}
