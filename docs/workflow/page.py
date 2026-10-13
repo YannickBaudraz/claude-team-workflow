@@ -223,7 +223,7 @@ def build(router, groups, kinds, sources, install, digest):
 <h2 class="band-title" id="band-project">Once per project</h2>
 {flow_html(router, router['project'])}
 </section>
-<div class="into-epic cols4"><span>Each epic starts here{link()}</span></div>
+<div class="into-epic cols4"><span>{link()}Each epic starts here</span></div>
 <section class="frame" aria-labelledby="band-epic">
 <h2 class="band-title" id="band-epic">Per epic</h2>
 {flow_html(router, router['lead'])}
@@ -271,6 +271,7 @@ def build(router, groups, kinds, sources, install, digest):
 <p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files.</p>
 </section>
 </main>
+<a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>
 <script>{BAR_JS}</script>
 </body>
 </html>

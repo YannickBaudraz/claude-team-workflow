@@ -20,11 +20,16 @@ themeBtn.hidden = false;
 
 const tools = document.querySelector('.skill-tools'), rest = document.createElement('div');
 tools.before(rest);  // marks where the tools sit when not stuck
+const toTop = document.querySelector('.to-top');
 function mark() {
-  bar.classList.toggle('scrolled', document.querySelector('h1').getBoundingClientRect().bottom < 0);
-  // The section in view is the last one whose top has passed under the bar.
+  const scrolled = document.querySelector('h1').getBoundingClientRect().bottom < 0;
+  bar.classList.toggle('scrolled', scrolled);
+  toTop.classList.toggle('shown', scrolled);
+  // The section in view is the last one whose top has passed under the bar, or the last
+  // section once the page can scroll no further, though its top never reaches the bar.
   let current = -1;
   targets.forEach((target, index) => { if (target.getBoundingClientRect().top < 140) current = index; });
+  if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) current = targets.length - 1;
   links.forEach((link, index) =>
     index === current ? link.setAttribute('aria-current', 'location') : link.removeAttribute('aria-current'));
   // The skill tools join the header only while they sit stuck right under it.
