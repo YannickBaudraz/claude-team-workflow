@@ -11,6 +11,10 @@ the page:
     python3 docs/build-workflow.py --out _site/index.html
     python3 docs/build-workflow.py --check               # exit 1 when the sources can't be read
 
+The page serves its own fonts from docs/fonts (SIL Open Font License, the licences
+sit beside them), copied next to the page when it is written elsewhere, so no
+visitor's browser asks a third party for anything.
+
 GitHub Actions (.github/workflows/pages.yml) builds and publishes the page to
 GitHub Pages on every push to main. skills/ask-team/scripts/check-registry.py
 runs the --check.
@@ -19,13 +23,16 @@ import hashlib
 import html
 import os
 import re
+import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, 'skills', 'ask-team', 'SKILL.md')
 REGISTRY = os.path.join(ROOT, 'skills', 'ask-team', 'REGISTRY.md')
 PREVIEW = os.path.join(ROOT, 'docs', 'workflow.html')
+FONTS = os.path.join(ROOT, 'docs', 'fonts')
 REPO_URL = 'https://github.com/YannickBaudraz/claude-team-workflow'
+PAGE_URL = 'https://yannickbaudraz.github.io/claude-team-workflow/'
 
 TITLE = 'Claude Team Workflow'
 LEDE = 'From an idea to a merged epic, run the way an engineering team works.'
@@ -38,11 +45,20 @@ GROUP_TITLES = {'start': 'Start here', 'in': 'Other ways in', 'any': 'Any time',
                 'other': 'Outside the flow'}
 
 LIGHT = dict(paper='#F2F4F7', surface='#FFFFFF', ink='#16202C', muted='#5B6778',
-             rule='#D3DAE2', product='#A86A12', lead='#0E7A70', dev='#2C5BC8',
+             rule='#D3DAE2', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
              review='#7445C2', you='#C02E48', on_role='#FFFFFF')
 DARK = dict(paper='#0F141A', surface='#17202A', ink='#E4E9EF', muted='#97A3B2',
             rule='#2B3644', product='#E3A64B', lead='#3FC2B3', dev='#82A5F6',
             review='#B898F2', you='#F27389', on_role='#0F141A')
+
+# One variable woff2 per family, latin subset: (family, file, weight range).
+FACES = [('Bricolage Grotesque', 'bricolage-grotesque.woff2', '600 700'),
+         ('Instrument Sans', 'instrument-sans.woff2', '400 700'),
+         ('JetBrains Mono', 'jetbrains-mono.woff2', '600 700')]
+# The approval diamond, as the tab icon.
+ICON = ('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22>'
+        '<rect x=%223.5%22 y=%223.5%22 width=%229%22 height=%229%22 rx=%221%22 '
+        'transform=%22rotate(45 8 8)%22 fill=%22%23C02E48%22/></svg>')
 
 esc = html.escape
 
@@ -216,7 +232,7 @@ def shown_output(output):
 ARR = '<span class="arr" aria-hidden="true"></span>'
 
 
-def card_html(s):
+def card_html(s, level=3):
     label = ROLE_NAMES[s['role']] + (f' · {s["qual"]}' if s['qual'] else '')
     note = f'<p class="note">{md(cap(s["note"]))}</p>' if s['note'] else ''
     out = shown_output(s['output'])
@@ -225,22 +241,26 @@ def card_html(s):
     return (f'<article class="card{" optional" if s["optional"] else ""} p-{s["role"]}" id="step-{s["n"]}">'
             f'<div class="card-head"><span class="num">{s["n"]}</span>'
             f'<span class="role">{esc(label)}</span></div>'
-            f'<h3><a href="#skills-{s["n"]}">{esc(s["name"])}</a></h3>{note}'
+            f'<h{level} class="title"><a href="#skills-{s["n"]}">{esc(s["name"])}</a></h{level}>{note}'
             f'<p class="cmd-text">{md(s["command"])}</p>'
             + (f'<div class="result">{result}</div>' if result else '') + '</article>')
 
 
-def flow_html(r, numbers, cls='flow'):
-    return f'<div class="{cls}">' + ARR.join(card_html(r['steps'][n]) for n in numbers) + '</div>'
+def flow_html(r, numbers, cls='flow', level=3):
+    return f'<div class="{cls}">' + ARR.join(card_html(r['steps'][n], level) for n in numbers) + '</div>'
 
 
 def page_css():
     def tokens(p):
         return ' '.join(f"--{k.replace('_', '-')}:{v};" for k, v in p.items())
-    return f"""
+    faces = ''.join(f'@font-face{{font-family:"{f}";src:url("fonts/{file}") format("woff2");'
+                    f'font-weight:{w};font-style:normal;font-display:swap}}\n'
+                    for f, file, w in FACES)
+    return faces + f"""
 /* Layout: one column of bands. The epic loop is a dashed frame whose rows snake,
    design to tickets leftwards and build to retro rightwards, so the retro sits under
-   the first epic step. Below 980px everything stacks in reading order. */
+   the first epic step. Below 1100px the flow stacks in reading order, and below 980px
+   the router, sizes and panels do too. */
 :root{{ {tokens(LIGHT)}
   --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --body:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
@@ -248,103 +268,107 @@ def page_css():
 @media (prefers-color-scheme: dark){{ :root:not([data-theme="light"]){{ {tokens(DARK)} color-scheme:dark; }} }}
 :root[data-theme="dark"]{{ {tokens(DARK)} color-scheme:dark; }}
 *,*::before,*::after{{box-sizing:border-box}}
-body{{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}}
+body{{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:.9375rem;line-height:1.5}}
 .wrap{{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:40px 64px;display:grid;gap:28px}}
-h1,h2,h3{{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}}
-h1{{font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-.01em}}
-.lede{{color:var(--muted);font-size:17px;max-width:62ch;margin:10px 0 0}}
+h1,h2,h3,h4{{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}}
+h1{{font-size:clamp(1.875rem,5vw,2.875rem);font-weight:700;letter-spacing:-.01em}}
+.lede{{color:var(--muted);font-size:1.0625rem;max-width:62ch;margin:10px 0 0}}
 code{{font-family:var(--mono);font-size:.84em;font-weight:600;overflow-wrap:anywhere}}
-a{{color:inherit}}
+a{{color:inherit;text-underline-offset:.18em}}
+::selection{{background:var(--dev);color:var(--on-role)}}
 a:focus-visible{{outline:2px solid var(--dev);outline-offset:2px;border-radius:3px}}
-.legend{{display:flex;flex-wrap:wrap;gap:8px 20px;list-style:none;padding:0;margin:16px 0 0;font-size:13.5px}}
+.legend{{display:flex;flex-wrap:wrap;gap:8px 20px;list-style:none;padding:0;margin:16px 0 0;font-size:.8438rem}}
 .legend li{{display:flex;align-items:center;gap:7px}}
 .sw{{width:11px;height:11px;border-radius:3px;background:var(--c)}}
 .dia{{width:9px;height:9px;background:var(--you);transform:rotate(45deg);flex:none;display:inline-block}}
 .dash-sw{{width:22px;height:12px;border:1.5px dashed var(--muted);border-radius:3px}}
-.kicker{{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}}
+.kicker{{font-family:var(--body);line-height:1.5;font-size:.75rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}}
 .box{{background:var(--surface);border:1px solid var(--rule);border-radius:12px}}
 .router{{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:20px;padding:20px 22px;align-items:center}}
-.router .cmd{{font-family:var(--mono);font-size:30px;font-weight:700;margin:4px 0}}
-.router .sub{{color:var(--muted);margin:0;font-size:13.5px}}
+.router .cmd{{font-family:var(--mono);font-size:1.875rem;font-weight:700;margin:4px 0}}
+.router .sub{{color:var(--muted);margin:0;font-size:.8438rem}}
 .router .sub strong{{color:var(--ink)}}
 .beats{{display:flex;align-items:stretch;list-style:none;margin:0;padding:0}}
-.beats li{{flex:1 1 0;min-width:0;background:var(--paper);border-radius:8px;padding:14px;font-weight:700;font-size:15px;display:flex;align-items:center}}
+.beats li{{flex:1 1 0;min-width:0;background:var(--paper);border-radius:8px;padding:14px;font-weight:700;font-size:.9375rem;display:flex;align-items:center}}
 .beats .arr{{flex:0 0 32px;background:none;padding:0;justify-content:center}}
 .fork{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}}
 .fork .box{{padding:16px 18px;display:grid;gap:6px;align-content:start}}
 .fork p{{margin:0}}
 .fork em{{font-style:normal;font-weight:700}}
-.fork-note{{grid-column:1/-1;color:var(--muted);font-size:13.5px;margin:-8px 0 0}}
+.fork-note{{grid-column:1/-1;color:var(--muted);font-size:.8438rem;margin:-8px 0 0}}
 .band{{display:grid;gap:12px}}
 .flow{{display:flex;align-items:stretch}}
 .flow-rev{{flex-direction:row-reverse}}
-.arr{{flex:0 0 26px;display:flex;justify-content:center;padding-top:16px;color:var(--muted);font-size:18px;font-weight:700}}
+.arr{{flex:0 0 26px;display:flex;justify-content:center;padding-top:16px;color:var(--muted);font-size:1.125rem;font-weight:700}}
 .arr::before{{content:"→"}}
 .flow-rev > .arr::before{{content:"←"}}
 .card{{flex:1 1 0;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}}
 .card.optional{{border-style:dashed;border-color:var(--muted)}}
 .card-head{{display:flex;align-items:center;gap:9px}}
-.num{{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;font-variant-numeric:tabular-nums}}
-.role{{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}}
-.card h3{{font-size:17px;font-weight:700}}
-.card h3 a{{text-decoration:none}}
-.card h3 a:hover{{text-decoration:underline}}
-.note{{margin:-4px 0 0;color:var(--muted);font-size:13px;line-height:1.4}}
-.cmd-text{{margin:0;font-size:13.5px;line-height:1.5}}
-.cmd-text code{{font-size:12.5px}}
+.num{{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:.8125rem;flex:none;font-variant-numeric:tabular-nums}}
+.role{{font-size:.7188rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c)}}
+.card .title{{font-size:1.0625rem;font-weight:700}}
+.card .title a{{text-decoration:none}}
+.card .title a:hover{{text-decoration:underline}}
+.note{{margin:-4px 0 0;color:var(--muted);font-size:.8125rem;line-height:1.4}}
+.cmd-text{{margin:0;font-size:.8438rem;line-height:1.5}}
+.cmd-text code{{font-size:.7812rem}}
 .result{{margin-top:auto;padding-top:9px;border-top:1px solid var(--rule);display:grid;gap:8px}}
-.out{{margin:0;font-weight:600;font-size:13.5px;line-height:1.4}}
+.out{{margin:0;font-weight:600;font-size:.8438rem;line-height:1.4}}
 .out::before{{content:"→ ";color:var(--muted)}}
-.gate-mark{{margin:0;display:flex;align-items:center;gap:8px;color:var(--you);font-weight:700;font-size:12.5px}}
+.gate-mark{{margin:0;display:flex;align-items:center;gap:8px;color:var(--you);font-weight:700;font-size:.7812rem}}
 .frame{{border:1.5px dashed var(--muted);border-radius:16px;padding:26px 20px 18px;position:relative;display:grid}}
 .frame > .kicker{{position:absolute;top:-9px;left:16px;background:var(--paper);padding:0 7px}}
 .joint{{display:flex;justify-content:space-between;padding:10px 0;color:var(--muted);font-weight:700}}
 .joint span{{width:25%;text-align:center}}
-.joint .up{{color:var(--ink);font-size:13.5px}}
-.into-epic{{display:flex;justify-content:flex-end;margin:-14px 0;padding-right:9%;color:var(--muted);font-size:18px;font-weight:700}}
+.joint .up{{color:var(--ink);font-size:.8438rem}}
+.into-epic{{display:flex;justify-content:flex-end;margin:-14px 0;padding-right:9%;color:var(--muted);font-size:1.125rem;font-weight:700}}
 .ticket-row{{display:flex;align-items:stretch}}
 .ticket-row > .card{{flex:1 1 0}}
 .ticket{{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:20px 12px 12px;position:relative}}
 .ticket > .kicker{{position:absolute;top:-9px;left:14px;background:var(--paper);padding:0 7px}}
-.loop-note{{margin:10px 0 0;font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center}}
-.loop-note::before{{content:"↺";color:var(--muted);font-size:16px}}
-.epic-note{{margin:14px 0 0;color:var(--muted);font-size:13.5px}}
+.loop-note{{margin:10px 0 0;font-size:.8125rem;font-weight:700;display:flex;gap:6px;align-items:center}}
+.loop-note::before{{content:"↺";color:var(--muted);font-size:1rem}}
+.epic-note{{margin:14px 0 0;color:var(--muted);font-size:.8438rem}}
 .panels{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;padding-top:8px}}
-.panels h2{{font-size:20px;margin-bottom:12px}}
+.panels h2{{font-size:1.25rem;margin-bottom:12px}}
 .panels ul{{list-style:none;margin:0;padding:0;display:grid;gap:12px}}
 .panels li p{{margin:0}}
-.panels .when{{color:var(--muted);font-size:14px}}
-.rules li{{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start;font-size:14.5px}}
+.panels .when{{color:var(--muted);font-size:.875rem}}
+.rules li{{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start;font-size:.9062rem}}
 .rules .dot{{width:7px;height:2px;background:var(--muted);margin-top:11px}}
 .rules .dia{{margin-top:7px}}
 .skills{{border-top:1px solid var(--rule);padding-top:36px;display:grid;gap:14px}}
-.skills h2{{font-size:clamp(24px,3.4vw,30px)}}
+.skills h2{{font-size:clamp(1.5rem,3.4vw,1.875rem)}}
 .groups{{columns:3 300px;column-gap:36px;margin-top:10px}}
 .group{{break-inside:avoid;margin:0 0 26px;scroll-margin-top:16px}}
-.group h3{{font-size:17px;display:flex;align-items:center;gap:9px;margin-bottom:10px}}
-.group .num{{width:24px;height:24px;font-size:12px;border-radius:5px}}
+.group h3{{font-size:1.0625rem;display:flex;align-items:center;gap:9px;margin-bottom:10px}}
+.group .num{{width:24px;height:24px;font-size:.75rem;border-radius:5px}}
 .group ul{{list-style:none;margin:0;padding:0;display:grid;gap:10px}}
-.group li p{{margin:2px 0 0;color:var(--muted);font-size:14px;line-height:1.45}}
-.group li > code{{font-size:13px}}
-.tag{{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;vertical-align:1px}}
-.foot{{color:var(--muted);font-size:13px;margin:0}}
-.foot code{{font-size:12px}}
+.group li p{{margin:2px 0 0;color:var(--muted);font-size:.875rem;line-height:1.45}}
+.group li > code{{font-size:.8125rem}}
+.tag{{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:.7188rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:1px}}
+.foot{{color:var(--muted);font-size:.8125rem;margin:0}}
+.foot code{{font-size:.75rem}}
 .p-product{{--c:var(--product)}} .p-lead{{--c:var(--lead)}} .p-dev{{--c:var(--dev)}} .p-review{{--c:var(--review)}} .p-you{{--c:var(--you)}}
-@media (max-width: 980px){{
+@media (max-width: 1100px){{
   .flow,.flow-rev,.ticket-row{{flex-direction:column}}
-  .arr{{padding:6px 0;flex-basis:auto}}
-  .arr::before,.flow-rev > .arr::before{{content:"↓"}}
+  .flow > .arr,.ticket-row > .arr{{padding:6px 0;flex-basis:auto}}
+  .flow > .arr::before,.ticket-row > .arr::before{{content:"↓"}}
   .joint{{display:none}}
   .joint.phone{{display:flex;justify-content:center}}
   .into-epic{{justify-content:center;padding-right:0;margin:-18px 0}}
   .ticket{{margin:12px 0 0}}
+}}
+@media (min-width: 1101px){{ .joint.phone{{display:none}} }}
+@media (max-width: 980px){{
   .router{{grid-template-columns:minmax(0,1fr)}}
   .beats{{flex-direction:column}}
   .beats .arr{{padding:4px 0}}
+  .beats .arr::before{{content:"↓"}}
   .fork,.panels{{grid-template-columns:minmax(0,1fr)}}
   .fork-note{{margin:0}}
 }}
-@media (min-width: 981px){{ .joint.phone{{display:none}} }}
 """
 
 
@@ -389,15 +413,26 @@ def build(router, groups, digest):
              '<li><span class="tag">tag</span><span>when it is used</span></li>')
 
     first_lead = r['lead'][0]
+    summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
+    preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
+                        for _, file, _ in FACES)
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{esc(TITLE)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<meta name="description" content="{esc(summary)}">
+<link rel="canonical" href="{PAGE_URL}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{esc(TITLE)}">
+<meta property="og:description" content="{esc(summary)}">
+<meta property="og:url" content="{PAGE_URL}">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="{LIGHT['paper']}" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="{DARK['paper']}" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="{ICON}">
+{preload}
 <style>{page_css()}</style>
 </head>
 <body>
@@ -413,18 +448,18 @@ def build(router, groups, digest):
 </section>
 <section class="fork" aria-label="Size of the request">{fork}</section>
 <section class="band" aria-label="Once per project">
-<p class="kicker">Once per project</p>
+<h2 class="kicker">Once per project</h2>
 {flow_html(r, r['project'])}
 </section>
 <div class="into-epic" aria-hidden="true">↓</div>
 <section class="frame" aria-label="Per epic">
-<p class="kicker">Per epic · about {r['epics']} per roadmap, never more than {r['most']}</p>
+<h2 class="kicker">Per epic · about {r['epics']} per roadmap, never more than {r['most']}</h2>
 {flow_html(r, r['lead'], 'flow flow-rev')}
 <div class="joint" aria-hidden="true"><span>↓</span><span class="up">↑ Next epic</span></div>
 <div class="joint phone" aria-hidden="true"><span>↓</span></div>
 <div class="ticket-row">
-<section class="ticket" aria-label="Per ticket"><p class="kicker">Per ticket</p>
-{flow_html(r, r['ticket'])}
+<section class="ticket" aria-label="Per ticket"><h3 class="kicker">Per ticket</h3>
+{flow_html(r, r['ticket'], level=4)}
 <p class="loop-note">Changes requested at {r['review']} go back to {r['ticket'][0]}</p>
 </section>
 {ARR}
@@ -441,7 +476,7 @@ def build(router, groups, digest):
 <h2>Every skill, step by step</h2>
 <ul class="legend">{names}</ul>
 <div class="groups">{''.join(blocks)}</div>
-<p class="foot">Built by <a href="{REPO_URL}"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code> · sources {digest}</p>
+<p class="foot">Built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code> · sources {digest}</p>
 </section>
 </main>
 </body>
@@ -454,6 +489,8 @@ def main():
     try:
         router = read_router(SKILL)
         groups = read_registry(REGISTRY, router['steps'])
+        for _, file, _ in FACES:
+            need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as e:
         print(f'workflow page: cannot read the sources: {e}')
         return 1
@@ -461,9 +498,12 @@ def main():
         return 0
     out = args[args.index('--out') + 1] if '--out' in args else PREVIEW
     digest = hashlib.sha256(open(SKILL, 'rb').read() + open(REGISTRY, 'rb').read()).hexdigest()[:10]
-    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    out_dir = os.path.dirname(os.path.abspath(out))
+    os.makedirs(out_dir, exist_ok=True)
     with open(out, 'w', encoding='utf-8') as f:
         f.write(build(router, groups, digest))
+    if out_dir != os.path.dirname(FONTS):
+        shutil.copytree(FONTS, os.path.join(out_dir, 'fonts'), dirs_exist_ok=True)
     print(f'wrote {out}')
     return 0
 
