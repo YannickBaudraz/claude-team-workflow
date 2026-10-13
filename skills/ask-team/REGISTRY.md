@@ -71,6 +71,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `research` | `mattpocock/skills` | auto | any time |  | Write the notes where the project map puts research. | A cited write-up from primary sources, saved in the repo. |
 | `wizard` | `mattpocock/skills` | auto | any time |  |  | Generates an interactive script that walks you through steps only you can take, such as credentials or a dashboard. |
 | `/handoff` | `mattpocock/skills` | typed | any time, moving work elsewhere |  |  | Writes a handoff document so another agent or person can pick up the work. |
+| `/suggest-title` | `YannickBaudraz/claude-team-workflow` | typed | any time, naming a session |  |  | Proposes a name for the current session that you will recognise in /resume, distinct from the project's other session names, with the /rename line to paste. |
 
 ## Denied duplicates
 
