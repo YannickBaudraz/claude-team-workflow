@@ -34,7 +34,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 | 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green | The user merges. |
 | 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. |
 
-Approval gates are the user's: never treat a step as approved because its output exists. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
+Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
 
 ## Ways in
 

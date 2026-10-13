@@ -31,6 +31,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(ROOT, 'skills', 'ask-team', 'SKILL.md')
 REGISTRY = os.path.join(ROOT, 'skills', 'ask-team', 'REGISTRY.md')
+README = os.path.join(ROOT, 'README.md')
 PREVIEW = os.path.join(ROOT, 'docs', 'workflow.html')
 FONTS = os.path.join(ROOT, 'docs', 'fonts')
 REPO_URL = 'https://github.com/YannickBaudraz/claude-team-workflow'
@@ -55,12 +56,13 @@ ROLE_WORDS = {'product': 'product', 'tech lead': 'lead', 'developer': 'dev', 're
 ROLE_NAMES = {'product': 'Product', 'lead': 'Tech lead', 'dev': 'Developer',
               'review': 'Reviewer', 'you': 'You'}
 GROUP_TITLES = {'start': 'Start here', 'in': 'Other ways in', 'any': 'Any time',
-                'other': 'Outside the flow'}
+                'other': 'Ad hoc'}
+OUTSIDE = 'Outside the flow'
 
-LIGHT = dict(paper='#F2F4F7', surface='#FFFFFF', ink='#16202C', muted='#5B6778',
+LIGHT = dict(paper='#F2F4F7', surface='#FFFFFF', tray='#E7EBF0', ink='#16202C', muted='#5B6778',
              rule='#D3DAE2', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
              review='#7445C2', you='#C02E48', on_role='#FFFFFF')
-DARK = dict(paper='#18191B', surface='#212225', ink='#E8E9EB', muted='#A0A4AA',
+DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', muted='#A0A4AA',
             rule='#34363A', product='#D6A45E', lead='#64B5A7', dev='#93A9E2',
             review='#B7A2E0', you='#E98A93', on_role='#18191B')
 
@@ -197,7 +199,7 @@ def read_registry(path, steps):
     workflow = [t for t in tables if t and 'does' in t[0]]
     need(len(workflow) == 1, 'REGISTRY.md should have one table with a Does column')
 
-    groups, kinds = {}, {}
+    groups, kinds, sources = {}, {}, {}
     for row in workflow[0]:
         name, used, does = row['command'].strip('`'), row.get('used at', ''), row.get('does', '')
         need(does, f'REGISTRY.md: {name} has no Does')
@@ -214,8 +216,28 @@ def read_registry(path, steps):
                 key, tag = 'other', used
         groups.setdefault(key, []).append((name, tag, does))
         kinds[name] = row.get('visibility', '')
+        sources[name] = row.get('source', '').strip('`')
     need('start' in groups, 'REGISTRY.md has no "entry point" skill')
-    return groups, kinds
+    return groups, kinds, sources
+
+
+def read_install(path):
+    """The README's Install section: what it needs, the commands, and what they do.
+
+    Optional on purpose: when the section is missing or reshaped, the page drops the
+    install commands and still builds, so rewording the README never fails the check."""
+    try:
+        text = open(path, encoding='utf-8').read()
+    except OSError:
+        return None
+    m = re.search(r'^## Install\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+    code = m and re.search(r'```\w*\n(.*?)```', m.group(1), re.S)
+    if not code:
+        return None
+    prose = [' '.join(p.split()) for p in re.sub(r'```.*?```', '', m.group(1), flags=re.S).split('\n\n')
+             if p.strip()]
+    return dict(needs=prose[0] if prose else '', commands=code.group(1).strip().splitlines(),
+                after=prose[1] if len(prose) > 1 else '')
 
 
 # ---- Drawing ------------------------------------------------------------------
@@ -239,14 +261,15 @@ def voice(s):
 
 
 def md(s):
-    """Inline markdown to HTML: `code` (command arguments dropped), **bold**, *italics*."""
+    """Inline markdown to HTML: `code` (a command's arguments muted), **bold**, *italics*."""
     out = []
     for seg in re.split(r'(`[^`]*`)', s):
         if len(seg) > 1 and seg[0] == seg[-1] == '`':
             code = seg[1:-1]
-            if code.startswith('/'):
-                code = code.split(' <')[0]
-            out.append(f'<code>{esc(code)}</code>')
+            name, _, args = code.partition(' <') if code.startswith('/') else (code, '', '')
+            # The space sits inside the span, so a long command breaks before its arguments.
+            args = f'<span class="arg"> &lt;{esc(args)}</span>' if args else ''
+            out.append(f'<code>{esc(name)}{args}</code>')
         else:
             t = esc(voice(seg))
             t = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', t)
@@ -260,33 +283,113 @@ def cap(s):
 
 
 def shown_output(output):
-    """The output without sentences that only say it is approved: the gate mark says that."""
-    keep = [s for s in sentences(output)
-            if not re.fullmatch(r'(both )?approved( by the user)?\.?', s, re.I)]
-    return ' '.join(keep)
+    """The output without what the gate mark says, and the gate mark's words.
+
+    "Approved.", "reviewed and approved" and "The user merges." move to the mark, which
+    reads "You approve", "You approve before publishing" or "You approve, then merge"."""
+    keep, when, merge = [], '', False
+    for s in sentences(output):
+        if re.fullmatch(r'(both )?approved( by the user)?\.?', s, re.I):
+            continue
+        if re.fullmatch(r'the user merges\.?', s, re.I):
+            merge = True
+            continue
+        m = re.search(r',?\s*(?:reviewed and )?approved(?: (before \w+))?(?=\.?$)', s, re.I)
+        if m:
+            when = m.group(1) or ''
+            s = s[:m.start()] + s[m.end():]
+        keep.append(s)
+    mark = 'You approve, then merge' if merge else 'You approve' + (f' {when}' if when else '')
+    return ' '.join(keep), mark
 
 
 AI = '<i class="ai"></i>'
-ARR = f'<span class="arr" aria-hidden="true">{AI}</span>'
+
+
+def link():
+    """A connector between steps. A gate shows on the card before it, not on the arrow."""
+    return f'<span class="link">{AI}</span>'
+
+
+def arr():
+    return f'<span class="arr" aria-hidden="true">{link()}</span>'
 
 
 def card_html(s, level=3):
     label = ROLE_NAMES[s['role']] + (f' · {s["qual"]}' if s['qual'] else '')
     note = f'<p class="note">{md(cap(s["note"]))}</p>' if s['note'] else ''
-    out = shown_output(s['output'])
-    result = (f'<p class="out">{md(out)}</p>' if out else '') + (
-        '<p class="gate-mark"><span class="dia"></span>You approve</p>' if s['gate'] else '')
+    out, mark = shown_output(s['output'])
+    result = (f'<p class="out">{link_steps(md(out))}</p>' if out else '') + (
+        f'<p class="gate-mark"><span class="dia"></span>{esc(mark)}</p>' if s['gate'] else '')
     return (f'<article class="card{" optional" if s["optional"] else ""} p-{s["role"]}" id="step-{s["n"]}">'
             f'<div class="card-head"><span class="num">{s["n"]}</span>'
             f'<span class="role">{esc(label)}</span></div>'
-            f'<h{level} class="title"><a href="#skills-{s["n"]}">{esc(s["name"])}'
-            f'<span class="vh">, its skills</span></a></h{level}>{note}'
+            f'<h{level} class="title"><span class="vh">Step {s["n"]}, {esc(label)}: </span>'
+            f'<a href="#skills-{s["n"]}">{esc(s["name"])}'
+            f'<span class="vh">, its skills</span><i class="to-skills"></i></a></h{level}>{note}'
             f'<p class="cmd-text">{md(s["command"])}</p>'
+            + (f'<p class="repeat"><i class="loop"></i>Repeats for each {esc(s["qual"][4:])}</p>'
+               if s['qual'].startswith('per ') and s['qual'] not in ('per epic', 'per ticket') else '')
             + (f'<div class="result">{result}</div>' if result else '') + '</article>')
 
 
 def flow_html(r, numbers, cls='flow', level=3):
-    return f'<div class="{cls}">' + ARR.join(card_html(r['steps'][n], level) for n in numbers) + '</div>'
+    cards = [card_html(r['steps'][n], level) for n in numbers]
+    joins = [arr() for _ in numbers[:-1]]
+    return f'<div class="{cls}">' + ''.join(c + j for c, j in zip(cards, joins + [''])) + '</div>'
+
+
+def link_steps(h):
+    """Link "step 9", "steps 6 to 9" and "(10" in running text to the step's card."""
+    def one(m):
+        lead, n = m.group(1), int(m.group(2))
+        if not 1 <= n <= STEP_COUNT:
+            return m.group(0)
+        if lead == '(':
+            return f'(<a class="step-ref" href="#step-{n}">{m.group(0)[1:]}</a>'
+        return f'<a class="step-ref" href="#step-{n}">{m.group(0)}</a>'
+    parts = re.split(r'(<[^>]+>)', h)
+    depth = 0
+    for i, part in enumerate(parts):
+        if part.startswith('<'):
+            depth += 1 if re.match(r'<(a|code)\b', part) else -1 if re.match(r'</(a|code)>', part) else 0
+        elif depth == 0:
+            parts[i] = re.sub(r'(\b[Ss]teps? |\()(\d{1,2})(?: to \d{1,2})?(?=[\s),.;:])', one, part)
+    return ''.join(parts)
+
+
+STEP_COUNT = 0
+TERM_SKIP = re.compile(r'<(a|code|h[1-4]|title|script|style|summary)\b|class="[^"]*\b(role|num|tag|beats|cmd)\b')
+
+
+def link_terms(h):
+    """Link the first use of each glossary term, outside headings, links and code."""
+    todo = [(t, re.compile(rf'(?i){p}')) for t, p, _ in TERMS]
+    parts = re.split(r'(<[^>]+>)', h)
+    stack = []
+    for i, part in enumerate(parts):
+        if part.startswith('</'):
+            if stack:
+                stack.pop()
+        elif part.startswith('<'):
+            if not re.match(r'<(input|br|img|meta|link|!)', part, re.I) and not part.endswith('/>'):
+                stack.append(bool(TERM_SKIP.match(part) or TERM_SKIP.search(part)))
+        elif part.strip() and not any(stack):
+            # Find every term in the original text first, so no link lands inside another.
+            hits = sorted((m.start(), m.end(), t, pat) for t, pat in todo for m in [pat.search(part)] if m)
+            out, at = [], 0
+            for start, end, t, pat in hits:
+                if start < at:
+                    continue
+                out += [part[at:start], f'<a class="term" href="#term-{slug(t)}">{part[start:end]}</a>']
+                at = end
+                todo.remove((t, pat))
+            parts[i] = ''.join(out) + part[at:]
+    return ''.join(parts)
+
+
+def slug(t):
+    return re.sub(r'[^a-z0-9]+', '-', t.lower()).strip('-')
 
 
 def answer_html(r):
@@ -312,11 +415,19 @@ def page_css():
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --gap:30px; --bar:56px;
   --link:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 12' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 6h28M25 1.8l4.5 4.2-4.5 4.2'/%3E%3C/svg%3E");
-  --arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h15M13 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E"); }}
-@media (prefers-color-scheme: dark){{ :root{{ {tokens(DARK)} color-scheme:dark; }} }}
+  --loop:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.6-5.9'/%3E%3Cpath d='M20 4.5v4.2h-4.2'/%3E%3C/svg%3E");
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  --arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h15M13 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E");
+  --sun:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E");
+  --moon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/%3E%3C/svg%3E");
+  --system:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }}
+/* The theme follows the system unless the toggle in the bar pins one (data-theme on html). */
+@media (prefers-color-scheme: dark){{ :root:not([data-theme="light"]){{ {tokens(DARK)} color-scheme:dark; }} }}
+:root[data-theme="dark"]{{ {tokens(DARK)} color-scheme:dark; }}
+:root[data-theme="light"]{{ color-scheme:light; }}
 *,*::before,*::after{{box-sizing:border-box}}
 html{{scroll-padding-top:calc(var(--bar) + 16px)}}
-body{{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.55}}
+body{{margin:0;overflow-x:clip;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.55}}
 .wrap,.bar-in{{max-width:1300px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}}
 .wrap{{padding-block:40px 56px;display:grid;gap:28px}}
 .wrap > *,.section > *,.panels > *{{min-width:0}}
@@ -343,7 +454,12 @@ a{{color:inherit;text-underline-offset:.2em}}
 .bar .home a:hover{{background:none}}
 .bar:not(.scrolled) .home{{display:none}}
 .bar:not(.scrolled) li:nth-child(2) a{{margin-left:-12px}}
-.bar .out-link{{margin-left:auto}}
+.bar .theme-li{{margin-left:auto}}
+.theme{{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}}
+.theme:hover{{color:var(--ink);background:var(--paper)}}
+.theme i{{width:19px;height:19px;background:currentColor;-webkit-mask:var(--system) center/contain no-repeat;mask:var(--system) center/contain no-repeat}}
+.theme[data-mode="light"] i{{-webkit-mask-image:var(--sun);mask-image:var(--sun)}}
+.theme[data-mode="dark"] i{{-webkit-mask-image:var(--moon);mask-image:var(--moon)}}
 .bar .out-link a{{color:var(--ink);border:1px solid var(--rule)}}
 .ai{{display:inline-block;flex:none;width:24px;height:24px;background:currentColor;-webkit-mask:var(--arrow) center/contain no-repeat;mask:var(--arrow) center/contain no-repeat}}
 .ai.ext{{width:15px;height:15px;transform:rotate(-45deg)}}
@@ -354,25 +470,29 @@ a{{color:inherit;text-underline-offset:.2em}}
 .sw{{width:11px;height:11px;border-radius:3px;background:var(--c)}}
 .dia{{width:9px;height:9px;background:var(--you);transform:rotate(45deg);flex:none;display:inline-block}}
 .dash-sw{{width:22px;height:12px;border:1.5px dashed var(--muted);border-radius:3px}}
-.kicker{{font-family:var(--body);line-height:1.5;font-size:.75rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}}
+.band-title{{font-size:1.375rem;font-weight:700;letter-spacing:-.01em}}
 .box{{background:var(--surface);border:1px solid var(--rule);border-radius:12px}}
 .router{{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px 32px;padding:22px 24px;align-items:center}}
-.router .cmd{{font-family:var(--mono);font-size:1.875rem;font-weight:700;margin:0 0 6px}}
+.router .cmd,.install .cmd{{font-family:var(--mono);font-size:1.875rem;font-weight:700;line-height:1.2;margin:0 0 6px}}
+.new-here{{margin:14px 0 0;font-size:.9375rem;color:var(--muted)}}
+.new-here a{{color:var(--ink);font-weight:600}}
 .router .sub{{color:var(--muted);margin:0;font-size:.9375rem;max-width:44ch}}
 .router .sub strong{{color:var(--ink)}}
 .beats{{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;list-style:none;margin:12px 0 0;padding:0;font-size:.875rem;font-weight:700}}
 .beats .arr{{flex:none;padding:0;color:var(--muted)}}
 .beats .ai{{width:16px;height:16px}}
 .answer{{background:var(--paper);border-radius:8px;padding:14px 18px}}
-.answer-title{{margin:0 0 8px;font-size:.875rem;font-weight:700;color:var(--muted)}}
+.answer-title{{margin:0 0 8px;font-size:.9375rem;font-weight:700;color:var(--ink)}}
 .answer ol{{margin:0;padding-left:1.4em;display:grid;gap:4px;font-size:.9375rem}}
 .answer li::marker{{color:var(--muted);font-weight:700}}
-.fork{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}}
-.fork .box{{padding:16px 18px;display:grid;gap:6px;align-content:start}}
-.fork h2{{font-size:1.5rem}}
-.fork p{{margin:0;font-size:.9375rem}}
-.fork em{{font-style:normal;font-weight:700}}
-.fork-note{{grid-column:1/-1;color:var(--muted);font-size:.875rem;margin:-8px 0 0}}
+/* Sizing comes before the flow but is not the flow: one compact strip, quieter than the bands. */
+.fork{{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:6px 28px;padding:16px 22px;align-items:baseline}}
+.fork > h2{{font-family:var(--body);font-size:1rem;font-weight:700}}
+.fork ul{{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 28px}}
+.fork h3{{font-family:var(--body);font-size:.9375rem;font-weight:700;display:inline;margin-right:6px}}
+.fork li p{{display:inline;margin:0;font-size:.9375rem;color:var(--muted)}}
+.fork em{{font-style:normal;font-weight:700;color:var(--ink)}}
+.fork-note{{grid-column:2;color:var(--muted);font-size:.875rem;margin:4px 0 0}}
 .band{{display:grid;gap:12px}}
 .flow{{display:flex;align-items:stretch}}
 .arr{{flex:0 0 var(--gap);display:flex;justify-content:center;align-items:center;color:var(--muted)}}
@@ -381,37 +501,45 @@ a{{color:inherit;text-underline-offset:.2em}}
 .card:target{{box-shadow:0 0 0 2px var(--c),0 6px 18px -8px var(--c)}}
 .card-head{{display:flex;align-items:center;gap:9px}}
 .num{{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:.8125rem;flex:none;font-variant-numeric:tabular-nums;font-family:var(--body)}}
-.role{{font-size:.7188rem;line-height:1.3;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);font-family:var(--body)}}
-.card .title{{font-size:1.125rem;font-weight:700}}
-.card .title a{{text-decoration:underline dotted var(--muted) 1.5px;text-underline-offset:.22em}}
-.card .title a:hover{{text-decoration:underline solid var(--c) 2px}}
+.role{{font-size:.75rem;line-height:1.3;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);font-family:var(--body)}}
+.card .title{{font-size:1.1875rem;font-weight:700}}
+/* The title opens the step's skills: a plain link with a down cue, not the glossary's dotted line. */
+.card .title a{{text-decoration:none;display:inline-flex;align-items:center;gap:5px}}
+.card .title a:hover{{text-decoration:underline solid var(--c) 2px;text-underline-offset:.22em}}
+.to-skills{{display:inline-block;flex:none;width:15px;height:15px;background:var(--muted);-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat}}
+.card .title a:hover .to-skills{{background:var(--c)}}
+.repeat{{margin:0;display:flex;align-items:center;gap:6px;font-size:.8125rem;font-weight:700;color:var(--c)}}
+.repeat .loop{{width:15px;height:15px;background:var(--c)}}
 .note{{margin:-4px 0 0;color:var(--muted);font-size:.8125rem;line-height:1.4}}
-.cmd-text{{margin:0;font-size:.8438rem;line-height:1.5}}
-.cmd-text code{{font-size:.7812rem;white-space:normal}}
+.cmd-text{{margin:0;font-size:.8438rem;line-height:1.6}}
+.cmd-text code{{font-size:.8125rem;white-space:normal;color:var(--ink)}}
+.arg{{font-weight:400;color:var(--muted);white-space:normal}}
 .result{{margin-top:auto;padding-top:9px;border-top:1px solid var(--rule);display:grid;gap:8px}}
 .out{{margin:0;font-weight:600;font-size:.8438rem;line-height:1.4}}
-.out::before{{content:"→ ";color:var(--muted)}}
 .gate-mark{{margin:0;display:flex;align-items:center;gap:8px;color:var(--you);font-weight:700;font-size:.8125rem}}
-.frame{{border:1.5px dashed var(--muted);border-radius:16px;padding:26px 20px 18px;position:relative;display:grid}}
-.frame > .kicker{{position:absolute;top:-10px;left:16px;background:var(--paper);padding:0 7px}}
+.frame{{border:1.5px dashed var(--muted);border-radius:16px;padding:30px 20px 18px;position:relative;display:grid;gap:10px}}
+.frame > .band-title,.ticket > .band-title{{position:absolute;top:0;left:14px;transform:translateY(-55%);background:var(--paper);padding:0 8px}}
+.link{{display:inline-grid;place-items:center}}
+.loop{{display:inline-block;flex:none;width:17px;height:17px;background:var(--muted);-webkit-mask:var(--loop) center/contain no-repeat;mask:var(--loop) center/contain no-repeat}}
 .cols4{{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:var(--gap)}}
 .joint{{padding:8px 0;color:var(--muted);font-weight:700}}
-.joint span{{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}}
+.joint > span{{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}}
 .joint .down{{grid-column:1 / span 2;justify-content:flex-start;padding-left:14px;font-size:.875rem}}
 .joint .down .ai{{transform:rotate(90deg)}}
+.into-epic .link,.joint .link{{margin-inline:4px}}
 .into-epic{{margin:-14px 0;padding-inline:21.5px;color:var(--muted);font-weight:700}}
-.into-epic span{{grid-column:1;justify-self:start;display:grid;justify-items:center;gap:2px;font-size:.875rem;line-height:1.3}}
+.into-epic > span{{grid-column:1;justify-self:start;display:grid;justify-items:center;gap:2px;font-size:.875rem;line-height:1.3}}
 .into-epic .ai{{transform:rotate(90deg);margin:8px 0}}
 .ticket-row{{display:flex;align-items:stretch}}
-.ticket-row > .card{{flex:1 1 0}}
-.ticket{{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:20px 12px 12px;position:relative}}
-.ticket > .kicker{{position:absolute;top:-10px;left:14px;background:var(--paper);padding:0 7px}}
+.ticket-row > .card{{flex:1 1 0;align-self:flex-start}}
+.ticket{{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:24px 12px 12px;position:relative}}
+.ticket > .band-title{{font-size:1.125rem}}
 .loop-note,.epic-note{{margin:10px 0 0;font-size:.875rem;font-weight:700;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}}
-.loop-note::before,.epic-note::before{{content:"↺";color:var(--muted);font-size:1.0625rem}}
 .epic-note{{margin-top:16px}}
 .epic-note span{{font-weight:400;color:var(--muted)}}
 .panels{{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:24px 40px}}
-.panels h2,.panels h3{{font-size:1.5rem;margin-bottom:14px}}
+.panels h2{{font-size:1.375rem;margin-bottom:14px}}
+.panels h3{{font-size:1.25rem;margin-bottom:14px}}
 .panels ul,.panels dl{{list-style:none;margin:0;padding:0;display:grid;gap:14px}}
 .panels li p{{margin:0}}
 .panels .when{{color:var(--muted);font-size:.9375rem}}
@@ -422,42 +550,88 @@ a{{color:inherit;text-underline-offset:.2em}}
 .rules .dia{{margin-top:8px}}
 .section{{border-top:1px solid var(--rule);padding-top:36px;display:grid;gap:14px}}
 .section > h2{{font-size:clamp(1.75rem,3.4vw,2.125rem)}}
-.phase{{border-top:1px solid var(--rule);padding-top:18px}}
-.phase-title{{font-size:1.25rem;margin-bottom:6px}}
-/* Three columns in reading order. The script sets each block's row span from its
-   height, so a long block leaves no gap under a short one; Tab still follows the steps. */
-.groups{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:40px;align-items:start;margin-top:10px}}
-.groups.packed{{grid-auto-rows:4px}}
-.tag.step-tag{{background:var(--c);border-color:var(--c);color:var(--on-role)}}
-.group-by{{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;border:0;padding:0;margin:8px 0 4px}}
-.group-by legend{{float:left;font-weight:700;font-size:1rem}}
+.phase{{padding-top:30px}}
+.phase:first-child{{padding-top:8px}}
+.phase-title{{font-size:1.25rem;margin-bottom:12px}}
+/* Every skill reads as an index: one row per group, the group on the left and its skills
+   on the right. Closed, a row lists its skills by name; open, what each does and where it
+   comes from. Without the script every row stays open. */
+.groups{{border-bottom:1px solid var(--rule)}}
+.grouping .phase:last-child .groups{{border-bottom:0}}
+.tag.step-tag{{background:var(--c);border-color:var(--c);color:var(--on-role);text-decoration:none}}
+.group-by{{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;border:0;padding:0;margin:0}}
+.group-by legend{{float:left;font-weight:600;font-size:.875rem;color:var(--muted)}}
 .group-by .seg{{display:inline-flex;border:1px solid var(--rule);border-radius:8px;background:var(--surface);overflow:hidden}}
-.group-by label{{position:relative;cursor:pointer;padding:7px 16px;font-weight:600;font-size:.9375rem;color:var(--muted)}}
+.group-by label{{position:relative;cursor:pointer;padding:4px 12px;font-weight:600;font-size:.875rem;color:var(--muted)}}
 .group-by label + label{{border-left:1px solid var(--rule)}}
 .group-by input{{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}}
 .group-by label:hover{{color:var(--ink)}}
 .group-by label:has(:checked){{color:var(--ink);font-weight:700;box-shadow:inset 0 -3px 0 var(--ink)}}
 .group-by label:has(:focus-visible){{outline:2px solid var(--dev);outline-offset:-4px}}
-.group{{break-inside:avoid;margin:0 0 24px;padding:10px 12px;margin-inline:-12px;border-radius:10px}}
-.group:target{{background:var(--surface);box-shadow:0 0 0 2px var(--c,var(--rule))}}
-.group-head{{display:flex;align-items:baseline;gap:9px;margin-bottom:10px}}
-.group h4{{font-size:1.25rem;display:flex;flex-wrap:wrap;align-items:center;gap:4px 9px}}
-.group h4 .role{{flex-basis:100%;order:3}}
+/* The grouping and expand controls stay under the bar while you read the skills. Once stuck
+   they join the header as its second row: the nav stays solid, the tools sit on a frosted
+   layer that lets the list show through, so they read as part of the content below. The
+   layer spans the window; the body clips its overhang so the page never scrolls sideways. */
+.skill-tools{{position:sticky;top:var(--bar);z-index:4;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding:6px 0;background:var(--paper);border-bottom:1px solid var(--rule)}}
+.skill-tools.stuck{{background:none;border-bottom-color:transparent}}
+.skill-tools.stuck::before{{content:"";position:absolute;z-index:-1;top:0;bottom:-1px;left:50%;width:100vw;translate:-50% 0;background:color-mix(in srgb,var(--tray) 70%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--rule);box-shadow:0 8px 20px -16px rgb(0 0 0 / .35)}}
+.has-stuck-tools .bar{{box-shadow:none}}
+.group{{scroll-margin-top:68px}}
+/* A plain text button: the nav keeps the only bordered button in the header. */
+.all{{font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;color:var(--ink);background:none;border:0;border-radius:6px;padding:5px 10px;margin-right:-10px}}
+.all:hover{{background:color-mix(in srgb,var(--ink) 8%,transparent)}}
+/* Rows reach 12px past the text on each side, so a highlighted row has room inside its own
+   box; the rule between rows stays at the text's width. */
+.group{{position:relative;display:grid;grid-template-columns:minmax(0,16rem) minmax(0,1fr);column-gap:32px;align-items:start;padding:12px;margin-inline:-12px;border-radius:10px}}
+.group::before{{content:"";position:absolute;top:0;left:12px;right:12px;border-top:1px solid var(--rule)}}
+/* Reached from a card, the row lifts onto a surface ringed in its role colour. */
+.group:target{{background:var(--surface);box-shadow:inset 0 0 0 2px var(--c,var(--rule))}}
+.group:target::before,.group:target + .group::before{{display:none}}
+.group-head,.group-body{{min-width:0}}
+.group h4{{font-size:1.125rem}}
+.group h4,.toggle{{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:28px}}
+.group h4 .role{{flex-basis:100%;order:3;padding-left:34px}}
+#by-step[data-by="role"] .group h4 .role{{display:none}}
 .group .num{{width:24px;height:24px;font-size:.75rem;border-radius:5px}}
-.back{{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:.875rem;font-weight:600;color:var(--muted);text-decoration:none}}
+/* The script turns each heading into the row's toggle, its chevron first. */
+.toggle{{width:100%;padding:0;border:0;border-radius:6px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}}
+.toggle::before{{content:"";flex:none;width:16px;height:16px;background:var(--muted);-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat;transform:rotate(-90deg)}}
+.toggle[aria-expanded="true"]::before{{transform:none}}
+.toggle:hover::before{{background:var(--ink)}}
+.toggle:hover .name{{text-decoration:underline;text-underline-offset:.2em}}
+.toggle .role{{padding-left:60px}}
+.group-body > ul{{list-style:none;margin:0;padding:3px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:16px 36px;align-items:start}}
+.group li.also{{display:none}}
+.group.closed .group-body > ul{{display:flex;flex-wrap:wrap;gap:0 22px;padding-top:0}}
+.group.closed .group-body > ul > li{{display:block;line-height:28px}}
+.group.closed li > :not(code),.group.closed details,.group.closed .back{{display:none}}
+.group.closed li.also{{display:block;color:var(--muted);font-size:.875rem;font-weight:600}}
+.back{{display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:10px 0;font-size:.875rem;font-weight:600;color:var(--muted);text-decoration:none}}
 .back .ai{{width:16px;height:16px;transform:rotate(-90deg)}}
 .back:hover{{color:var(--ink);text-decoration:underline;text-underline-offset:.2em}}
-.group ul{{list-style:none;margin:0;padding:0;display:grid;gap:10px}}
 .group li{{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}}
 .group li p{{flex-basis:100%;margin:0;color:var(--muted);font-size:.9375rem;line-height:1.45}}
-.group li > code{{font-size:.8438rem}}
-.group details{{margin-top:10px}}
+.group li > code{{font-size:.875rem}}
+.src{{font-size:.8125rem;color:var(--muted);text-decoration-color:var(--rule);padding:6px 0;margin:-6px 0}}
+.group li > .src{{flex-basis:100%}}
+a.src:hover{{color:var(--ink);text-decoration-color:currentColor}}
+.step-ref{{text-decoration-color:var(--muted)}}
+.term{{text-decoration:underline dotted var(--muted) 1.5px}}
+.panels dt:target{{color:var(--dev)}}
+.any-time{{margin:0;line-height:2}}
+.any-time a{{text-decoration-color:var(--rule)}}
+.group details{{margin-top:14px}}
 .group summary{{cursor:pointer;color:var(--muted);font-size:.9375rem;font-weight:600}}
 .group summary code{{color:var(--ink)}}
 .group summary:hover{{color:var(--ink)}}
-.group details ul{{margin-top:10px;padding-left:14px;border-left:1px solid var(--rule)}}
-.tag{{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:.7188rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}}
-.foot{{color:var(--muted);font-size:.875rem;margin:8px 0 0;padding-top:20px;border-top:1px solid var(--rule)}}
+.group details ul{{list-style:none;margin:10px 0 0;padding:0 0 0 14px;border-left:1px solid var(--rule);display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:12px 36px;align-items:start}}
+.tag{{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}}
+.install p:not(.foot){{margin:0;max-width:70ch}}
+.install .when{{color:var(--muted)}}
+.install .then{{margin-top:12px;font-weight:600}}
+pre.shell{{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;overflow-x:auto;max-width:100%}}
+pre.shell code{{font-size:.875rem;white-space:pre;line-height:1.7}}
+.foot{{color:var(--muted);font-size:.875rem;margin:24px 0 0;padding-top:20px;border-top:1px solid var(--rule)}}
 .foot code{{font-size:.8125rem;white-space:normal}}
 .p-product{{--c:var(--product)}} .p-lead{{--c:var(--lead)}} .p-dev{{--c:var(--dev)}} .p-review{{--c:var(--review)}} .p-you{{--c:var(--you)}}
 @media (max-width: 1100px){{
@@ -467,59 +641,77 @@ a{{color:inherit;text-underline-offset:.2em}}
   .flow > .arr .ai,.ticket-row > .arr .ai{{transform:rotate(90deg)}}
   .joint{{display:none}}
   .joint.phone{{display:flex;justify-content:center}}
-  .into-epic{{grid-template-columns:minmax(0,1fr);margin:-18px 0}}
-  .into-epic span{{grid-column:1}}
+  .into-epic{{grid-template-columns:minmax(0,1fr);margin:-12px 0}}
+  .into-epic > span{{grid-column:1}}
   .ticket{{margin:12px 0 0}}
-  .router,.fork,.panels{{grid-template-columns:minmax(0,1fr)}}
-  .groups{{grid-template-columns:minmax(0,1fr)}}
-  .fork-note{{margin:0}}
+  .router,.fork,.fork ul,.panels{{grid-template-columns:minmax(0,1fr)}}
+  .group{{grid-template-columns:minmax(0,1fr);row-gap:6px}}
+  .group-body{{padding-left:26px}}
+  .fork-note{{grid-column:1}}
   .bar .home a{{font-size:.9375rem}}
   .cmd-text code{{white-space:nowrap}}
 }}
 /* Side by side, a role label may wrap to two lines: every head keeps room for two,
    so the titles of a row line up. */
 @media (min-width: 1101px){{ .joint.phone{{display:none}} .card-head{{min-height:1.875rem}} }}
-@media (max-width: 600px){{ .bar .home{{display:none}} .bar li:nth-child(2) a{{margin-left:-12px}} .bar ul{{gap:0}} }}
+@media (max-width: 420px){{ .cmd-text code{{white-space:normal;overflow-wrap:anywhere}} .bar a{{padding-inline:8px}} .bar li:nth-child(2) a{{margin-left:-8px}} .router .cmd,.install .cmd{{font-size:1.5rem}} }}
+@media (max-width: 600px){{ .group-by legend{{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}} .group-by label{{padding:7px 12px}} .bar .home{{display:none}} .bar li:nth-child(2) a{{margin-left:-12px}} .bar ul{{gap:0}} }}
 @media (prefers-reduced-motion: no-preference){{ html{{scroll-behavior:smooth}} }}
 """
 
 
+# Runs in the head, before the page paints: a pinned theme never flashes the system one.
+THEME_JS = """(function () {
+  let t = null;
+  try { t = localStorage.getItem('theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') return;
+  document.documentElement.dataset.theme = t;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.content = t === 'dark' ? '%s' : '%s');
+})();""" % (DARK['paper'], LIGHT['paper'])
+
 BAR_JS = """const bar = document.querySelector('.bar');
 const links = [...bar.querySelectorAll('a[href^="#"]:not([href="#top"])')];
 const targets = links.map(a => document.querySelector(a.getAttribute('href')));
+// Theme: system, light or dark, in that cycle. The head script already applied a pinned one.
+const themeBtn = document.querySelector('.theme'), modes = ['system', 'light', 'dark'];
+function setTheme(mode) {
+  const root = document.documentElement, next = modes[(modes.indexOf(mode) + 1) % 3];
+  if (mode === 'system') delete root.dataset.theme; else root.dataset.theme = mode;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.content =
+    (mode === 'system' ? m.media.includes('dark') : mode === 'dark') ? '@DARK@' : '@LIGHT@');
+  themeBtn.dataset.mode = mode;
+  const label = `Theme: ${mode === 'system' ? 'match system' : mode}. Switch to ${next === 'system' ? 'match system' : next}`;
+  themeBtn.setAttribute('aria-label', label);
+  themeBtn.title = label;
+  try { mode === 'system' ? localStorage.removeItem('theme') : localStorage.setItem('theme', mode); } catch (e) {}
+}
+setTheme(document.documentElement.dataset.theme || 'system');
+themeBtn.addEventListener('click', () => setTheme(modes[(modes.indexOf(themeBtn.dataset.mode) + 1) % 3]));
+themeBtn.hidden = false;
+
+const tools = document.querySelector('.skill-tools'), rest = document.createElement('div');
+tools.before(rest);  // marks where the tools sit when not stuck
 function mark() {
   bar.classList.toggle('scrolled', document.querySelector('h1').getBoundingClientRect().bottom < 0);
   // The section in view is the last one whose top has passed under the bar.
   let current = -1;
   targets.forEach((t, i) => { if (t.getBoundingClientRect().top < 140) current = i; });
   links.forEach((a, i) => i === current ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current'));
+  // The skill tools join the header only while they sit stuck right under it.
+  const top = tools.getBoundingClientRect().top, under = parseFloat(getComputedStyle(tools).top);
+  const stuck = Math.abs(top - under) < 1 && rest.getBoundingClientRect().top < under - 1;
+  tools.classList.toggle('stuck', stuck);
+  document.documentElement.classList.toggle('has-stuck-tools', stuck);
 }
 addEventListener('scroll', mark, {passive: true});
 mark();
 
-// Skills: group them by role (the default), moment, step or kind, and pack the columns.
+// Skills: group them by role (the default), moment or kind.
 const byStep = document.getElementById('by-step'), byKind = document.getElementById('by-kind');
 const blocks = [...byStep.querySelectorAll('section.group')];
 const switcher = document.querySelector('.group-by');
-function pack() {
-  // Block i goes to column i mod n, straight under the previous block there: rows read
-  // left to right in step order, and no column waits for a taller neighbour.
-  document.querySelectorAll('.groups').forEach(g => {
-    g.classList.remove('packed');
-    [...g.children].forEach(c => c.style.gridArea = '');
-    const n = getComputedStyle(g).gridTemplateColumns.split(' ').length;
-    const items = [...g.children].map(c => [c, c.getBoundingClientRect().height + parseFloat(getComputedStyle(c).marginBottom)]);
-    if (n < 2) return;
-    g.classList.add('packed');
-    const next = Array(n).fill(1);
-    items.forEach(([c, h], i) => {
-      const col = i % n, span = Math.ceil(h / 4);
-      c.style.gridArea = `${next[col]} / ${col + 1} / span ${span}`;
-      next[col] += span;
-    });
-  });
-}
 function group(by) {
+  byStep.dataset.by = by;
   byKind.hidden = by !== 'kind';
   byStep.hidden = by === 'kind';
   if (by !== 'kind') {
@@ -536,26 +728,62 @@ function group(by) {
     }));
   }
   try { localStorage.setItem('group-by', by); } catch (e) {}
-  pack();
 }
+
+// Each row opens from its heading; one button opens or closes them all, and a card's
+// title opens the row of its step.
+const status = document.getElementById('skills-status');
+const all = document.querySelector('.all');
+const groups = [...document.querySelectorAll('section.group')];
+function setOpen(g, open) {
+  g.classList.toggle('closed', !open);
+  g.querySelector('.toggle').setAttribute('aria-expanded', open);
+}
+function label() {
+  all.textContent = groups.some(g => g.classList.contains('closed')) ? 'Expand all' : 'Collapse all';
+}
+groups.forEach(g => {
+  const h = g.querySelector('h4'), b = document.createElement('button');
+  b.type = 'button'; b.className = 'toggle';
+  b.append(...h.childNodes);
+  h.append(b);
+  b.addEventListener('click', () => { setOpen(g, g.classList.contains('closed')); label(); });
+  setOpen(g, false);
+});
+all.hidden = false;
+all.addEventListener('click', () => {
+  const open = groups.some(g => g.classList.contains('closed'));
+  groups.forEach(g => setOpen(g, open));
+  label();
+  status.textContent = open ? 'Every group expanded.' : 'Every group collapsed.';
+});
+function openTarget() {
+  const t = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (t && t.matches('section.group')) { setOpen(t, true); label(); }
+}
+addEventListener('hashchange', openTarget);
+
 switcher.hidden = false;
-switcher.addEventListener('change', e => group(e.target.value));
+switcher.addEventListener('change', e => {
+  group(e.target.value);
+  status.textContent = 'Skills grouped by ' + e.target.parentElement.textContent.trim().toLowerCase() + '.';
+});
 let saved = 'role';
 try { saved = localStorage.getItem('group-by') || 'role'; } catch (e) {}
 const choice = switcher.querySelector(`input[value="${saved}"]`);
-if (choice) { choice.checked = true; group(saved); } else pack();
-addEventListener('resize', pack);
-document.fonts.ready.then(pack);
-document.addEventListener('toggle', pack, true);"""
+if (choice) { choice.checked = true; group(saved); }
+openTarget();""".replace('@DARK@', DARK['paper']).replace('@LIGHT@', LIGHT['paper'])
 
 
-def build(router, groups, kinds, digest):
+def build(router, groups, kinds, sources, install, digest):
+    global STEP_COUNT
     r = router
     steps = r['steps']
+    STEP_COUNT = len(steps)
     start = groups['start'][0][0]
     legend = ''.join(f'<li class="p-{k}"><span class="sw"></span>{esc(v)}</li>'
                      for k, v in ROLE_NAMES.items())
-    legend += ('<li><span class="dia"></span>Your approval</li>'
+    legend += ('<li><span class="dia"></span>Gate: you approve before moving on</li>'
                '<li><span class="dash-sw"></span>Only when needed</li>')
     beats = f'<li class="arr" aria-hidden="true">{AI}</li>'.join(f'<li>{esc(b)}</li>' for b in r['beats'])
 
@@ -563,50 +791,61 @@ def build(router, groups, kinds, digest):
     by_name = {s['name'].lower(): n for n, s in steps.items()}
     path = ('write the ticket, then build it',
             f'write the ticket (step {by_name.get("tickets")}), then build it (step {by_name.get("build")})')
-    fork = ''.join(f'<div class="box"><h2>{esc(k)}</h2>'
-                   f'<p>{md(s.replace(*path) if "tickets" in by_name and "build" in by_name else s)}</p></div>'
+    # Each sentence already names its size in bold; the heading is for screen readers.
+    fork = ''.join(f'<li><h3 class="vh">{esc(k)}</h3>'
+                   f'<p>{link_steps(md(s.replace(*path) if "tickets" in by_name and "build" in by_name else s))}</p></li>'
                    for k, s in r['fork'])
-    fork += ''.join(f'<p class="fork-note">{md(s)}</p>' for s in r['fork_notes'])
+    fork_note = ''.join(f'<p class="fork-note">{md(s)}</p>' for s in r['fork_notes'])
+    sizing = next((b for b in r['beats'] if b.lower().startswith('size')), 'Size the request')
 
     # The router's ways in and any-time skills, plus any registry one it leaves out.
-    does = {n.lstrip('/'): d for entries in groups.values() for n, _, d in entries}
     ways_text = ' '.join(r['ways'])
-    ways = ''.join(f'<li><p>{md(w)}</p></li>' for w in r['ways'])
+    ways = ''.join(f'<li><p>{link_steps(md(w))}</p></li>' for w in r['ways'])
     ways += ''.join(f'<li><p><code>{esc(n)}</code></p><p class="when">{md(d)}</p></li>'
                     for n, _, d in groups.get('in', []) if n.lstrip('/') not in ways_text)
-    listed = {n.lstrip('/') for n, _ in r['any_time']}
-    any_time = ''.join(f'<li><p><code>{esc(n)}</code></p>'
-                       f'<p class="when">{md(cap(w or does.get(n.lstrip("/"), "").rstrip(".")))}</p></li>'
-                       for n, w in r['any_time'])
-    any_time += ''.join(f'<li><p><code>{esc(n)}</code></p><p class="when">{md(d.rstrip("."))}</p></li>'
-                        for n, _, d in groups.get('any', []) if n.lstrip('/') not in listed)
-    gates = ''.join(f'<li><span class="dia"></span><span>{md(s)}</span></li>' for s in r['gate_rules'])
-    sessions = ''.join(f'<li><span class="dot"></span><span>{md(s)}</span></li>' for s in r['session_rules'])
+    # Any time: the names only, each linked to the group that describes it, so the page
+    # says what a skill does in one place.
+    home = {n.lstrip('/'): k for k, entries in groups.items() for n, _, _ in entries}
+    listed = [n for n, _ in r['any_time']]
+    listed += [n for n, _, _ in groups.get('any', []) if n.lstrip('/') not in {x.lstrip('/') for x in listed}]
+    any_time = ', '.join(f'<a href="#skills-{home.get(n.lstrip("/"), "any")}"><code>{esc(n)}</code></a>'
+                         for n in listed)
+    gates = ''.join(f'<li><span class="dia"></span><span>{link_steps(md(s))}</span></li>' for s in r['gate_rules'])
+    sessions = ''.join(f'<li><span class="dot"></span><span>{link_steps(md(s))}</span></li>' for s in r['session_rules'])
     source_text = open(SKILL, encoding='utf-8').read() + open(REGISTRY, encoding='utf-8').read()
-    terms = ''.join(f'<div><dt>{esc(t)}</dt><dd>{esc(d)}</dd></div>' for t, pattern, d in TERMS
+    terms = ''.join(f'<div><dt id="term-{slug(t)}">{esc(t)}</dt><dd>{esc(d)}</dd></div>' for t, pattern, d in TERMS
                     if re.search(pattern, source_text, re.I))
 
-    # The skill list, step by step. The router box, Other ways in and Any time already
-    # show the rest; a skill another one reads folds under its step.
+    def source(n):
+        """Where a skill comes from: its repository, linked, or Claude Code for a built-in."""
+        src = sources.get(n, '')
+        if re.fullmatch(r'[\w.-]+/[\w.-]+', src):
+            return (f'<a class="src" href="https://github.com/{esc(src)}">{esc(src)}'
+                    f'<span class="vh"> (source repository)</span></a>')
+        return f'<span class="src">{esc(src)}</span>' if src else ''
+
+    # Every skill in the registry, step by step, then the ones outside the flow; a skill
+    # another one reads folds under its step.
     blocks = []
-    for key in sorted(k for k in groups if isinstance(k, int)) + ['other']:
+    for key in sorted(k for k in groups if isinstance(k, int)) + ['start', 'in', 'any', 'other']:
         if key not in groups:
             continue
         if isinstance(key, int):
             s = steps[key]
             role = ROLE_NAMES[s['role']]
-            head = (f'<div class="group-head"><h4><span class="num">{key}</span>{esc(s["name"])}'
+            head = (f'<div class="group-head"><h4><span class="num">{key}</span><span class="name">{esc(s["name"])}</span>'
                     f'<span class="role">{esc(role)}</span></h4></div>')
             back = (f'<a class="back" href="#step-{key}"><i class="ai"></i>'
                     f'Back to step {key}</a>')
             cls = f' p-{s["role"]}'
         else:
-            head = f'<div class="group-head"><h4>{esc(GROUP_TITLES[key])}</h4></div>'
+            head = f'<div class="group-head"><h4><span class="name">{esc(GROUP_TITLES[key])}</span></h4></div>'
             cls, back = '', ''
 
         def item(n, t, d):
+            t = '' if key == 'start' else t
             return (f'<li><code>{esc(n)}</code>' + (f'<span class="tag">{esc(voice(t))}</span>' if t else '')
-                    + f'<p>{md(d)}</p></li>')
+                    + f'<p>{md(d)}</p>{source(n)}</li>')
         # A skill another command loads ("read by /build-ticket", "under the workshop")
         # folds under that command, named in the summary.
         top, users = [], {}
@@ -627,14 +866,19 @@ def build(router, groups, kinds, digest):
             folded += (f'<details><summary>Loaded by {who} ({count})</summary>'
                        f'<ul>{"".join(item(*e) for e in entries)}</ul></details>')
         items = ''.join(item(*e) for e in top)
+        # Closed, a row lists its own skills by name and counts the ones they load.
+        loaded = sum(len(e) for e in users.values())
+        items += f'<li class="also">+{loaded} more</li>' if loaded else ''
         phase = ('Once per project' if key in r['project'] else 'Per epic' if key in r['lead'] or key == r['close']
-                 else 'Per ticket' if key in r['ticket'] else GROUP_TITLES['other'])
-        role = ROLE_NAMES[steps[key]['role']] if isinstance(key, int) else GROUP_TITLES['other']
-        where = f'Step {key}' if isinstance(key, int) else GROUP_TITLES['other']
+                 else 'Per ticket' if key in r['ticket'] else OUTSIDE)
+        role = ROLE_NAMES[steps[key]['role']] if isinstance(key, int) else OUTSIDE
+        where = f'Step {key}' if isinstance(key, int) else GROUP_TITLES[key]
         tone = steps[key]['role'] if isinstance(key, int) else ''
         blocks.append(dict(role=role, phase=phase, skills=[(n, where, d, tone) for n, _, d in groups[key]],
                            html=f'<section class="group{cls}" id="skills-{key}" data-role="{esc(role)}" '
-                                f'data-moment="{esc(phase)}">{head}<ul>{items}</ul>{folded}{back}</section>'))
+
+                                f'data-moment="{esc(phase)}">{head}'
+                                f'<div class="group-body"><ul>{items}</ul>{folded}{back}</div></section>'))
 
     def grouped(field):
         return ''.join(f'<div class="phase"><h3 class="phase-title">{esc(g)}</h3><div class="groups">'
@@ -646,10 +890,12 @@ def build(router, groups, kinds, digest):
     by_kind = {}
     for b in blocks:
         for n, where, d, tone in b['skills']:
-            step = f'<span class="tag step-tag p-{tone}">{esc(where)}</span>' if tone else f'<span class="tag">{esc(where)}</span>'
+            step = (f'<a class="tag step-tag p-{tone}" href="#step-{where.split()[-1]}">{esc(where)}</a>' if tone
+                    else f'<span class="tag">{esc(where)}</span>')
             by_kind.setdefault(kind_of.get(kinds.get(n), 'You start it'), []).append(
-                f'<li><code>{esc(n)}</code>{step}<p>{md(d)}</p></li>')
-    by_kind = ''.join(f'<section class="group"><div class="group-head"><h4>{esc(k)}</h4></div><ul>{"".join(by_kind[k])}</ul></section>'
+                f'<li><code>{esc(n)}</code>{step}<p>{md(d)}</p>{source(n)}</li>')
+    by_kind = ''.join(f'<section class="group"><div class="group-head"><h4><span class="name">{esc(k)}</span></h4></div>'
+                      f'<div class="group-body"><ul>{"".join(by_kind[k])}</ul></div></section>'
                       for k in dict.fromkeys(kind_of.values()) if k in by_kind)
     group_by = ''.join(f'<label><input type="radio" name="group-by" value="{v}"{" checked" if v == "role" else ""}>{t}</label>'
                        for v, t in (('role', 'Role'), ('moment', 'Moment'), ('kind', 'Kind')))
@@ -657,11 +903,19 @@ def build(router, groups, kinds, digest):
              '<li><code>name</code><span>Claude loads it when it fits; you can type it too</span></li>'
              '<li><span class="tag">tag</span><span>when it is used</span></li>')
 
+    if install:
+        commands = '\n'.join(esc(c) for c in install['commands'])
+        install_html = (f'<p>{md(install["needs"])}</p>' if install['needs'] else '') + (
+            f'<pre class="shell"><code>{commands}</code></pre>'
+            + (f'<p class="when">{md(install["after"])}</p>' if install['after'] else ''))
+    else:
+        install_html = f'<p>Install it from <a href="{REPO_URL}">the repository</a>; its README says how.</p>'
+
     first_lead = r['lead'][0]
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
-    return f"""<!doctype html>
+    page = f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -676,53 +930,57 @@ def build(router, groups, kinds, digest):
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="{LIGHT['paper']}" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="{DARK['paper']}" media="(prefers-color-scheme: dark)">
+<script>{THEME_JS}</script>
 <link rel="icon" href="{ICON}">
 {preload}
 <style>{page_css()}</style>
 </head>
 <body>
-<a class="skip" href="#flow">Skip to the flow</a>
+<a class="skip" href="#top">Skip to content</a>
 <header class="bar"><nav class="bar-in" aria-label="On this page"><ul>
 <li class="home"><a href="#top">{esc(TITLE)}</a></li>
-<li><a href="#flow">Flow</a></li><li><a href="#rules">Rules</a></li><li><a href="#skills">Skills</a></li>
+<li><a href="#flow">Flow</a></li><li><a href="#rules">Rules</a></li><li><a href="#skills">Skills</a></li><li><a href="#install">Install</a></li>
+<li class="theme-li"><button type="button" class="theme" hidden><i></i></button></li>
 <li class="out-link"><a href="{REPO_URL}" target="_blank" rel="noopener">GitHub<i class="ai ext"></i><span class="vh"> (opens in a new tab)</span></a></li>
 </ul></nav></header>
 <main class="wrap" id="top">
 <header>
 <h1>{esc(TITLE)}</h1>
 <p class="lede">{esc(LEDE)} <code>{esc(start)}</code> tells you which command comes next; you approve every gate.</p>
-<ul class="legend" aria-label="Legend">{legend}</ul>
 </header>
-<section class="box router" aria-label="The router">
-<div><p class="cmd">{esc(start)}</p><p class="sub">Start here, at any step. {md(r['never'])}</p>
-<ol class="beats" aria-label="What it does">{beats}</ol></div>
+<section class="box router" aria-labelledby="router-title">
+<div><h2 class="cmd" id="router-title">{esc(start)}</h2><p class="sub">Start here, at any step. {md(r['never'])}</p>
+<ol class="beats" aria-label="What it does">{beats}</ol>
+<p class="new-here">New here? <a href="#install">Install it first</a>.</p></div>
 {answer_html(r)}
 </section>
-<section class="fork" aria-label="Size of the request">{fork}</section>
+<section class="box fork" aria-labelledby="fork-title">
+<h2 id="fork-title">{esc(sizing)}</h2><ul>{fork}</ul>{fork_note}
+</section>
+<ul class="legend" aria-label="How to read the flow">{legend}</ul>
 <section class="band" id="flow" aria-labelledby="band-project">
-<h2 class="kicker" id="band-project">Once per project</h2>
+<h2 class="band-title" id="band-project">Once per project</h2>
 {flow_html(r, r['project'])}
 </section>
-<div class="into-epic cols4" aria-hidden="true"><span>Each epic starts here{AI}</span></div>
+<div class="into-epic cols4"><span>Each epic starts here{link()}</span></div>
 <section class="frame" aria-labelledby="band-epic">
-<h2 class="kicker" id="band-epic">Per epic</h2>
+<h2 class="band-title" id="band-epic">Per epic</h2>
 {flow_html(r, r['lead'])}
-<div class="joint cols4" aria-hidden="true"><span class="down">{AI}Then, for each ticket: {r['ticket'][0]} to {r['ticket'][-1]}</span></div>
-<div class="joint phone" aria-hidden="true"><span class="down">{AI}</span></div>
+<div class="joint cols4"><span class="down">{link()}Then, for each ticket: steps {r['ticket'][0]} to {r['ticket'][-1]}</span></div>
+<div class="joint phone"><span class="down">{link()}Then, for each ticket: steps {r['ticket'][0]} to {r['ticket'][-1]}</span></div>
 <div class="ticket-row">
-<section class="ticket" aria-labelledby="band-ticket"><h3 class="kicker" id="band-ticket">Per ticket</h3>
+<section class="ticket" aria-labelledby="band-ticket"><h3 class="band-title" id="band-ticket">Per ticket</h3>
 {flow_html(r, r['ticket'], level=4)}
-<p class="loop-note">Changes requested at {r['review']} go back to {r['ticket'][0]}</p>
+<p class="loop-note"><i class="loop"></i>Changes requested at {r['review']} go back to {r['ticket'][0]}</p>
 </section>
-{ARR}
+{arr()}
 {card_html(steps[r['close']])}
 </div>
-<p class="epic-note"><a href="#step-{first_lead}">After {r['close']}, the next epic starts again at {first_lead}.</a>
-<span>About {r['epics']} epics per roadmap, never more than {r['most']}.</span></p>
+<p class="epic-note"><i class="loop"></i><a href="#step-{first_lead}">After {r['close']}, the next epic starts again at {first_lead}.</a></p>
 </section>
 <section class="panels" style="--n:2" aria-label="Beside the flow">
-<div><h2>Any time</h2><ul>{any_time}</ul></div>
 <div><h2>Other ways in</h2><ul>{ways}</ul></div>
+<div><h2>Any time</h2><p class="any-time">{any_time}</p></div>
 </section>
 <section class="section" id="rules" aria-labelledby="rules-title">
 <h2 id="rules-title">Rules</h2>
@@ -735,16 +993,31 @@ def build(router, groups, kinds, digest):
 <section class="section" id="skills" aria-labelledby="skills-title">
 <h2 id="skills-title">Every skill</h2>
 <ul class="legend" aria-label="How to read a skill name">{names}</ul>
-<fieldset class="group-by" hidden><legend>Group by</legend><span class="seg">{group_by}</span></fieldset>
-<div class="grouping" id="by-step">{grouped('role')}</div>
+<div class="skill-list">
+<div class="skill-tools"><fieldset class="group-by" hidden><legend>Group by</legend><span class="seg">{group_by}</span></fieldset>
+<button type="button" class="all" hidden>Expand all</button></div>
+<p class="vh" aria-live="polite" id="skills-status"></p>
+<div class="grouping" id="by-step" data-by="role">{grouped('role')}</div>
 <div class="grouping" id="by-kind" hidden><div class="phase"><div class="groups">{by_kind}</div></div></div>
-<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources version {digest}.</p>
+</div>
+</section>
+<section class="section install" id="install" aria-labelledby="install-title">
+<h2 id="install-title">Run it on your project</h2>
+{install_html}
+<p class="then">Then, in your project, start Claude Code and run</p>
+<p class="cmd">{esc(start)}</p>
+<p class="when">It tells you the next command, the session to run it in, and what you approve first.</p>
+<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files.</p>
 </section>
 </main>
 <script>{BAR_JS}</script>
 </body>
 </html>
 """
+    # The glossary sits below the flow: link each term the first time the page uses it.
+    head, sep, rest = page.partition('<main')
+    body, sep2, tail = rest.partition('id="rules"')
+    return head + sep + link_terms(body) + sep2 + tail
 
 
 
@@ -753,7 +1026,8 @@ def main():
     args = sys.argv[1:]
     try:
         router = read_router(SKILL)
-        groups, kinds = read_registry(REGISTRY, router['steps'])
+        groups, kinds, sources = read_registry(REGISTRY, router['steps'])
+        install = read_install(README)
         for _, file, _ in FACES:
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as e:
@@ -766,7 +1040,7 @@ def main():
     out_dir = os.path.dirname(os.path.abspath(out))
     os.makedirs(out_dir, exist_ok=True)
     with open(out, 'w', encoding='utf-8') as f:
-        f.write(build(router, groups, kinds, digest))
+        f.write(build(router, groups, kinds, sources, install, digest))
     if out_dir != os.path.dirname(FONTS):
         shutil.copytree(FONTS, os.path.join(out_dir, 'fonts'), dirs_exist_ok=True)
     print(f'wrote {out}')
