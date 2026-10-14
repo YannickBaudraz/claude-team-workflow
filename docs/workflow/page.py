@@ -1,13 +1,15 @@
 """Assembling the page: the HTML, with its stylesheet and scripts from the files beside this one.
 
-page.css holds /* LIGHT_TOKENS */ and /* DARK_TOKENS */ where the colour variables go;
-theme.js and page.js hold @LIGHT@ and @DARK@ where the theme-color values go."""
+page.css holds /* LIGHT_TOKENS */ and /* DARK_TOKENS */ where Reader's colour variables go,
+and /* PALETTES */ where the other palettes go; theme.js and page.js hold @PAPERS@ where
+each palette's paper colours go, for the browser's theme-color."""
 import os
 import re
 
 from . import render
-from .config import (DARK, FACES, GROUP_TITLES, ICON, LEDE, LIGHT, OUTSIDE, PAGE_URL, REGISTRY,
-                     REPO_URL, ROLE_NAMES, SKILL, TERMS, TITLE)
+from .config import (DARK, FACES, GROUP_TITLES, ICON, LEDE, LIGHT, OUTSIDE, PAGE_URL, PALETTE_SOURCES,
+                     PALETTES, REGISTRY, REPO_URL, ROLE_NAMES, SKILL, TERMS, TITLE)
+from .palettes import PAPERS, palette_css, tokens
 from .render import (AI, answer_html, arr, card_html, esc, flow_html, link, link_steps, link_terms, md,
                      slug, voice)
 
@@ -15,19 +17,32 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def asset(name):
-    """A stylesheet or script beside this file, with the theme colours filled in."""
+    """A stylesheet or script beside this file, with the palettes' paper colours filled in."""
     text = open(os.path.join(HERE, name), encoding='utf-8').read().rstrip('\n')
-    return text.replace('@DARK@', DARK['paper']).replace('@LIGHT@', LIGHT['paper'])
+    return text.replace('@PAPERS@', PAPERS)
 
 
 def page_css():
-    def tokens(palette):
-        return ' '.join(f"--{name.replace('_', '-')}:{value};" for name, value in palette.items())
     faces = ''.join(f'@font-face{{font-family:"{family}";src:url("fonts/{file}") format("woff2");'
                     f'font-weight:{weights};font-style:normal;font-display:swap}}\n'
                     for family, file, weights in FACES)
     css = asset('page.css') + '\n'
-    return faces + '\n' + css.replace('/* LIGHT_TOKENS */', tokens(LIGHT)).replace('/* DARK_TOKENS */', tokens(DARK))
+    return faces + '\n' + (css.replace('/* LIGHT_TOKENS */', tokens(LIGHT)).replace('/* DARK_TOKENS */', tokens(DARK))
+                           .replace('/* PALETTES */', palette_css()))
+
+
+def appearance_html():
+    """The bar's appearance menu: the mode and the palette, in a popover under its button."""
+    modes = ''.join(f'<label><input type="radio" name="mode" value="{value}"><i class="mi {value}"></i>{label}</label>'
+                    for value, label in (('system', 'System'), ('light', 'Light'), ('dark', 'Dark')))
+    palettes = ''.join(f'<label><input type="radio" name="palette" value="{key}">'
+                       f'<span class="swatch" data-swatch="{key}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
+                       f'{esc(name)}</label>' for key, name, _, _ in PALETTES)
+    return ('<li class="theme-li"><button type="button" class="theme" popovertarget="appearance" hidden><i></i><b class="chev"></b></button>'
+            '<div class="appearance" id="appearance" popover role="group" aria-label="Appearance">'
+            f'<fieldset><legend>Mode</legend><span class="seg">{modes}</span></fieldset>'
+            f'<fieldset class="palettes"><legend>Palette</legend>{palettes}</fieldset>'
+            '</div></li>')
 
 
 THEME_JS = asset('theme.js')
@@ -174,6 +189,8 @@ def build(router, groups, kinds, sources, install, digest):
 
     first_lead = router['lead'][0]
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
+    palette_links = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
+    credits = ', '.join(palette_links[:-1]) + ' and ' + palette_links[-1]
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
     page = f"""<!doctype html>
@@ -201,7 +218,7 @@ def build(router, groups, kinds, sources, install, digest):
 <header class="bar"><nav class="bar-in" aria-label="On this page"><ul>
 <li class="home"><a href="#top">{esc(TITLE)}</a></li>
 <li><a href="#flow">Flow</a></li><li><a href="#rules">Rules</a></li><li><a href="#skills">Skills</a></li><li><a href="#install">Install</a></li>
-<li class="theme-li"><button type="button" class="theme" hidden><i></i></button></li>
+{appearance_html()}
 <li class="out-link"><a href="{REPO_URL}" target="_blank" rel="noopener">GitHub<i class="ai ext"></i><span class="vh"> (opens in a new tab)</span></a></li>
 </ul></nav></header>
 <main class="wrap" id="top">
@@ -268,7 +285,7 @@ def build(router, groups, kinds, sources, install, digest):
 <p class="then">Then, in your project, start Claude Code and run</p>
 <p class="cmd">{esc(start)}</p>
 <p class="when">It tells you the next command, the session to run it in, and what you approve first.</p>
-<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files.</p>
+<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
 </main>
 <a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>

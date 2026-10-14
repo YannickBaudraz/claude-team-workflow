@@ -39,6 +39,58 @@ DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', m
             rule='#34363A', product='#D6A45E', lead='#64B5A7', dev='#93A9E2',
             review='#B7A2E0', you='#E98A93', on_role='#18191B')
 
+# The palettes a visitor picks in the bar's appearance menu, each with a light and a dark
+# side: (key, name, light, dark). Reader is the page's own, the one a first visit gets.
+# Cool is Reader moved toward blue-grey; its light side takes the same OKLab step, colour by
+# colour, as its dark side, with the change in lightness mirrored; the white card, which
+# cannot get lighter, takes the step at the highest lightness that holds it.
+# Catppuccin (Latte, Mocha), Tokyo Night (Day, Night) and Nord (Snow Storm, Polar Night)
+# keep their authors' published colours, except Tokyo Night Day's blue text (see below)
+# and the text colours that read under 4.5:1 on paper, cards or tray: only their lightness was
+# moved, until they pass. Every text colour is checked at 4.5:1 on each build.
+PALETTES = [
+    ('reader', 'Reader', LIGHT, DARK),
+    ('cool', 'Cool',
+     dict(paper='#F0F5FB', surface='#F8FCFF', tray='#E7EDF3', ink='#15202D', muted='#546275',
+          rule='#CDD9E6', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
+          review='#7445C2', you='#C02E48', on_role='#FFFFFF'),
+     dict(paper='#16191D', surface='#1E2227', tray='#121417', ink='#E6E9EC', muted='#A3AAB2',
+          rule='#323840', product='#D6A45E', lead='#64B5A7', dev='#93A9E2',
+          review='#B7A2E0', you='#E98A93', on_role='#121417')),
+    # Latte: mantle, base, crust, text, subtext0, surface0; yellow, teal, blue, mauve, red.
+    # Mocha: the same roles, peach for product.
+    ('catppuccin', 'Catppuccin',
+     dict(paper='#E6E9EF', surface='#EFF1F5', tray='#DCE0E8', ink='#4C4F69', muted='#5E6175',
+          rule='#CCD0DA', product='#965C04', lead='#04757B', dev='#135CEA',
+          review='#8737ED', you='#D00A38', on_role='#FFFFFF'),
+     dict(paper='#181825', surface='#1E1E2E', tray='#11111B', ink='#CDD6F4', muted='#A6ADC8',
+          rule='#313244', product='#FAB387', lead='#94E2D5', dev='#89B4FA',
+          review='#CBA6F7', you='#F38BA8', on_role='#11111B')),
+    # Day: bg, bg_dark, bg_highlight; Night: bg, Storm's bg_dark, bg_dark, fg_gutter, fg,
+    # fg_dark. Roles: yellow, teal or green1, blue, magenta, red. Day's own text is blue
+    # (#3760BF); here it is Tokyo Night Light's dark slate, muted one fifth of the way to
+    # the cards.
+    ('tokyo', 'Tokyo Night',
+     dict(paper='#E1E2E7', surface='#E9E9EC', tray='#D5D6DB', ink='#343B58', muted='#565C74',
+          rule='#C4C8DA', product='#7E5F31', lead='#03725E', dev='#0761CA',
+          review='#823AD7', you='#C9044C', on_role='#FFFFFF'),
+     dict(paper='#1A1B26', surface='#1F2335', tray='#16161E', ink='#C0CAF5', muted='#A9B1D6',
+          rule='#3B4261', product='#E0AF68', lead='#73DACA', dev='#7AA2F7',
+          review='#BB9AF7', you='#F7768E', on_role='#16161E')),
+    # Snow Storm: nord5, nord6, nord4, nord0, nord3; Polar Night: nord0, nord1, nord3, nord4.
+    # Roles: nord13 yellow, nord7 frost, nord10 or nord9 blue, nord15 purple, nord11 red.
+    ('nord', 'Nord',
+     dict(paper='#E5E9F0', surface='#ECEFF4', tray='#D8DEE9', ink='#2E3440', muted='#4C566A',
+          rule='#CBD2DE', product='#816423', lead='#45706F', dev='#496B95',
+          review='#815E7B', you='#A64B55', on_role='#FFFFFF'),
+     dict(paper='#2E3440', surface='#3B4252', tray='#272C36', ink='#D8DEE9', muted='#AEB6C4',
+          rule='#4C566A', product='#EBCB8B', lead='#8FBCBB', dev='#90B1D1',
+          review='#C9A2C2', you='#F6929A', on_role='#272C36')),
+]
+PALETTE_SOURCES = [('Catppuccin', 'https://catppuccin.com/palette/'),
+                   ('Tokyo Night', 'https://github.com/folke/tokyonight.nvim'),
+                   ('Nord', 'https://www.nordtheme.com/docs/colors-and-palettes')]
+
 # One variable woff2 per family, latin subset: (family, file, weight range).
 FACES = [('Bricolage Grotesque', 'bricolage-grotesque.woff2', '600 700'),
          ('Instrument Sans', 'instrument-sans.woff2', '400 700'),

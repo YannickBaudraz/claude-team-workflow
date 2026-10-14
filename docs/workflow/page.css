@@ -1,28 +1,35 @@
 /* Layout: a sticky bar on top, then one column of bands. The epic loop is a dashed
    frame whose rows snake, design to tickets leftwards and build to retro rightwards, so
    the retro sits under the first epic step. Below 1100px everything stacks in reading
-   order, in one centred column narrow enough to read. */
+   order, in one centred column narrow enough to read.
+   Spacing runs on a 4px scale in four steps: 8 from a label to its content, 16 between
+   items, 32 between blocks, 64 between sections (32, the rule, 32). A heading always has
+   at least twice as much room above as below. */
 :root{ /* LIGHT_TOKENS */
   --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --body:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  --gap:30px; --bar:56px;
+  --gap:24px; --bar:56px; --frame-pad:16px; --ticket-pad:12px;
   --link:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 12' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 6h28M25 1.8l4.5 4.2-4.5 4.2'/%3E%3C/svg%3E");
   --loop:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.6-5.9'/%3E%3Cpath d='M20 4.5v4.2h-4.2'/%3E%3C/svg%3E");
   --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
   --arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h15M13 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E");
   --sun:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E");
   --moon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/%3E%3C/svg%3E");
+  --check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --system:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }
 /* The theme follows the system unless the toggle in the bar pins one (data-theme on html). */
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ /* DARK_TOKENS */ color-scheme:dark; } }
 :root[data-theme="dark"]{ /* DARK_TOKENS */ color-scheme:dark; }
 :root[data-theme="light"]{ color-scheme:light; }
+/* The other palettes, picked in the appearance menu (data-palette on html), and every
+   palette's swatch in that menu; page.py writes them from config.PALETTES. */
+/* PALETTES */
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:calc(var(--bar) + 16px)}
 body{margin:0;overflow-x:clip;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.55}
 .wrap,.bar-in{max-width:1300px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
-.wrap{padding-block:40px 56px;display:grid;gap:28px}
+.wrap{padding-block:40px 64px;display:grid;gap:32px}
 .wrap > *,.section > *,.panels > *{min-width:0}
 h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
 h1{font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-.015em}
@@ -53,8 +60,39 @@ a{color:inherit;text-underline-offset:.2em}
 .bar:not(.scrolled) .home{display:none}
 .bar:not(.scrolled) li:nth-child(2) a{margin-left:-12px}
 .bar .theme-li{margin-left:auto}
-.theme{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
-.theme:hover{color:var(--ink);background:var(--paper)}
+/* Appearance: the button shows the mode and opens the menu; its chevron says it is a menu. */
+.theme{display:flex;align-items:center;gap:2px;height:36px;padding:0 5px 0 8px;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.theme:hover,.theme.open{color:var(--ink);background:var(--paper)}
+.theme .chev{width:12px;height:12px;background:currentColor;-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat}
+/* The menu: a popover in the top layer, placed under its button by page.js. Mode is a
+   segmented switch like the skills list's Group by; each palette is a row with a swatch
+   drawn in its own colours, on the side the page shows: paper, a card with a line of text,
+   and the four role colours. */
+.appearance{position:fixed;inset:auto;margin:0;width:min(264px,calc(100vw - 32px));padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--surface);color:var(--ink);font-size:.875rem;box-shadow:0 18px 40px -18px rgb(0 0 0 / .45),0 2px 6px -2px rgb(0 0 0 / .12);opacity:0;translate:0 -4px}
+.appearance:popover-open{display:grid;gap:16px;opacity:1;translate:0 0}
+.appearance fieldset{border:0;margin:0;padding:0;min-width:0}
+.appearance legend{padding:0;margin-bottom:8px;font-weight:600;font-size:.8125rem;color:var(--muted)}
+.appearance input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+/* Each option is as wide as its content plus an equal share of what is left, so all three
+   have the same room around their label, whatever its length. */
+.appearance .seg{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.appearance .seg label{position:relative;display:flex;align-items:center;flex:1 1 auto;justify-content:center;gap:5px;padding:7px 8px;cursor:pointer;font-weight:600;color:var(--muted)}
+.appearance .seg label + label{border-left:1px solid var(--rule)}
+.appearance .seg label:hover{color:var(--ink)}
+.appearance .seg label:has(:checked){color:var(--ink);box-shadow:inset 0 -3px 0 var(--ink)}
+.appearance .seg label:has(:focus-visible){outline:2px solid var(--dev);outline-offset:-4px}
+.mi{flex:none;width:15px;height:15px;background:currentColor;-webkit-mask:var(--system) center/contain no-repeat;mask:var(--system) center/contain no-repeat}
+.mi.light{-webkit-mask-image:var(--sun);mask-image:var(--sun)}
+.mi.dark{-webkit-mask-image:var(--moon);mask-image:var(--moon)}
+.palettes{display:grid;gap:2px}
+.palettes label{position:relative;display:flex;align-items:center;gap:12px;padding:6px 8px;margin-inline:-8px;border-radius:8px;cursor:pointer;font-weight:600}
+.palettes label:hover,.palettes label:has(:checked){background:var(--paper)}
+.palettes label:has(:checked)::after{content:"";margin-left:auto;width:16px;height:16px;background:var(--ink);-webkit-mask:var(--check) center/contain no-repeat;mask:var(--check) center/contain no-repeat}
+.palettes label:has(:focus-visible){outline:2px solid var(--dev);outline-offset:-2px}
+.swatch{position:relative;flex:none;display:flex;align-items:flex-end;gap:3px;width:46px;height:30px;padding:0 6px 5px;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+.swatch::before{content:"";position:absolute;left:5px;right:5px;top:4px;height:11px;border:1px solid var(--rule);border-radius:3px;background:linear-gradient(var(--ink),var(--ink)) 4px 50%/55% 2px no-repeat,var(--surface)}
+.swatch i{width:6px;height:6px;border-radius:50%;background:var(--product)}
+.swatch i:nth-child(2){background:var(--lead)} .swatch i:nth-child(3){background:var(--dev)} .swatch i:nth-child(4){background:var(--review)}
 .theme i{width:19px;height:19px;background:currentColor;-webkit-mask:var(--system) center/contain no-repeat;mask:var(--system) center/contain no-repeat}
 .theme[data-mode="light"] i{-webkit-mask-image:var(--sun);mask-image:var(--sun)}
 .theme[data-mode="dark"] i{-webkit-mask-image:var(--moon);mask-image:var(--moon)}
@@ -62,31 +100,33 @@ a{color:inherit;text-underline-offset:.2em}
 .ai{display:inline-block;flex:none;width:24px;height:24px;background:currentColor;-webkit-mask:var(--arrow) center/contain no-repeat;mask:var(--arrow) center/contain no-repeat}
 .ai.ext{width:15px;height:15px;transform:rotate(-45deg)}
 /* Between steps, a thin connector rather than a heavy arrow. */
-.arr .ai,.joint .ai,.into-epic .ai{width:26px;height:10px;-webkit-mask-image:var(--link);mask-image:var(--link)}
-.legend{display:flex;flex-wrap:wrap;gap:8px 20px;list-style:none;padding:0;margin:18px 0 0;font-size:.875rem}
+.arr .ai,.joint .ai,.into-epic .ai{width:22px;height:10px;-webkit-mask-image:var(--link);mask-image:var(--link)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 24px;list-style:none;padding:0;margin:0;font-size:.875rem}
+.wrap > .legend{margin:16px 0 -8px}
 .legend li{display:flex;align-items:center;gap:7px}
 .sw{width:11px;height:11px;border-radius:3px;background:var(--c)}
 .dia{width:9px;height:9px;background:var(--you);transform:rotate(45deg);flex:none;display:inline-block}
 .dash-sw{width:22px;height:12px;border:1.5px dashed var(--muted);border-radius:3px}
 .band-title{font-size:1.375rem;font-weight:700;letter-spacing:-.01em}
 .box{background:var(--surface);border:1px solid var(--rule);border-radius:12px}
-.router{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px 32px;padding:22px 24px;align-items:center}
+.router{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:24px 32px;padding:24px;align-items:center}
 .router .cmd,.install .cmd{font-family:var(--mono);font-size:1.875rem;font-weight:700;line-height:1.2;margin:0 0 6px}
-.new-here{margin:14px 0 0;font-size:.9375rem;color:var(--muted)}
+.new-here{margin:16px 0 0;font-size:.9375rem;color:var(--muted)}
 .new-here a{color:var(--ink);font-weight:600}
 .router .sub{color:var(--muted);margin:0;font-size:.9375rem;max-width:44ch}
 .router .sub strong{color:var(--ink)}
 .beats{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;list-style:none;margin:12px 0 0;padding:0;font-size:.875rem;font-weight:700}
 .beats .arr{flex:none;padding:0;color:var(--muted)}
 .beats .ai{width:16px;height:16px}
-.answer{background:var(--paper);border-radius:8px;padding:14px 18px}
+.answer{background:var(--paper);border-radius:8px;padding:16px}
 .answer-title{margin:0 0 8px;font-size:.9375rem;font-weight:700;color:var(--ink)}
 .answer ol{margin:0;padding-left:1.4em;display:grid;gap:4px;font-size:.9375rem}
 .answer li::marker{color:var(--muted);font-weight:700}
-/* Sizing comes before the flow but is not the flow: one compact strip, quieter than the bands. */
-.fork{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:6px 28px;padding:16px 22px;align-items:baseline}
+/* Sizing comes before the flow but is not the flow: one compact strip, quieter than the bands,
+   tucked under the router as its companion. */
+.fork{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:8px 32px;padding:16px 24px;align-items:baseline;margin-top:-16px}
 .fork > h2{font-family:var(--body);font-size:1rem;font-weight:700}
-.fork ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 28px}
+.fork ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 32px}
 .fork h3{font-family:var(--body);font-size:.9375rem;font-weight:700;display:inline;margin-right:6px}
 .fork li p{display:inline;margin:0;font-size:.9375rem;color:var(--muted)}
 .fork em{font-style:normal;font-weight:700;color:var(--ink)}
@@ -94,10 +134,10 @@ a{color:inherit;text-underline-offset:.2em}
 .band{display:grid;gap:12px}
 .flow{display:flex;align-items:stretch}
 .arr{flex:0 0 var(--gap);display:flex;justify-content:center;align-items:center;color:var(--muted)}
-.card{flex:1 1 0;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 13px;display:flex;flex-direction:column;gap:8px}
+.card{flex:1 1 0;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .card.optional{border-style:dashed;border-color:var(--muted)}
 .card:target{box-shadow:0 0 0 2px var(--c),0 6px 18px -8px var(--c)}
-.card-head{display:flex;align-items:center;gap:9px}
+.card-head{display:flex;align-items:center;gap:8px}
 .num{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:.8125rem;flex:none;font-variant-numeric:tabular-nums;font-family:var(--body)}
 .role{font-size:.75rem;line-height:1.3;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);font-family:var(--body)}
 .card .title{font-size:1.1875rem;font-weight:700}
@@ -112,34 +152,36 @@ a{color:inherit;text-underline-offset:.2em}
 .cmd-text{margin:0;font-size:.8438rem;line-height:1.6}
 .cmd-text code{font-size:.8125rem;white-space:normal;color:var(--ink)}
 .arg{font-weight:400;color:var(--muted);white-space:normal}
-.result{margin-top:auto;padding-top:9px;border-top:1px solid var(--rule);display:grid;gap:8px}
+.result{margin-top:auto;padding-top:8px;border-top:1px solid var(--rule);display:grid;gap:8px}
 .out{margin:0;font-weight:600;font-size:.8438rem;line-height:1.4}
 .gate-mark{margin:0;display:flex;align-items:center;gap:8px;color:var(--you);font-weight:700;font-size:.8125rem}
-.frame{border:1.5px dashed var(--muted);border-radius:16px;padding:30px 20px 18px;position:relative;display:grid;gap:10px}
-.frame > .band-title,.ticket > .band-title{position:absolute;top:0;left:14px;transform:translateY(-55%);background:var(--paper);padding:0 8px}
+/* Frames: each title straddles its border 12px above its cards, its text on the cards'
+   left edge; the nested ticket frame steps its inset down. */
+.frame{border:1.5px dashed var(--muted);border-radius:16px;padding:24px var(--frame-pad) var(--frame-pad);position:relative;display:grid;gap:12px}
+.frame > .band-title,.ticket > .band-title{position:absolute;top:0;left:calc(var(--frame-pad) - 8px);transform:translateY(-55%);background:var(--paper);padding:0 8px}
 .link{display:inline-grid;place-items:center}
 .loop{display:inline-block;flex:none;width:17px;height:17px;background:var(--muted);-webkit-mask:var(--loop) center/contain no-repeat;mask:var(--loop) center/contain no-repeat}
 .cols4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:var(--gap)}
-.joint{padding:8px 0;color:var(--muted);font-weight:700}
+.joint{padding:4px 0 0;color:var(--muted);font-weight:700}
 .joint > span{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}
-.joint .down{grid-column:1 / span 2;justify-content:flex-start;padding-left:14px;font-size:.875rem}
+.joint .down{grid-column:1 / span 2;justify-content:flex-start;padding-left:calc(var(--ticket-pad) + 1.5px);font-size:.875rem}
 .joint .down .ai{transform:rotate(90deg)}
 .into-epic .link,.joint .link{margin-inline:4px}
-.into-epic{margin:-14px 0;padding-inline:21.5px;color:var(--muted);font-weight:700}
+.into-epic{margin:-18px 0 -12px;padding-inline:calc(var(--frame-pad) + 1.5px);color:var(--muted);font-weight:700}
 /* Read like the ticket loop's cue: the arrow down, then what it leads into. */
 .into-epic > span{grid-column:1;justify-self:start;display:flex;align-items:center;gap:4px;min-height:30px;font-size:.875rem;line-height:1.3}
 .into-epic .ai{transform:rotate(90deg)}
 .ticket-row{display:flex;align-items:stretch}
 .ticket-row > .card{flex:1 1 0}
-.ticket{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:24px 12px 12px;position:relative}
-.ticket > .band-title{font-size:1.125rem}
-.loop-note,.epic-note{margin:10px 0 0;font-size:.875rem;font-weight:700;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.ticket{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:22px var(--ticket-pad) var(--ticket-pad);position:relative}
+.ticket > .band-title{font-size:1.125rem;left:calc(var(--ticket-pad) - 6px);padding:0 6px}
+.loop-note,.epic-note{margin:12px 0 0;font-size:.875rem;font-weight:700;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
 .epic-note{margin-top:16px}
 .epic-note span{font-weight:400;color:var(--muted)}
-.panels{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:24px 40px}
-.panels h2{font-size:1.375rem;margin-bottom:14px}
-.panels h3{font-size:1.25rem;margin-bottom:14px}
-.panels ul,.panels dl{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.panels{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:40px}
+.panels h2{font-size:1.375rem;margin-bottom:12px}
+.panels h3{font-size:1.25rem;margin-bottom:12px}
+.panels ul,.panels dl{list-style:none;margin:0;padding:0;display:grid;gap:16px}
 .panels li p{margin:0}
 .panels .when{color:var(--muted);font-size:.9375rem}
 .panels dt{font-weight:700}
@@ -147,11 +189,11 @@ a{color:inherit;text-underline-offset:.2em}
 .rules li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start}
 .rules .dot{width:7px;height:2px;background:var(--muted);margin-top:12px}
 .rules .dia{margin-top:8px}
-.section{border-top:1px solid var(--rule);padding-top:36px;display:grid;gap:14px}
-.section > h2{font-size:clamp(1.75rem,3.4vw,2.125rem)}
-.phase{padding-top:30px}
-.phase:first-child{padding-top:8px}
-.phase-title{font-size:1.25rem;margin-bottom:12px}
+.section{border-top:1px solid var(--rule);padding-top:32px;display:grid;gap:16px}
+.section > h2{font-size:clamp(1.75rem,3.4vw,2.125rem);margin-bottom:8px}
+.phase{padding-top:32px}
+.phase:first-child{padding-top:24px}
+.phase-title{font-size:1.25rem;margin-bottom:8px}
 /* Every skill reads as an index: one row per group, the group on the left and its skills
    on the right. Closed, a row lists its skills by name; open, what each does and where it
    comes from. Without the script every row stays open. */
@@ -189,7 +231,6 @@ a{color:inherit;text-underline-offset:.2em}
 .group-head,.group-body{min-width:0}
 .group h4{font-size:1.125rem}
 .group h4,.toggle{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:28px}
-.group h4 .role{flex-basis:100%;order:3;padding-left:34px}
 #by-step[data-by="role"] .group h4 .role{display:none}
 .group .num{width:24px;height:24px;font-size:.75rem;border-radius:5px}
 /* The script turns each heading into the row's toggle, its chevron first. */
@@ -198,8 +239,15 @@ a{color:inherit;text-underline-offset:.2em}
 .toggle[aria-expanded="true"]::before{transform:none}
 .toggle:hover::before{background:var(--ink)}
 .toggle:hover .name{text-decoration:underline;text-underline-offset:.2em}
-.toggle .role{padding-left:60px}
-.group-body > ul{list-style:none;margin:0;padding:3px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:16px 36px;align-items:start}
+/* Where the role label shows, a step's heading is two lines, name over role: the badge
+   grows to span both, with the chevron centred beside it. */
+#by-step:not([data-by="role"]) .group h4:not(:has(.toggle)),#by-step:not([data-by="role"]) .group .toggle{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
+#by-step:not([data-by="role"]) .group h4:not(:has(.toggle)){grid-template-columns:auto minmax(0,1fr)}
+#by-step:not([data-by="role"]) .group .toggle::before,#by-step:not([data-by="role"]) .group h4 .num{grid-row:1 / span 2}
+#by-step:not([data-by="role"]) .group h4 .num{width:40px;height:40px;font-size:.9375rem;border-radius:8px}
+#by-step:not([data-by="role"]) .group h4 .name{align-self:end;line-height:1.2}
+#by-step:not([data-by="role"]) .group h4 .role{padding-left:0;align-self:start}
+.group-body > ul{list-style:none;margin:0;padding:3px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:16px 32px;align-items:start}
 .group li.also{display:none}
 .group.closed .group-body > ul{display:flex;flex-wrap:wrap;gap:0 22px;padding-top:0}
 .group.closed .group-body > ul > li{display:block;line-height:28px}
@@ -219,18 +267,20 @@ a.src:hover{color:var(--ink);text-decoration-color:currentColor}
 .panels dt:target{color:var(--dev)}
 .any-time{margin:0;line-height:2}
 .any-time a{text-decoration-color:var(--rule)}
-.group details{margin-top:14px}
+.group details{margin-top:12px}
 .group summary{cursor:pointer;color:var(--muted);font-size:.9375rem;font-weight:600}
 .group summary code{color:var(--ink)}
 .group summary:hover{color:var(--ink)}
-.group details ul{list-style:none;margin:10px 0 0;padding:0 0 0 14px;border-left:1px solid var(--rule);display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:12px 36px;align-items:start}
+.group details ul{list-style:none;margin:8px 0 0;padding:0 0 0 16px;border-left:1px solid var(--rule);display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:12px 32px;align-items:start}
 .tag{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .install p:not(.foot){margin:0;max-width:70ch}
 .install .when{color:var(--muted)}
-.install .then{margin-top:12px;font-weight:600}
-pre.shell{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 18px;overflow-x:auto;max-width:100%}
+/* Two steps: install, then run. Each reads as one block; the second starts after a break. */
+.install p.then{margin-top:16px;font-weight:600}
+.install p.cmd,.install p.cmd + p.when{margin-top:-8px}
+pre.shell{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;overflow-x:auto;max-width:100%}
 pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
-.foot{color:var(--muted);font-size:.875rem;margin:24px 0 0;padding-top:20px;border-top:1px solid var(--rule)}
+.foot{color:var(--muted);font-size:.875rem;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--rule)}
 .foot code{font-size:.8125rem;white-space:normal}
 .p-product{--c:var(--product)} .p-lead{--c:var(--lead)} .p-dev{--c:var(--dev)} .p-review{--c:var(--review)} .p-you{--c:var(--you)}
 @media (max-width: 1100px){
@@ -240,9 +290,8 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
   .flow > .arr .ai,.ticket-row > .arr .ai{transform:rotate(90deg)}
   .joint{display:none}
   .joint.phone{display:flex;justify-content:center}
-  .into-epic{grid-template-columns:minmax(0,1fr);margin:-12px 0}
+  .into-epic{grid-template-columns:minmax(0,1fr)}
   .into-epic > span{grid-column:1}
-  .ticket{margin:12px 0 0}
   .router,.fork,.fork ul,.panels{grid-template-columns:minmax(0,1fr)}
   .group{grid-template-columns:minmax(0,1fr);row-gap:6px}
   .group-body{padding-left:26px}
@@ -252,7 +301,15 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 }
 /* Side by side, a role label may wrap to two lines: every head keeps room for two,
    so the titles of a row line up. */
-@media (min-width: 1101px){ .joint.phone{display:none} .card-head{min-height:1.875rem} }
-@media (max-width: 420px){ .cmd-text code{white-space:normal;overflow-wrap:anywhere} .bar a{padding-inline:8px} .bar li:nth-child(2) a{margin-left:-8px} .router .cmd,.install .cmd{font-size:1.5rem} }
-@media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} }
-@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s} }
+/* Side by side, the glossary has more entries than the rules beside it: a wider column in
+   two, so the three columns end together. */
+@media (min-width: 1101px){ .joint.phone{display:none} .card-head{min-height:1.875rem}
+  #rules .panels{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr)} #rules dl{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px} }
+/* A 360px phone fits the four links, the appearance button and GitHub only with tighter
+   padding; the first link's text stays on the page's left edge, scrolled or not (these
+   outrank the rules above). */
+@media (max-width: 420px){ .cmd-text code{white-space:normal;overflow-wrap:anywhere} .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
+@media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
+@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
+  .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}
+  @starting-style{ .appearance:popover-open{opacity:0;translate:0 -4px} } }

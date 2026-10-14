@@ -9,18 +9,20 @@ turns that into "you". Change those two files, never the page:
 
     python3 docs/build-workflow.py                       # write docs/workflow.html to preview
     python3 docs/build-workflow.py --out _site/index.html
-    python3 docs/build-workflow.py --check               # exit 1 when the sources can't be read
+    python3 docs/build-workflow.py --check               # exit 1 when the sources can't be read,
+                                                         # or a palette's text reads under 4.5:1
 
 This file is the command line; the page is made in docs/workflow/:
 
     config.py    where the sources are, and the page's own frame: title, lede, glossary,
-                 role names, colours, fonts
+                 role names, palettes, fonts
     sources.py   reading SKILL.md, REGISTRY.md and the README's Install section
     render.py    the drawing helpers: voice, inline markdown, cards, arrows, links
+    palettes.py  the palettes' CSS, and the check that their text reads at 4.5:1
     page.py      assembling the HTML
-    page.css     the stylesheet; page.py fills in the colour tokens and the font faces
-    theme.js     runs in the head: applies a pinned theme before the page paints
-    page.js      the bar, the theme toggle and the skills list
+    page.css     the stylesheet; page.py fills in the palettes and the font faces
+    theme.js     runs in the head: applies a pinned mode and palette before the page paints
+    page.js      the bar, its appearance menu and the skills list
 
 The page serves its own fonts from docs/fonts (SIL Open Font License, the licences
 sit beside them), copied next to the page when it is written elsewhere, so no
@@ -37,6 +39,7 @@ import sys
 
 from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, SKILL
 from workflow.page import build
+from workflow.palettes import palette_problems
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
 
 
@@ -50,6 +53,10 @@ def main():
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as error:
         print(f'workflow page: cannot read the sources: {error}')
+        return 1
+    unreadable = palette_problems()
+    if unreadable:
+        print('workflow page: text under 4.5:1 in a palette:\n  ' + '\n  '.join(unreadable))
         return 1
     if '--check' in args:
         return 0
