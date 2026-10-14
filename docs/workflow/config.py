@@ -42,14 +42,15 @@ DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', m
 # The palettes a visitor picks in the bar's appearance menu, each with a light and a dark
 # side: (key, name, light, dark). Reader is the page's own, the one a first visit gets.
 # Cool is Reader moved toward blue-grey; its light side takes the same OKLab step, colour by
-# colour, as its dark side, with the change in lightness mirrored. Catppuccin (Latte, Mocha)
+# colour, as its dark side, with the change in lightness mirrored; the white card, which
+# cannot get lighter, takes the step at the highest lightness that holds it. Catppuccin (Latte, Mocha)
 # and Nord (Snow Storm, Polar Night) keep their authors' published colours, except the text
 # colours that read under 4.5:1 on paper or cards: only their lightness was moved, until
 # they pass. Every text colour is checked at 4.5:1 on each build.
 PALETTES = [
     ('reader', 'Reader', LIGHT, DARK),
     ('cool', 'Cool',
-     dict(paper='#EDF2F8', surface='#F8FAFD', tray='#E4EAF1', ink='#15202D', muted='#546275',
+     dict(paper='#F0F5FB', surface='#F8FCFF', tray='#E7EDF3', ink='#15202D', muted='#546275',
           rule='#CDD9E6', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
           review='#7445C2', you='#C02E48', on_role='#FFFFFF'),
      dict(paper='#16191D', surface='#1E2227', tray='#121417', ink='#E6E9EC', muted='#A3AAB2',
