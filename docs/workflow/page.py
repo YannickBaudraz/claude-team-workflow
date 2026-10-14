@@ -240,8 +240,8 @@ def build(router, groups, kinds, sources, install, digest):
 
     first_lead = router['lead'][0]
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
-    names = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
-    credits = ', '.join(names[:-1]) + ' and ' + names[-1]
+    palette_links = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
+    credits = ', '.join(palette_links[:-1]) + ' and ' + palette_links[-1]
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
     page = f"""<!doctype html>
