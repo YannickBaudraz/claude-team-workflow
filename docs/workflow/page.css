@@ -241,6 +241,14 @@ a{color:inherit;text-underline-offset:.2em}
 .toggle:hover::before{background:var(--ink)}
 .toggle:hover .name{text-decoration:underline;text-underline-offset:.2em}
 .group .toggle .role{padding-left:60px}
+/* Where the role label shows, a step's heading is two lines, name over role: the badge
+   grows to span both, with the chevron centred beside it. */
+#by-step:not([data-by="role"]) .group h4:not(:has(.toggle)),#by-step:not([data-by="role"]) .group .toggle{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
+#by-step:not([data-by="role"]) .group h4:not(:has(.toggle)){grid-template-columns:auto minmax(0,1fr)}
+#by-step:not([data-by="role"]) .group .toggle::before,#by-step:not([data-by="role"]) .group h4 .num{grid-row:1 / span 2}
+#by-step:not([data-by="role"]) .group h4 .num{width:40px;height:40px;font-size:.9375rem;border-radius:8px}
+#by-step:not([data-by="role"]) .group h4 .name{align-self:end;line-height:1.2}
+#by-step:not([data-by="role"]) .group h4 .role{padding-left:0;align-self:start}
 .group-body > ul{list-style:none;margin:0;padding:3px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:16px 32px;align-items:start}
 .group li.also{display:none}
 .group.closed .group-body > ul{display:flex;flex-wrap:wrap;gap:0 22px;padding-top:0}
