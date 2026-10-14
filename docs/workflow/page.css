@@ -13,11 +13,15 @@
   --arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h15M13 5.5l6.5 6.5-6.5 6.5'/%3E%3C/svg%3E");
   --sun:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E");
   --moon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/%3E%3C/svg%3E");
+  --check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --system:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }
 /* The theme follows the system unless the toggle in the bar pins one (data-theme on html). */
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ /* DARK_TOKENS */ color-scheme:dark; } }
 :root[data-theme="dark"]{ /* DARK_TOKENS */ color-scheme:dark; }
 :root[data-theme="light"]{ color-scheme:light; }
+/* The other palettes, picked in the appearance menu (data-palette on html), and every
+   palette's swatch in that menu; page.py writes them from config.PALETTES. */
+/* PALETTES */
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:calc(var(--bar) + 16px)}
 body{margin:0;overflow-x:clip;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.55}
@@ -53,8 +57,37 @@ a{color:inherit;text-underline-offset:.2em}
 .bar:not(.scrolled) .home{display:none}
 .bar:not(.scrolled) li:nth-child(2) a{margin-left:-12px}
 .bar .theme-li{margin-left:auto}
-.theme{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
-.theme:hover{color:var(--ink);background:var(--paper)}
+/* Appearance: the button shows the mode and opens the menu; its chevron says it is a menu. */
+.theme{display:flex;align-items:center;gap:2px;height:36px;padding:0 5px 0 8px;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.theme:hover,.theme.open{color:var(--ink);background:var(--paper)}
+.theme .chev{width:12px;height:12px;background:currentColor;-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat}
+/* The menu: a popover in the top layer, placed under its button by page.js. Mode is a
+   segmented switch like the skills list's Group by; each palette is a row with a swatch
+   drawn in its own colours, on the side the page shows: paper, a card with a line of text,
+   and the four role colours. */
+.appearance{position:fixed;inset:auto;margin:0;width:min(264px,calc(100vw - 32px));padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--surface);color:var(--ink);font-size:.875rem;box-shadow:0 18px 40px -18px rgb(0 0 0 / .45),0 2px 6px -2px rgb(0 0 0 / .12);opacity:0;translate:0 -4px}
+.appearance:popover-open{display:grid;gap:16px;opacity:1;translate:0 0}
+.appearance fieldset{border:0;margin:0;padding:0;min-width:0}
+.appearance legend{padding:0;margin-bottom:8px;font-weight:600;font-size:.8125rem;color:var(--muted)}
+.appearance input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.appearance .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.appearance .seg label{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px;cursor:pointer;font-weight:600;color:var(--muted)}
+.appearance .seg label + label{border-left:1px solid var(--rule)}
+.appearance .seg label:hover{color:var(--ink)}
+.appearance .seg label:has(:checked){color:var(--ink);box-shadow:inset 0 -3px 0 var(--ink)}
+.appearance .seg label:has(:focus-visible){outline:2px solid var(--dev);outline-offset:-4px}
+.mi{flex:none;width:15px;height:15px;background:currentColor;-webkit-mask:var(--system) center/contain no-repeat;mask:var(--system) center/contain no-repeat}
+.mi.light{-webkit-mask-image:var(--sun);mask-image:var(--sun)}
+.mi.dark{-webkit-mask-image:var(--moon);mask-image:var(--moon)}
+.palettes{display:grid;gap:2px}
+.palettes label{position:relative;display:flex;align-items:center;gap:12px;padding:6px 8px;margin-inline:-8px;border-radius:8px;cursor:pointer;font-weight:600}
+.palettes label:hover,.palettes label:has(:checked){background:var(--paper)}
+.palettes label:has(:checked)::after{content:"";margin-left:auto;width:16px;height:16px;background:var(--ink);-webkit-mask:var(--check) center/contain no-repeat;mask:var(--check) center/contain no-repeat}
+.palettes label:has(:focus-visible){outline:2px solid var(--dev);outline-offset:-2px}
+.swatch{position:relative;flex:none;display:flex;align-items:flex-end;gap:3px;width:46px;height:30px;padding:0 6px 5px;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+.swatch::before{content:"";position:absolute;left:5px;right:5px;top:4px;height:11px;border:1px solid var(--rule);border-radius:3px;background:linear-gradient(var(--ink),var(--ink)) 4px 50%/55% 2px no-repeat,var(--surface)}
+.swatch i{width:6px;height:6px;border-radius:50%;background:var(--product)}
+.swatch i:nth-child(2){background:var(--lead)} .swatch i:nth-child(3){background:var(--dev)} .swatch i:nth-child(4){background:var(--review)}
 .theme i{width:19px;height:19px;background:currentColor;-webkit-mask:var(--system) center/contain no-repeat;mask:var(--system) center/contain no-repeat}
 .theme[data-mode="light"] i{-webkit-mask-image:var(--sun);mask-image:var(--sun)}
 .theme[data-mode="dark"] i{-webkit-mask-image:var(--moon);mask-image:var(--moon)}
@@ -253,6 +286,11 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 /* Side by side, a role label may wrap to two lines: every head keeps room for two,
    so the titles of a row line up. */
 @media (min-width: 1101px){ .joint.phone{display:none} .card-head{min-height:1.875rem} }
-@media (max-width: 420px){ .cmd-text code{white-space:normal;overflow-wrap:anywhere} .bar a{padding-inline:8px} .bar li:nth-child(2) a{margin-left:-8px} .router .cmd,.install .cmd{font-size:1.5rem} }
+/* A 360px phone fits the four links, the appearance button and GitHub only with tighter
+   padding; the first link's text stays on the page's left edge, scrolled or not (these
+   outrank the rules above). */
+@media (max-width: 420px){ .cmd-text code{white-space:normal;overflow-wrap:anywhere} .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
 @media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} }
-@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s} }
+@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
+  .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}
+  @starting-style{ .appearance:popover-open{opacity:0;translate:0 -4px} } }

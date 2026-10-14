@@ -36,7 +36,7 @@ A router, not a skill pack: `/ask-team` never runs a step itself, it prints the 
 - The page is generated: `docs/build-workflow.py` builds it from `skills/ask-team/SKILL.md` and `skills/ask-team/REGISTRY.md`. Content changes go in those two files, never in the page. `docs/build-workflow.py` is only the command line; the code that makes the page is in `docs/workflow/`, where `config.py` holds the page's own frame (title, lede, short glossary).
 - Published to GitHub Pages by `.github/workflows/pages.yml` on every push to `main`. `docs/workflow.html` is a gitignored build output.
 - No visitor's browser calls a third party: fonts are self-hosted from `docs/fonts/` under the SIL Open Font License, licences beside them.
-- Light and dark themes both supported: the page follows the system unless the visitor picks one with the toggle in the bar, which it remembers.
+- Light and dark themes both supported, in four palettes (Reader, the page's own; Cool; Catppuccin; Nord): the page follows the system in Reader unless the visitor picks a mode or a palette in the bar's appearance menu, which it remembers. Every palette keeps its text at 4.5:1 or better; the build checks it.
 - English only.
 - Terminology from the sources: epic, PRD, ADR, spike, Fog, tracer-bullet ticket, blocking edge, CI green, frontier.
 

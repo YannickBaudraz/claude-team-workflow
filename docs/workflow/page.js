@@ -1,22 +1,54 @@
 const bar = document.querySelector('.bar');
 const links = [...bar.querySelectorAll('a[href^="#"]:not([href="#top"])')];
 const targets = links.map(link => document.querySelector(link.getAttribute('href')));
-// Theme: system, light or dark, in that cycle. The head script already applied a pinned one.
-const themeBtn = document.querySelector('.theme'), modes = ['system', 'light', 'dark'];
-function setTheme(mode) {
-  const root = document.documentElement, next = modes[(modes.indexOf(mode) + 1) % 3];
-  if (mode === 'system') delete root.dataset.theme; else root.dataset.theme = mode;
+// Appearance: the mode (system, light or dark) and the palette, picked in the bar's menu.
+// The head script already applied pinned ones; this keeps the button, the radios, the
+// browser's theme colour and the remembered choices in step. Without the popover API the
+// button stays hidden and the page follows the system in Reader.
+const root = document.documentElement, papers = @PAPERS@;
+const themeBtn = document.querySelector('.theme'), panel = document.querySelector('.appearance');
+function paint() {
+  const mode = root.dataset.theme || 'system', palette = root.dataset.palette || 'reader';
   document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.content =
-    (mode === 'system' ? meta.media.includes('dark') : mode === 'dark') ? '@DARK@' : '@LIGHT@');
+    papers[palette][(mode === 'system' ? meta.media.includes('dark') : mode === 'dark') ? 1 : 0]);
+  const modeInput = panel.querySelector(`[name="mode"][value="${mode}"]`);
+  const paletteInput = panel.querySelector(`[name="palette"][value="${palette}"]`);
+  modeInput.checked = paletteInput.checked = true;
   themeBtn.dataset.mode = mode;
-  const label = `Theme: ${mode === 'system' ? 'match system' : mode}. Switch to ${next === 'system' ? 'match system' : next}`;
+  const label = `Appearance: ${paletteInput.parentElement.textContent}, ${mode === 'system' ? 'matching the system' : mode}`;
   themeBtn.setAttribute('aria-label', label);
   themeBtn.title = label;
-  try { mode === 'system' ? localStorage.removeItem('theme') : localStorage.setItem('theme', mode); } catch {}
 }
-setTheme(document.documentElement.dataset.theme || 'system');
-themeBtn.addEventListener('click', () => setTheme(modes[(modes.indexOf(themeBtn.dataset.mode) + 1) % 3]));
-themeBtn.hidden = false;
+function remember(key, value, fallback) {
+  try { value === fallback ? localStorage.removeItem(key) : localStorage.setItem(key, value); } catch {}
+}
+function setTheme(mode) {
+  if (mode === 'system') delete root.dataset.theme; else root.dataset.theme = mode;
+  remember('theme', mode, 'system');
+  paint();
+}
+function setPalette(palette) {
+  if (palette === 'reader') delete root.dataset.palette; else root.dataset.palette = palette;
+  remember('palette', palette, 'reader');
+  paint();
+}
+panel.addEventListener('change', e => (e.target.name === 'mode' ? setTheme : setPalette)(e.target.value));
+// The panel sits in the top layer: it opens under its button, right edges aligned, and
+// never closer than 16px to either side of the window; its width is page.css's
+// min(264px, 100vw - 32px). A phone's address bar showing or hiding resizes the window,
+// so it follows rather than closes.
+function place() {
+  const box = themeBtn.getBoundingClientRect(), width = root.clientWidth, panelWidth = Math.min(264, width - 32);
+  panel.style.top = `${box.bottom + 8}px`;
+  panel.style.right = `${Math.min(Math.max(16, width - box.right), width - 16 - panelWidth)}px`;
+}
+panel.addEventListener('beforetoggle', e => {
+  themeBtn.classList.toggle('open', e.newState === 'open');
+  if (e.newState === 'open') place();
+});
+addEventListener('resize', () => { if (panel.matches(':popover-open')) place(); });
+paint();
+themeBtn.hidden = !Object.hasOwn(HTMLElement.prototype, 'popover');
 
 const tools = document.querySelector('.skill-tools'), rest = document.createElement('div');
 tools.before(rest);  // marks where the tools sit when not stuck
