@@ -231,9 +231,6 @@ a{color:inherit;text-underline-offset:.2em}
 .group-head,.group-body{min-width:0}
 .group h4{font-size:1.125rem}
 .group h4,.toggle{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:28px}
-/* The role label goes on its own line, under the name: past the badge (24 + 10), and once
-   the script adds the toggle's chevron, past that too (16 + 10 more). */
-.group h4 .role{flex-basis:100%;order:3;padding-left:34px}
 #by-step[data-by="role"] .group h4 .role{display:none}
 .group .num{width:24px;height:24px;font-size:.75rem;border-radius:5px}
 /* The script turns each heading into the row's toggle, its chevron first. */
@@ -242,7 +239,6 @@ a{color:inherit;text-underline-offset:.2em}
 .toggle[aria-expanded="true"]::before{transform:none}
 .toggle:hover::before{background:var(--ink)}
 .toggle:hover .name{text-decoration:underline;text-underline-offset:.2em}
-.group .toggle .role{padding-left:60px}
 /* Where the role label shows, a step's heading is two lines, name over role: the badge
    grows to span both, with the chevron centred beside it. */
 #by-step:not([data-by="role"]) .group h4:not(:has(.toggle)),#by-step:not([data-by="role"]) .group .toggle{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
