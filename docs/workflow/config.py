@@ -43,10 +43,11 @@ DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', m
 # side: (key, name, light, dark). Reader is the page's own, the one a first visit gets.
 # Cool is Reader moved toward blue-grey; its light side takes the same OKLab step, colour by
 # colour, as its dark side, with the change in lightness mirrored; the white card, which
-# cannot get lighter, takes the step at the highest lightness that holds it. Catppuccin (Latte, Mocha)
-# and Nord (Snow Storm, Polar Night) keep their authors' published colours, except the text
-# colours that read under 4.5:1 on paper or cards: only their lightness was moved, until
-# they pass. Every text colour is checked at 4.5:1 on each build.
+# cannot get lighter, takes the step at the highest lightness that holds it.
+# Catppuccin (Latte, Mocha), Tokyo Night (Day, Night) and Nord (Snow Storm, Polar Night)
+# keep their authors' published colours, except Tokyo Night Day's blue text (see below)
+# and the text colours that read under 4.5:1 on paper or cards: only their lightness was
+# moved, until they pass. Every text colour is checked at 4.5:1 on each build.
 PALETTES = [
     ('reader', 'Reader', LIGHT, DARK),
     ('cool', 'Cool',
@@ -65,6 +66,17 @@ PALETTES = [
      dict(paper='#181825', surface='#1E1E2E', tray='#11111B', ink='#CDD6F4', muted='#A6ADC8',
           rule='#313244', product='#FAB387', lead='#94E2D5', dev='#89B4FA',
           review='#CBA6F7', you='#F38BA8', on_role='#11111B')),
+    # Day: bg, bg_dark, bg_highlight; Night: bg, Storm's bg_dark, bg_dark, fg_gutter, fg,
+    # fg_dark. Roles: yellow, teal or green1, blue, magenta, red. Day's own text is blue
+    # (#3760BF); here it is Tokyo Night Light's dark slate, muted one fifth of the way to
+    # the cards.
+    ('tokyo', 'Tokyo Night',
+     dict(paper='#E1E2E7', surface='#E9E9EC', tray='#D5D6DB', ink='#343B58', muted='#585E76',
+          rule='#C4C8DA', product='#7E5F31', lead='#03725E', dev='#0761CA',
+          review='#823AD7', you='#C9044C', on_role='#FFFFFF'),
+     dict(paper='#1A1B26', surface='#1F2335', tray='#16161E', ink='#C0CAF5', muted='#A9B1D6',
+          rule='#3B4261', product='#E0AF68', lead='#73DACA', dev='#7AA2F7',
+          review='#BB9AF7', you='#F7768E', on_role='#16161E')),
     # Snow Storm: nord5, nord6, nord4, nord0, nord3; Polar Night: nord0, nord1, nord3, nord4.
     # Roles: nord13 yellow, nord7 frost, nord10 or nord9 blue, nord15 purple, nord11 red.
     ('nord', 'Nord',
@@ -75,7 +87,9 @@ PALETTES = [
           rule='#4C566A', product='#EBCB8B', lead='#8FBCBB', dev='#90B1D1',
           review='#C9A2C2', you='#F6929A', on_role='#272C36')),
 ]
-PALETTE_SOURCES = [('Catppuccin', 'https://catppuccin.com/palette/'), ('Nord', 'https://www.nordtheme.com/docs/colors-and-palettes')]
+PALETTE_SOURCES = [('Catppuccin', 'https://catppuccin.com/palette/'),
+                   ('Tokyo Night', 'https://github.com/folke/tokyonight.nvim'),
+                   ('Nord', 'https://www.nordtheme.com/docs/colors-and-palettes')]
 
 # One variable woff2 per family, latin subset: (family, file, weight range).
 FACES = [('Bricolage Grotesque', 'bricolage-grotesque.woff2', '600 700'),

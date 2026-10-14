@@ -240,7 +240,8 @@ def build(router, groups, kinds, sources, install, digest):
 
     first_lead = router['lead'][0]
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
-    credits = ' and '.join(f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES)
+    names = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
+    credits = ', '.join(names[:-1]) + ' and ' + names[-1]
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
     page = f"""<!doctype html>
@@ -335,7 +336,7 @@ def build(router, groups, kinds, sources, install, digest):
 <p class="then">Then, in your project, start Claude Code and run</p>
 <p class="cmd">{esc(start)}</p>
 <p class="when">It tells you the next command, the session to run it in, and what you approve first.</p>
-<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours moved to read at 4.5:1 or better.</p>
+<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
 </main>
 <a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>
