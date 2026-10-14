@@ -73,8 +73,10 @@ a{color:inherit;text-underline-offset:.2em}
 .appearance fieldset{border:0;margin:0;padding:0;min-width:0}
 .appearance legend{padding:0;margin-bottom:8px;font-weight:600;font-size:.8125rem;color:var(--muted)}
 .appearance input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.appearance .seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
-.appearance .seg label{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px;cursor:pointer;font-weight:600;color:var(--muted)}
+/* Each option is as wide as its content plus an equal share of what is left, so all three
+   have the same room around their label, whatever its length. */
+.appearance .seg{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.appearance .seg label{position:relative;display:flex;align-items:center;flex:1 1 auto;justify-content:center;gap:5px;padding:7px 8px;cursor:pointer;font-weight:600;color:var(--muted)}
 .appearance .seg label + label{border-left:1px solid var(--rule)}
 .appearance .seg label:hover{color:var(--ink)}
 .appearance .seg label:has(:checked){color:var(--ink);box-shadow:inset 0 -3px 0 var(--ink)}
