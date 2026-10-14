@@ -48,7 +48,7 @@ panel.addEventListener('beforetoggle', e => {
 });
 addEventListener('resize', () => { if (panel.matches(':popover-open')) place(); });
 paint();
-themeBtn.hidden = !Object.hasOwn(HTMLElement.prototype, 'popover');
+themeBtn.hidden = panel.hidden = !('popover' in HTMLElement.prototype);
 
 const tools = document.querySelector('.skill-tools'), rest = document.createElement('div');
 tools.before(rest);  // marks where the tools sit when not stuck

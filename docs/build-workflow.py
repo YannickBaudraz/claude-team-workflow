@@ -18,6 +18,7 @@ This file is the command line; the page is made in docs/workflow/:
                  role names, palettes, fonts
     sources.py   reading SKILL.md, REGISTRY.md and the README's Install section
     render.py    the drawing helpers: voice, inline markdown, cards, arrows, links
+    palettes.py  the palettes' CSS, and the check that their text reads at 4.5:1
     page.py      assembling the HTML
     page.css     the stylesheet; page.py fills in the palettes and the font faces
     theme.js     runs in the head: applies a pinned mode and palette before the page paints
@@ -37,7 +38,8 @@ import shutil
 import sys
 
 from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, SKILL
-from workflow.page import build, palette_problems
+from workflow.page import build
+from workflow.palettes import palette_problems
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
 
 

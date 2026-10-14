@@ -46,7 +46,7 @@ DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', m
 # cannot get lighter, takes the step at the highest lightness that holds it.
 # Catppuccin (Latte, Mocha), Tokyo Night (Day, Night) and Nord (Snow Storm, Polar Night)
 # keep their authors' published colours, except Tokyo Night Day's blue text (see below)
-# and the text colours that read under 4.5:1 on paper or cards: only their lightness was
+# and the text colours that read under 4.5:1 on paper, cards or tray: only their lightness was
 # moved, until they pass. Every text colour is checked at 4.5:1 on each build.
 PALETTES = [
     ('reader', 'Reader', LIGHT, DARK),
@@ -60,7 +60,7 @@ PALETTES = [
     # Latte: mantle, base, crust, text, subtext0, surface0; yellow, teal, blue, mauve, red.
     # Mocha: the same roles, peach for product.
     ('catppuccin', 'Catppuccin',
-     dict(paper='#E6E9EF', surface='#EFF1F5', tray='#DCE0E8', ink='#4C4F69', muted='#65687E',
+     dict(paper='#E6E9EF', surface='#EFF1F5', tray='#DCE0E8', ink='#4C4F69', muted='#5E6175',
           rule='#CCD0DA', product='#965C04', lead='#04757B', dev='#135CEA',
           review='#8737ED', you='#D00A38', on_role='#FFFFFF'),
      dict(paper='#181825', surface='#1E1E2E', tray='#11111B', ink='#CDD6F4', muted='#A6ADC8',
@@ -71,7 +71,7 @@ PALETTES = [
     # (#3760BF); here it is Tokyo Night Light's dark slate, muted one fifth of the way to
     # the cards.
     ('tokyo', 'Tokyo Night',
-     dict(paper='#E1E2E7', surface='#E9E9EC', tray='#D5D6DB', ink='#343B58', muted='#585E76',
+     dict(paper='#E1E2E7', surface='#E9E9EC', tray='#D5D6DB', ink='#343B58', muted='#565C74',
           rule='#C4C8DA', product='#7E5F31', lead='#03725E', dev='#0761CA',
           review='#823AD7', you='#C9044C', on_role='#FFFFFF'),
      dict(paper='#1A1B26', surface='#1F2335', tray='#16161E', ink='#C0CAF5', muted='#A9B1D6',
