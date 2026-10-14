@@ -49,7 +49,7 @@ DARK = dict(paper='#18191B', surface='#212225', tray='#141517', ink='#E8E9EB', m
 PALETTES = [
     ('reader', 'Reader', LIGHT, DARK),
     ('cool', 'Cool',
-     dict(paper='#F0F5FB', surface='#FFFFFF', tray='#E7EDF3', ink='#15202D', muted='#546275',
+     dict(paper='#EDF2F8', surface='#F8FAFD', tray='#E4EAF1', ink='#15202D', muted='#546275',
           rule='#CDD9E6', product='#94600F', lead='#0E7A70', dev='#2C5BC8',
           review='#7445C2', you='#C02E48', on_role='#FFFFFF'),
      dict(paper='#16191D', surface='#1E2227', tray='#121417', ink='#E6E9EC', muted='#A3AAB2',
