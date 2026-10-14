@@ -229,6 +229,8 @@ a{color:inherit;text-underline-offset:.2em}
 .group-head,.group-body{min-width:0}
 .group h4{font-size:1.125rem}
 .group h4,.toggle{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:28px}
+/* The role label goes on its own line, under the name: past the badge (24 + 10), and once
+   the script adds the toggle's chevron, past that too (16 + 10 more). */
 .group h4 .role{flex-basis:100%;order:3;padding-left:34px}
 #by-step[data-by="role"] .group h4 .role{display:none}
 .group .num{width:24px;height:24px;font-size:.75rem;border-radius:5px}
@@ -238,7 +240,7 @@ a{color:inherit;text-underline-offset:.2em}
 .toggle[aria-expanded="true"]::before{transform:none}
 .toggle:hover::before{background:var(--ink)}
 .toggle:hover .name{text-decoration:underline;text-underline-offset:.2em}
-.toggle .role{padding-left:60px}
+.group .toggle .role{padding-left:60px}
 .group-body > ul{list-style:none;margin:0;padding:3px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:16px 32px;align-items:start}
 .group li.also{display:none}
 .group.closed .group-body > ul{display:flex;flex-wrap:wrap;gap:0 22px;padding-top:0}
@@ -272,7 +274,7 @@ a.src:hover{color:var(--ink);text-decoration-color:currentColor}
 .install p.cmd,.install p.cmd + p.when{margin-top:-8px}
 pre.shell{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;overflow-x:auto;max-width:100%}
 pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
-.foot{color:var(--muted);font-size:.875rem;margin:16px 0 0;padding-top:16px;padding-right:max(0px,calc(100% - 70ch));border-top:1px solid var(--rule)}
+.foot{color:var(--muted);font-size:.875rem;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--rule)}
 .foot code{font-size:.8125rem;white-space:normal}
 .p-product{--c:var(--product)} .p-lead{--c:var(--lead)} .p-dev{--c:var(--dev)} .p-review{--c:var(--review)} .p-you{--c:var(--you)}
 @media (max-width: 1100px){
