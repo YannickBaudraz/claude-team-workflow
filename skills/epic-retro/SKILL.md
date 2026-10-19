@@ -34,7 +34,7 @@ Done when each angle above has its findings with sources, or an explicit "nothin
 
 ## 3. Verdict
 
-Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm.
+Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm. Once they do, close the epic on the tracker, and its parent issue too when this epic was the last one open under it.
 
 ## 4. Lessons
 
