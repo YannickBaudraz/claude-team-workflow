@@ -12,6 +12,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 |---|---|
 | `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached), `scripts/check-registry.py`, `templates/` |
 | `skills/project-setup/` | Decides a project's tools and where each kind of document lives, writes the project map, places the conventions |
+| `skills/change-request/` | The way in for a feature, improvement or bug fix in an existing project: diagnose or grill it, size it, write it as one issue |
 | `skills/build-ticket/` | One ticket: branch, test-first build, pull request |
 | `skills/epic-retro/` | Retrospective of a finished epic from the evidence it left |
 | `install/community-skills.txt` | The community skills the workflow installs |

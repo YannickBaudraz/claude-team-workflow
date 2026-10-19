@@ -25,7 +25,7 @@ One row per kind of document this project produces. When a new kind appears, dec
 | Design docs | | | | |
 | ADRs | | | | |
 | PRDs | | | | |
-| Stories and tickets | issue tracker | | | |
+| Epics, stories and tickets | issue tracker | | | |
 | Definition of done | | | | |
 | Coding standards | repo: `CODING_STANDARDS.md` | | developers | The reviewer reads it with the diff. |
 | Research notes | | | | |
