@@ -15,6 +15,8 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `skills/change-request/` | The way in for a feature, improvement or bug fix in an existing project: diagnose or grill it, size it, write it as one issue |
 | `skills/build-ticket/` | One ticket: branch, test-first build, pull request |
 | `skills/epic-retro/` | Retrospective of a finished epic from the evidence it left |
+| `skills/pr-screenshots/` | Before and after screenshots of a visible change, attached to the pull request body with gh |
+| `skills/suggest-title/` | A name for the current session you will recognise in /resume, with the /rename line to paste |
 | `install/community-skills.txt` | The community skills the workflow installs |
 | `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace |
 | `install.sh` | Installs all of the above on a machine |
