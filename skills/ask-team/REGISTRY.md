@@ -60,7 +60,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `/security-review` | Claude Code | built-in | 11 Review |  |  | Claude Code's built-in security review of the pending changes. |
 | `receiving-code-review` | `obra/superpowers` | auto | 11 Review, acting on feedback |  |  | How to act on review feedback: check each point before changing code, never agree blindly. |
 | `/plannotator-review` | `backnotprop/plannotator` | typed | 11 Review, the user reviews |  | `<PR or worktree>` | Opens the diff in your browser to annotate; Claude then works through your notes. |
-| `/acceptance-review` | `citypaul/.dotfiles` | hidden | 12 Approval |  | `<PR> against <ticket>`. The ticket is the authoritative contract. | A read-only, criterion-by-criterion proof that a PR meets its ticket or spec. |
+| `/acceptance-review` | `citypaul/.dotfiles` | hidden | 12 Approval |  | `<PR> against <ticket>`. The ticket is the authoritative contract; with no ticket, the base branch's version of the doc the PR changes. | A read-only, criterion-by-criterion proof that a PR meets its ticket or spec. |
 | `/ci-cd-and-automation` | `addyosmani/agent-skills` | hidden | 2 Setup, once per project |  | For the code host in the project map. Show each commit and wait for approval. | Sets up CI and its quality gates. |
 | `/retro` | `mattpocock/skills` | typed | 13 Retro | writing-for-agents | The sessions of the epic just closed. | Reviews coding sessions and suggests changes to Claude's setup: navigation pointers, automated checks, coding standards. |
 | `writing-for-agents` | `mattpocock/skills` | auto | 13 Retro, under /retro; editing skills or CLAUDE.md |  |  | The writing style for skills, AGENTS.md and CLAUDE.md. |
