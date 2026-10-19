@@ -13,7 +13,7 @@ One ticket, one branch, one pull request: the developer's role on a team. Review
 
 - Read the project map (the repo's `CLAUDE.md` or `AGENTS.md` points to it) and the tracker doc, `docs/agents/issue-tracker.md`.
 - Fetch the ticket: its body, acceptance criteria, comments, parent story or epic, and blockers. State its title to the user. When a blocker is still open, stop and say which.
-- Read `GLOSSARY.md`, the ADRs touching this area, `CODING_STANDARDS.md` and the definition of done.
+- Read `GLOSSARY.md`, the ADRs touching this area, and the coding standards and definition of done where the project map puts them.
 
 Done when you can list every acceptance criterion and the files and seams it touches.
 
