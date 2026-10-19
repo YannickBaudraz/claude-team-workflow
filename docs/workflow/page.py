@@ -14,6 +14,9 @@ from .render import (AI, answer_html, arr, card_html, esc, flow_html, link, link
                      slug, voice)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# Links that leave the page open in a new tab, and say so to a screen reader.
+NEW_TAB = ' target="_blank" rel="noopener"'
+NEW_TAB_NOTE = '<span class="vh"> (opens in a new tab)</span>'
 
 
 def asset(name):
@@ -95,8 +98,8 @@ def build(router, groups, kinds, sources, install, digest, version=None):
         """Where a skill comes from: its repository, linked, or Claude Code for a built-in."""
         src = sources.get(name, '')
         if re.fullmatch(r'[\w.-]+/[\w.-]+', src):
-            return (f'<a class="src" href="https://github.com/{esc(src)}">{esc(src)}'
-                    f'<span class="vh"> (source repository)</span></a>')
+            return (f'<a class="src" href="https://github.com/{esc(src)}"{NEW_TAB}>{esc(src)}'
+                    f'<span class="vh"> (source repository, opens in a new tab)</span></a>')
         return f'<span class="src">{esc(src)}</span>' if src else ''
 
     # Every skill in the registry, step by step, then the ones outside the flow; a skill
@@ -185,14 +188,14 @@ def build(router, groups, kinds, sources, install, digest, version=None):
             f'<pre class="shell"><code>{commands}</code></pre>'
             + (f'<p class="when">{md(install["after"])}</p>' if install['after'] else ''))
     else:
-        install_html = f'<p>Install it from <a href="{REPO_URL}">the repository</a>; its README says how.</p>'
+        install_html = f'<p>Install it from <a href="{REPO_URL}"{NEW_TAB}>the repository{NEW_TAB_NOTE}</a>; its README says how.</p>'
 
     first_lead = router['lead'][0]
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
-    palette_links = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
+    palette_links = [f'<a href="{url}"{NEW_TAB}>{esc(name)}{NEW_TAB_NOTE}</a>' for name, url in PALETTE_SOURCES]
     credits = ', '.join(palette_links[:-1]) + ' and ' + palette_links[-1]
     # The commit the page was built from, linked, and its date.
-    built = (f'<p class="version">Version <a href="{REPO_URL}/commit/{version["full"]}"><code>{version["short"]}</code></a>'
+    built = (f'<p class="version">Version <a href="{REPO_URL}/commit/{version["full"]}"{NEW_TAB}><code>{version["short"]}</code>{NEW_TAB_NOTE}</a>'
              f' · <time datetime="{version["date"]}">{version["date"]}</time>'
              + (' · with local changes' if version['changed'] else '') + '</p>') if version else ''
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
@@ -223,7 +226,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <li class="home"><a href="#top">{esc(TITLE)}</a></li>
 <li><a href="#flow">Flow</a></li><li><a href="#rules">Rules</a></li><li><a href="#skills">Skills</a></li><li><a href="#install">Install</a></li>
 {appearance_html()}
-<li class="out-link"><a href="{REPO_URL}" target="_blank" rel="noopener">GitHub<i class="ai ext"></i><span class="vh"> (opens in a new tab)</span></a></li>
+<li class="out-link"><a href="{REPO_URL}"{NEW_TAB}>GitHub<i class="ai ext"></i>{NEW_TAB_NOTE}</a></li>
 </ul></nav></header>
 <main class="wrap" id="top">
 <header>
@@ -290,7 +293,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <p class="then">Then, in your project, start Claude Code and run</p>
 <p class="cmd">{esc(start)}</p>
 <p class="when">It tells you the next command, the session to run it in, and what you approve first.</p>
-<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"><code>docs/build-workflow.py</code></a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
+<p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"{NEW_TAB}><code>docs/build-workflow.py</code>{NEW_TAB_NOTE}</a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
 </main>
 <a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>
