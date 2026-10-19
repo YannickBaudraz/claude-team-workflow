@@ -31,10 +31,10 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 | 9 | Tickets | `/to-tickets <epic or story>` | Tickets with blocking edges, approved before publishing. |
 | 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/pair <dials>` | PR open with the template filled. |
 | 11 | Peer review, fresh session | `/code-review-and-quality <PR>` and `/security-review`. When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
-| 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green | The user merges. |
+| 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green | The user merges: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>`. |
 | 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. |
 
-Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
+Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. With no ticket, the contract is the base branch's version of the doc the PR changes, and each line the PR rewrites in it goes to the user to approve before the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
 
 ## Ways in
 

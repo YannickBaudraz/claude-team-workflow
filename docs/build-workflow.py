@@ -28,6 +28,8 @@ The page serves its own fonts from docs/fonts (SIL Open Font License, the licenc
 sit beside them), copied next to the page when it is written elsewhere, so no
 visitor's browser asks a third party for anything.
 
+docs/shoot.py screenshots or measures the built page in headless Chrome.
+
 GitHub Actions (.github/workflows/pages.yml) builds and publishes the page to
 GitHub Pages on every push to main. skills/ask-team/scripts/check-registry.py
 runs the --check.
@@ -37,9 +39,12 @@ import os
 import shutil
 import sys
 
+# A planted change saved within the same second can otherwise run the old cached module.
+sys.dont_write_bytecode = True
+
 from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, SKILL
 from workflow.page import build
-from workflow.palettes import palette_problems
+from workflow.palettes import palette_problems, unchecked_backgrounds
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
 
 
@@ -53,6 +58,12 @@ def main():
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as error:
         print(f'workflow page: cannot read the sources: {error}')
+        return 1
+    unchecked = unchecked_backgrounds()
+    if unchecked:
+        print('workflow page: page.css paints backgrounds the 4.5:1 check does not cover: '
+              + ', '.join(f'--{name}' for name in unchecked)
+              + '\n  add each to BACKGROUNDS or NO_TEXT_ON in docs/workflow/palettes.py')
         return 1
     unreadable = palette_problems()
     if unreadable:

@@ -1,5 +1,7 @@
 """The palettes: their CSS, and the build's check that their text reads at 4.5:1."""
 import json
+import os
+import re
 
 from .config import PALETTES
 
@@ -8,6 +10,13 @@ TEXT = ['ink', 'muted', 'product', 'lead', 'dev', 'review', 'you']
 # What each text colour sits on: the role colours on paper and cards; ink and muted also on
 # the tray, which the skills toolbar shows through once it sticks.
 BACKGROUNDS = {t: ('paper', 'surface', 'tray') if t in ('ink', 'muted') else ('paper', 'surface') for t in TEXT}
+# Colours page.css paints as a background with no text of their own on them, or whose text
+# pair the check already holds the other way round.
+NO_TEXT_ON = {
+    'muted': 'icons and dots only',
+    'ink': 'icons, rules and the skip link, which is paper on ink: ink on paper, checked',
+    'c': "a role's colour, checked with the step numbers on it",
+}
 
 
 def tokens(palette):
@@ -57,3 +66,13 @@ def palette_problems():
                 if contrast(p['on_role'], p[t]) < 4.5:
                     problems.append(f'{name} {side}: on_role {p["on_role"]} on {t} {p[t]} is {contrast(p["on_role"], p[t]):.2f}:1')
     return problems
+
+
+def unchecked_backgrounds():
+    """Every colour page.css paints as a background that the 4.5:1 check neither covers nor
+    lists in NO_TEXT_ON, so a new background can't skip the check unseen."""
+    css = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'page.css'), encoding='utf-8').read()
+    painted = {name for rule in re.findall(r'background[a-z-]*:([^;}]*)', css)
+               for name in re.findall(r'var\(--([a-z-]+)\)', rule)}
+    checked = {bg for bgs in BACKGROUNDS.values() for bg in bgs} | set(TEXT[2:]) | set(NO_TEXT_ON)
+    return sorted(painted - checked)

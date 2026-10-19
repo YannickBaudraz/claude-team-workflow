@@ -5,3 +5,8 @@ _site/
 
 # Design critiques from the impeccable skill, kept locally.
 .impeccable/
+
+# Track the project's skills; the rest of .claude (worktrees, settings) stays local.
+!.claude/
+.claude/*
+!.claude/skills/
