@@ -28,6 +28,8 @@ The page serves its own fonts from docs/fonts (SIL Open Font License, the licenc
 sit beside them), copied next to the page when it is written elsewhere, so no
 visitor's browser asks a third party for anything.
 
+docs/shoot.py screenshots or measures the built page in headless Chrome.
+
 GitHub Actions (.github/workflows/pages.yml) builds and publishes the page to
 GitHub Pages on every push to main. skills/ask-team/scripts/check-registry.py
 runs the --check.
