@@ -9,7 +9,8 @@
 It builds the page from --root (this checkout by default) into a temporary folder, then loads
 it in an iframe of the asked size, so any width works, under 500px too. Stored choices are
 set before the page runs (--theme pins a mode, --dark sets the system's), scrolling to --at is
-instant, so the shot never lands mid-scroll, and each run gets a fresh browser profile.
+instant, so the shot never lands mid-scroll, and lands under every bar stuck to the top at that
+point, measured on the page. Each run gets a fresh browser profile.
 
 --measure prints every match of a selector as `selector [index] x y w h` in page pixels, plus
 each --style property computed on it. Chrome must run outside the Claude Code sandbox. CHROME
@@ -37,12 +38,31 @@ for (const [key, value] of Object.entries(o.store)) localStorage.setItem(key, va
 f.onload = () => {
   const d = f.contentDocument, w = f.contentWindow;
   d.documentElement.style.scrollBehavior = 'auto';
-  setTimeout(() => {
-    if (o.at) {
-      const t = d.querySelector(o.at);
-      if (t) w.scrollTo({top: t.getBoundingClientRect().top + w.scrollY - o.offset, behavior: 'instant'});
-      else out.push('no match for --at ' + o.at);
+  // The bars stuck to the top of the window: fixed ones, and sticky ones sitting at their
+  // top offset. Their bottom is where the visible page starts.
+  const covered = () => {
+    let bottom = 0;
+    for (const el of d.body.querySelectorAll('*')) {
+      const cs = w.getComputedStyle(el);
+      if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
+      const r = el.getBoundingClientRect();
+      if (!r.height || cs.visibility === 'hidden' || r.top > w.innerHeight / 2) continue;
+      if (cs.position === 'sticky' && Math.abs(r.top - (parseFloat(cs.top) || 0)) > 1) continue;
+      bottom = Math.max(bottom, r.bottom);
     }
+    return bottom;
+  };
+  // Scrolling can stick or unstick a bar, and the page's scripts react a frame later, so
+  // scroll, wait, and measure again until the bars stop moving.
+  const scroll = (t, cover, tries) => {
+    w.scrollTo({top: t.getBoundingClientRect().top + w.scrollY - cover - o.offset, behavior: 'instant'});
+    setTimeout(() => {
+      const now = covered();
+      if (Math.abs(now - cover) > 1 && tries) scroll(t, now, tries - 1);
+      else report();
+    }, 150);
+  };
+  const report = () => {
     for (const sel of o.measure) {
       const all = d.querySelectorAll(sel);
       if (!all.length) out.push(sel + ' no match');
@@ -53,6 +73,12 @@ f.onload = () => {
       });
     }
     document.getElementById('out').textContent = out.join('\\n') + '\\nDONE';
+  };
+  setTimeout(() => {
+    const t = o.at && d.querySelector(o.at);
+    if (o.at && !t) out.push('no match for --at ' + o.at);
+    else if (t && !t.getClientRects().length) out.push('--at ' + o.at + ' is not shown, so nothing was scrolled');
+    if (t && t.getClientRects().length) scroll(t, covered(), 4); else report();
   }, 300);
 };
 f.src = 'index.html';
@@ -68,8 +94,8 @@ def main():
     ap.add_argument('--theme', choices=['light', 'dark'], help='a pinned mode, as the menu stores it')
     ap.add_argument('--palette', help='a palette key from docs/workflow/config.py, e.g. nord')
     ap.add_argument('--group-by', choices=['role', 'moment', 'kind'], help="the skills list's grouping")
-    ap.add_argument('--at', help='a selector to scroll to, its top just under the bar')
-    ap.add_argument('--offset', type=int, default=70, help='room left above --at for the bar (70)')
+    ap.add_argument('--at', help='a selector to scroll to, its top just under the bars stuck at the top')
+    ap.add_argument('--offset', type=int, default=16, help='room between those bars and --at (16)')
     ap.add_argument('--shot', help='write a PNG screenshot here')
     ap.add_argument('--measure', action='append', default=[], metavar='SELECTOR')
     ap.add_argument('--style', action='append', default=[], metavar='PROPERTY')
@@ -93,13 +119,16 @@ def main():
                   '--allow-file-access-from-files', f'--user-data-dir={os.path.join(work, "profile")}',
                   '--virtual-time-budget=5000'] + (['--force-dark-mode'] if a.dark else [])
         url = 'file://' + os.path.join(work, 'frame.html')
-        if a.measure:
+        # A shot alone reads the page too when it scrolls, so a missing or hidden --at is said.
+        if a.measure or a.at:
             dom = subprocess.run(chrome + ['--dump-dom', url], capture_output=True, text=True, timeout=90).stdout
             found = dom.split('<pre id="out">', 1)[-1].split('</pre>', 1)[0]
             if 'DONE' not in found:
                 print('workflow shoot: the page did not finish loading in Chrome')
                 return 1
-            print(found.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&').replace('\nDONE', '').replace('DONE', ''))
+            found = found.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&').replace('DONE', '').strip()
+            if found:
+                print(found)
         if a.shot:
             # Chrome won't make a window under 500px wide; the iframe keeps the asked width,
             # and the shot is cropped back to it.
