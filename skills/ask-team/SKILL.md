@@ -22,7 +22,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 |---|---|---|---|
 | 1 | Discovery | `/grill-with-docs <idea>` (before any project folder exists: `/grill-me`) | Shared understanding; glossary terms and ADRs in the repo. Reads the domain doc first when one exists. |
 | 2 | Setup | `/project-setup`, then `/setup-matt-pocock-skills` | Project map, tracker doc, conventions. |
-| 3 | Fog (only when the way is unclear) | `/wayfinder` | Decisions on the tracker; then size the effort again: more than one epic continues at step 4. |
+| 3 | Fog (only when the way is unclear) | `/wayfinder` | Decisions on the tracker; then `/change-request` sizes the effort: more than one epic continues at step 4. |
 | 4 | Problem and brief | `/define-problem-statement`, then `/develop-solution-brief` | Both approved by the user. |
 | 5 | Roadmap | `/user-story-mapping-workshop` | Story map cut into release slices; each slice is an epic. Approved. |
 | 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code | Design doc reviewed and approved. |
@@ -39,10 +39,10 @@ Approval gates are the user's: never treat a step as approved because its output
 ## Ways in
 
 - A feature, an improvement or a bug fix the user brings to an existing project: `/change-request <change>`.
-- A bug report or request that arrived from outside: `/triage`. A bounded one it marks ready for an agent is already a ticket, built at step 10; anything bigger is marked ready for a human and sized as `/change-request` does, without a second grilling.
+- A bug report or request that arrived from outside: `/triage`. A bounded one it marks ready for an agent is already a ticket, built at step 10; anything bigger is marked ready for a human, and `/change-request <issue>` then sizes it from its brief, without a second grilling.
 - Something broken that resists a first look: `diagnosing-bugs` loads on its own; for a hard one, `/diagnosing-bugs` explicitly.
 - Production incident: `/engineering:incident-response`.
-- A huge, foggy effort: `/wayfinder`. Once its map clears, size and place the effort as `/change-request` does, instead of going straight to step 4.
+- A huge, foggy effort: `/wayfinder`. Once its map clears, `/change-request <effort>` sizes and places it, instead of going straight to step 4.
 
 ## Any time
 
