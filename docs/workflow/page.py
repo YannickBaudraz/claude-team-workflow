@@ -49,7 +49,7 @@ THEME_JS = asset('theme.js')
 BAR_JS = asset('page.js')
 
 
-def build(router, groups, kinds, sources, install, digest):
+def build(router, groups, kinds, sources, install, digest, version=None):
     steps = router['steps']
     render.STEP_COUNT = len(steps)
     start = groups['start'][0][0]
@@ -191,6 +191,10 @@ def build(router, groups, kinds, sources, install, digest):
     summary = f'{LEDE} {start} tells you which command comes next; you approve every gate.'
     palette_links = [f'<a href="{url}">{esc(name)}</a>' for name, url in PALETTE_SOURCES]
     credits = ', '.join(palette_links[:-1]) + ' and ' + palette_links[-1]
+    # The commit the page was built from, linked, and its date.
+    built = (f'<p class="version">Version <a href="{REPO_URL}/commit/{version["full"]}"><code>{version["short"]}</code></a>'
+             f' · <time datetime="{version["date"]}">{version["date"]}</time>'
+             + (' · with local changes' if version['changed'] else '') + '</p>') if version else ''
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
     page = f"""<!doctype html>
@@ -225,6 +229,7 @@ def build(router, groups, kinds, sources, install, digest):
 <header>
 <h1>{esc(TITLE)}</h1>
 <p class="lede">{esc(LEDE)} <code>{esc(start)}</code> tells you which command comes next; you approve every gate.</p>
+{built}
 </header>
 <section class="box router" aria-labelledby="router-title">
 <div><h2 class="cmd" id="router-title">{esc(start)}</h2><p class="sub">Start here, at any step. {md(router['never'])}</p>

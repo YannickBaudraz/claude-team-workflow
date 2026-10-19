@@ -35,6 +35,7 @@ h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.
 h1{font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-.015em}
 .lede{color:var(--muted);font-size:1.125rem;max-width:60ch;margin:12px 0 0}
 .lede code{color:var(--ink)}
+.version{color:var(--muted);font-size:.875rem;margin:8px 0 0}
 code{font-family:var(--mono);font-size:.84em;font-weight:600;white-space:nowrap}
 a{color:inherit;text-underline-offset:.2em}
 ::selection{background:var(--dev);color:var(--on-role)}
