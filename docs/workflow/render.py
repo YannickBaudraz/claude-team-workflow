@@ -20,6 +20,8 @@ VOICE = [
     (r'\bPast that, propose a split', lambda match: 'Past that, Claude proposes a split'),
     (r"\b([Tt])he user's(?=[:.,;)]|$)", lambda match: you(match.group(1)) + 'ours'),
     (r"\b([Tt])he user's\b", lambda match: you(match.group(1)) + 'our'),
+    (r'\b([Tt])he user (is|has|does)\b',
+     lambda match: you(match.group(1)) + 'ou ' + {'is': 'are', 'has': 'have', 'does': 'do'}[match.group(2)]),
     (r'\b([Tt])he user (\w+?)s\b', lambda match: you(match.group(1)) + 'ou ' + match.group(2)),
     (r'\b([Tt])he user\b', lambda match: you(match.group(1)) + 'ou'),
 ]
