@@ -25,7 +25,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | Command | Source | Visibility | Used at | Calls | Arguments | Does |
 |---|---|---|---|---|---|---|
 | `/ask-team` | `YannickBaudraz/claude-team-workflow` | typed | entry point, any time |  |  | Reads where the project stands and prints the next command, the session to run it in, and what you must approve first. It never runs the step. |
-| `/project-setup` | `YannickBaudraz/claude-team-workflow` | typed | 2 Setup |  |  | Decides the project's tools and where each kind of document lives, writes the project map, and places the definition of done, PR template and coding standards. |
+| `/project-setup` | `YannickBaudraz/claude-team-workflow` | typed | 2 Setup |  |  | Decides a new or existing project's tools and where each kind of document lives, writes the project map, and places the definition of done, PR template and coding standards, keeping the ones the repo already has. |
 | `/build-ticket` | `YannickBaudraz/claude-team-workflow` | typed | 10 Build | file:incremental-implementation, file:test-driven-development, file:finishing-a-development-branch | `<ticket id>` | Builds one ticket test-first on its own branch and opens a pull request with the template filled. |
 | `/epic-retro` | `YannickBaudraz/claude-team-workflow` | typed | 13 Retro | lesson-learned | `<epic id>` | The retrospective of a finished epic from the evidence it left: sourced findings, a verdict against its goals, action items. It closes the epic once you confirm the verdict. |
 | `/change-request` | `YannickBaudraz/claude-team-workflow` | typed | way in | grilling, domain-modeling, diagnosing-bugs, file:ask-team | `<change or issue>` | The way in for a feature, improvement or bug fix in an existing project: diagnoses or grills it as needed, sizes it with you, and writes it as one issue with the next command. |
@@ -57,7 +57,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `codebase-design` | `mattpocock/skills` | auto | any time |  |  | Shared vocabulary for deep modules: interfaces, seams, testability. |
 | `pr` | `mattpocock/skills` | auto | 10 Build, PR bodies |  |  | Writes pull request bodies. |
 | `pr-screenshots` | `YannickBaudraz/claude-team-workflow` | auto | 10 Build, PR bodies |  |  | Renders a visible change from the base branch and the PR branch, and attaches the before and after pairs to the PR body with gh. |
-| `/code-review-and-quality` | `addyosmani/agent-skills` | hidden | 11 Review |  | `<PR>`. Against the ticket's acceptance criteria and CODING_STANDARDS.md. Post the findings on the PR. | A multi-axis review of a change before it merges. |
+| `/code-review-and-quality` | `addyosmani/agent-skills` | hidden | 11 Review |  | `<PR>`. Against the ticket's acceptance criteria and the coding standards the project map names. Post the findings on the PR. | A multi-axis review of a change before it merges. |
 | `code-review` | `mattpocock/skills` | auto | ad-hoc reviews |  |  | Reviews changes since a fixed point against the repo's coding standards and the originating spec. |
 | `/security-review` | Claude Code | built-in | 11 Review |  |  | Claude Code's built-in security review of the pending changes. |
 | `receiving-code-review` | `obra/superpowers` | auto | 11 Review, acting on feedback |  |  | How to act on review feedback: check each point before changing code, never agree blindly. |

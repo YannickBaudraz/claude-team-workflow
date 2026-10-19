@@ -42,7 +42,7 @@ Call the Skill tool with `lesson-learned` on the epic's commit range, so the eng
 
 ## 5. Action items and the document
 
-Propose at most about 7 action items, each with an owner and where it lands: a rule in `CODING_STANDARDS.md`, a check a tool can run, a template change, or a ticket. Apply none of them; the user decides.
+Propose at most about 7 action items, each with an owner and where it lands: a rule in the coding standards the project map names, a check a tool can run, a template change, or a ticket. Apply none of them; the user decides.
 
 Write the retro where the project map puts retros: evidence gaps, findings with sources, verdict, lessons, action items, and the status of the previous retro's items.
 

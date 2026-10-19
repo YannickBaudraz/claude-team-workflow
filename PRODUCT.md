@@ -8,12 +8,12 @@ web
 
 ## Users
 
-- **Me, first.** I run new projects with Claude Code through this workflow and use the page as my own reference while working: where a project stands, which step comes next, which session runs it, what has to be approved before moving on.
+- **Me, first.** I run new and existing projects with Claude Code through this workflow and use the page as my own reference while working: where a project stands, which step comes next, which session runs it, what has to be approved before moving on.
 - **People looking at how I work.** Peers, recruiters or clients who open the repo or the page to see how I run a project with Claude Code. Other developers are welcome to install it, but the page is not built to sell it to them.
 
 ## Product Purpose
 
-A personal workflow for new projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, peer review, approval and a retro per epic. `/ask-team` is the entry point: it reads the project's state and prints the next command to paste, the session to run it in, and the gate before the step after it.
+A personal workflow for new and existing projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, peer review, approval and a retro per epic. `/ask-team` is the entry point: it reads the project's state and prints the next command to paste, the session to run it in, and the gate before the step after it.
 
 The workflow page (https://yannickbaudraz.github.io/claude-team-workflow/) shows the whole workflow on one page. Someone who opens it succeeds when they:
 
