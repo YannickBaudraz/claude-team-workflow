@@ -65,6 +65,10 @@ f.onload = () => {
     }, 150);
   };
   const report = () => {
+    // Unless --freeze asked for motion, every transition is finished first: Chrome's
+    // headless shot does not advance them, so a plain shot or measure would otherwise
+    // catch the page part-way (a bar title still closed, a ring not yet drawn).
+    if (o.freeze === null) d.getAnimations().forEach(a => a.finish());
     for (const sel of o.measure) {
       const all = d.querySelectorAll(sel);
       if (!all.length) out.push(sel + ' no match');
@@ -74,10 +78,6 @@ f.onload = () => {
         out.push(`${sel} [${i}] ${Math.round(r.left)} ${Math.round(r.top + w.scrollY)} ${Math.round(r.width)} ${Math.round(r.height)}${css ? ' ' + css : ''}`);
       });
     }
-    // Unless --freeze asked for motion, every transition is finished first: Chrome's
-    // headless shot does not advance them, so a plain shot or measure would otherwise
-    // catch the page part-way (a bar title still closed, a ring not yet drawn).
-    if (o.freeze === null) d.getAnimations().forEach(a => a.finish());
     if (o.freeze !== null) {
       clearInterval(watching);
       out.push(`froze ${seen.size - before} animation${seen.size - before === 1 ? '' : 's'} at ${o.freeze}ms`);
