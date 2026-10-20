@@ -311,6 +311,7 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 /* The dock: the answer for the step you are on, fixed to the window's foot. Wide, it reads
    in a row, the step, then the answer, then the ways on; narrow, it stacks. */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--rule);box-shadow:0 -12px 28px -20px rgb(0 0 0 / .45);padding-bottom:env(safe-area-inset-bottom)}
+.dock:focus-visible{outline-offset:-3px;border-radius:0}
 .dock-in{position:relative;max-width:1300px;margin:0 auto;padding:16px clamp(16px,4vw,40px);display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr) minmax(0,auto) 36px;gap:12px 32px;align-items:center}
 .dock-head{display:flex;align-items:center;gap:12px;min-width:0}
 .dock-head .num{width:36px;height:36px;border-radius:8px;font-size:.9375rem}

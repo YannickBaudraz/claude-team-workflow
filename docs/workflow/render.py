@@ -176,7 +176,7 @@ def answer_html(router):
                     for number, step in router['steps'].items())
     return (f'<div class="answer"><p class="answer-title">Its answer gives you</p><ol>{items}</ol>'
             f'<div class="where" hidden><p class="where-title" id="where-title">Which step are you on?</p>'
-            f'<div class="where-steps" role="group" aria-labelledby="where-title">{picks}</div></div></div>')
+            f'<div class="where-steps" role="toolbar" aria-labelledby="where-title">{picks}</div></div></div>')
 
 
 def answers(router):

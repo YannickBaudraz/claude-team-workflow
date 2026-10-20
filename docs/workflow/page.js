@@ -211,7 +211,22 @@ cards.forEach((card, number) => {
   badge.replaceWith(button);
 });
 const picks = [...document.querySelectorAll('button[data-at]')];
+// The router's buttons are one stop for Tab: the arrow keys, Home and End move between them,
+// and the one Tab lands on is the step you are on, or step 1.
+const chips = [...where.querySelectorAll('button[data-at]')];
+function rove(chip) { chips.forEach(other => { other.tabIndex = other === chip ? 0 : -1; }); }
+where.addEventListener('keydown', event => {
+  const index = chips.indexOf(event.target), last = chips.length - 1;
+  const to = {ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1, Home: 0, End: last}[event.key];
+  if (index < 0 || to === undefined) return;
+  event.preventDefault();
+  const chip = chips[to < 0 ? last : to > last ? 0 : to];
+  rove(chip);
+  chip.focus();
+});
 let at = null, via = '';
+// The step button the dock was opened from with the keyboard: closing returns there.
+let back = null;
 function field(name, value) {
   dock.querySelector(`.dock-${name}`).hidden = !value;
   dock.querySelector(`.dock-${name} dd`).innerHTML = value;
@@ -223,6 +238,7 @@ function fill() {
     card.classList.toggle('here', number === at);
   });
   picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
+  if (!where.contains(document.activeElement)) rove(chips.find(chip => +chip.dataset.at === at) || chips[0]);
   root.classList.toggle('has-dock', at !== null);
   dock.hidden = at === null;
   if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
@@ -311,22 +327,41 @@ async function go(to, how = '', push = true) {
   here.animate(from ? {transform: [`translate(${from.left - now.left}px, ${from.top - now.top}px)`, 'none']}
     : {opacity: [0, 1], transform: ['translateY(-6px)', 'none']}, from ? settle : {duration: 300, easing: settle.easing});
 }
+// From the keyboard (a click with no pointer behind it), picking a step takes focus into the
+// dock, so its answer is read and Tab reaches it at once; a way on keeps focus on the ways on,
+// so Enter after Enter walks the flow; closing returns focus to where the dock was opened.
+function close() {
+  const from = back?.isConnected ? back : cards.get(at)?.querySelector('.num');
+  const focused = dock.contains(document.activeElement);
+  back = null;
+  go(null).then(() => {
+    if (!focused || !from) return;
+    if (chips.includes(from)) rove(from);
+    from.focus();
+  });
+}
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
-  const copy = event.target.closest('.copy');
-  if (pick) go(+pick.dataset.at);
-  else if (next) {
+  const copy = event.target.closest('.copy'), keyed = event.detail === 0;
+  if (pick) {
+    if (keyed) back = pick;
+    go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
+  } else if (next) {
     const to = parse(next.dataset.to), label = next.dataset.label;
-    go(to, label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`);
+    go(to, label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`)
+      .then(() => (dock.querySelector('.go') || dock).focus());
   }
   else if (copy) {
     navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy).then(() => {
       copy.textContent = 'Copied';
       setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
     });
-  } else if (event.target.closest('.dock-close')) go(null);
+  } else if (event.target.closest('.dock-close')) close();
 });
-dock.addEventListener('keydown', event => { if (event.key === 'Escape') go(null); });
+// Escape closes the dock from anywhere, unless it is closing the appearance menu.
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && at !== null && !event.defaultPrevented && !panel.matches(':popover-open')) close();
+});
 addEventListener('popstate', () => go(parse(new URL(location.href).searchParams.get('at')), '', false));
 // The dock's height keeps the page's end and the back-to-top button clear of it.
 new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);

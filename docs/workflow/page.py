@@ -299,11 +299,11 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"{NEW_TAB}><code>docs/build-workflow.py</code>{NEW_TAB_NOTE}</a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
 </main>
-<aside class="dock" id="dock" aria-labelledby="dock-step" hidden><div class="dock-in">
+<aside class="dock" id="dock" aria-labelledby="dock-step" tabindex="-1" hidden><div class="dock-in">
 <div class="dock-head"><span class="num"></span><div><p class="dock-step" id="dock-step" aria-live="polite"></p><p class="role dock-role"></p><p class="dock-via"></p></div></div>
 <dl class="dock-answer"><div class="dock-run"><dt>Run</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
 <div class="dock-next" role="group" aria-label="When this step is done"></div>
-<button type="button" class="dock-close" aria-label="Close the answer"><i></i></button>
+<button type="button" class="dock-close" aria-label="Close the answer" aria-keyshortcuts="Escape" title="Close (Esc)"><i></i></button>
 </div></aside>
 <script type="application/json" id="answers">{answers_json}</script>
 <a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>
