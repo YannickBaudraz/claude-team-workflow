@@ -63,6 +63,10 @@ def build(router, groups, kinds, sources, install, digest, version=None):
                '<li><span class="dash-sw"></span>Only when needed</li>'
                # Only the script makes a step's number a button.
                '<li class="pick-sw" hidden><span class="num">1</span>Pick the step you are on</li>')
+    # The router's command, by the router and under Install, over a rule with one segment per role
+    # it sends you to, in the legend's order.
+    roles = ''.join(f'<i class="p-{role}"></i>' for role in ROLE_NAMES)
+    command = f'{esc(start)}<span class="roles" aria-hidden="true">{roles}</span>'
     beats = f'<li class="arr" aria-hidden="true">{AI}</li>'.join(f'<li>{esc(beat)}</li>' for beat in router['beats'])
 
     # Name the steps the ticket path stands for.
@@ -240,7 +244,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 {built}
 </header>
 <section class="box router" aria-labelledby="router-title">
-<div><h2 class="cmd" id="router-title">{esc(start)}</h2><p class="sub">Start here, at any step. {md(router['never'])}</p>
+<div><h2 class="cmd" id="router-title">{command}</h2><p class="sub">Start here, at any step. {md(router['never'])}</p>
 <ol class="beats" aria-label="What it does">{beats}</ol>
 <p class="new-here">New here? <a href="#install">Install it first</a>.</p></div>
 {answer_html(router)}
@@ -296,7 +300,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <h2 id="install-title">Run it on your project</h2>
 {install_html}
 <p class="then">Then, in your project, start Claude Code and run</p>
-<p class="cmd">{esc(start)}</p>
+<p class="cmd">{command}</p>
 <p class="when">It tells you the next command, the session to run it in, and what you approve first.</p>
 <p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"{NEW_TAB}><code>docs/build-workflow.py</code>{NEW_TAB_NOTE}</a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
