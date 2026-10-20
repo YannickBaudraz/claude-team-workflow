@@ -125,7 +125,14 @@ a{color:inherit;text-underline-offset:.2em}
 .band-title{font-size:1.375rem;font-weight:700;letter-spacing:-.01em}
 .box{background:var(--surface);border:1px solid var(--rule);border-radius:12px}
 .router{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:24px 32px;padding:24px;align-items:center}
-.router .cmd,.install .cmd{font-family:var(--mono);font-size:1.875rem;font-weight:700;line-height:1.2;margin:0 0 6px}
+/* /ask-team is the page's star, by the router at the title's size and again under Install, over
+   a rule in the five role colours at half strength: a segment for each role it sends you to. */
+.router .cmd,.install .cmd{width:fit-content;font-family:var(--mono);font-size:1.875rem;font-weight:700;line-height:1.2;margin:0 0 6px}
+.router .cmd{font-size:clamp(2rem,5vw,3rem);line-height:1.1;letter-spacing:-.02em;margin-bottom:16px}
+.roles{display:flex;gap:3px;margin-top:8px}
+.roles i{flex:1;height:4px;border-radius:2px;background:color-mix(in srgb,var(--c) 55%,transparent)}
+.install .roles{margin-top:6px}
+.install .roles i{height:3px}
 .new-here{margin:16px 0 0;font-size:.9375rem;color:var(--muted)}
 .new-here a{color:var(--ink);font-weight:600}
 .router .sub{color:var(--muted);margin:0;font-size:.9375rem;max-width:44ch}
@@ -431,7 +438,7 @@ kbd + kbd{margin-left:-1px}
 /* A 360px phone fits the four links, the appearance button and GitHub only with tighter
    padding; the first link's text stays on the page's left edge, scrolled or not (these
    outrank the rules above). */
-@media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
+@media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .install .cmd{font-size:1.5rem} }
 @media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 /* Motion only says what changed or where you are; nothing moves on its own. A new mode or
    palette lands at once, nothing fading after it (.repaint). The rest waits for
