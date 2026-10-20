@@ -313,7 +313,7 @@ function glide(card) {
 // Chrome on Android blinks the dock in one.
 const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
 async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
-  if (to === at && !label) return;
+  if (to === at && !label && !undo) return;
   const was = at;
   if (undo) score = undo.score;
   else if (push && was !== null && to !== null) moves.push({at: was, via, score});
