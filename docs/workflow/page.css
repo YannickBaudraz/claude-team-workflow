@@ -68,8 +68,8 @@ a{color:inherit;text-underline-offset:.2em}
 /* Appearance: the button shows the mode and opens the menu; its chevron says it is a menu. */
 .theme{display:flex;align-items:center;gap:2px;height:36px;padding:0 5px 0 8px;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
 .theme:hover,.theme.open{color:var(--ink);background:var(--paper)}
-.theme.open .chev{rotate:180deg}
 .theme .chev{width:12px;height:12px;background:currentColor;-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat}
+.theme.open .chev{rotate:180deg}
 /* The menu: a popover in the top layer, placed under its button by page.js. Mode is a
    segmented switch like the skills list's Group by; each palette is a row with a swatch
    drawn in its own colours, on the side the page shows: paper, a card with a line of text,
@@ -319,8 +319,8 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
    palette crossfades for everyone, the same page in new colours. The rest waits for
    no reduced-motion preference: a card or a skills row reached from a link fades its ring in
    once the scroll has stopped (page.js marks it .landed), so it shows where the eye lands,
-   not on the way; an opened row's descriptions fade in under their
-   names; regrouped rows glide to their new place (page.js). */
+   not on the way; an opened row's descriptions fade in under their names; regrouped rows
+   glide to their new place (page.js). */
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.25s}
 @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
   .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}
@@ -328,7 +328,8 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
   .bar .home{transition:grid-template-columns .35s cubic-bezier(.16,1,.3,1),margin .35s cubic-bezier(.16,1,.3,1),opacity .25s,visibility .35s}
   .bar li:nth-child(2) a{transition:margin .35s cubic-bezier(.16,1,.3,1)}
   .bar a::after{transition:scale .25s cubic-bezier(.16,1,.3,1)}
-  .theme .chev,.toggle::before{transition:rotate .2s cubic-bezier(.16,1,.3,1),transform .2s cubic-bezier(.16,1,.3,1)}
+  .theme .chev{transition:rotate .2s cubic-bezier(.16,1,.3,1)}
+  .toggle::before{transition:transform .2s cubic-bezier(.16,1,.3,1)}
   .group-by label,.appearance .seg label{transition:box-shadow .15s,color .15s}
   .group,.card{transition:box-shadow .3s ease-out,background-color .3s ease-out}
   .group:target:not(.landed){background:var(--paper);box-shadow:inset 0 0 0 2px transparent}

@@ -74,6 +74,10 @@ f.onload = () => {
         out.push(`${sel} [${i}] ${Math.round(r.left)} ${Math.round(r.top + w.scrollY)} ${Math.round(r.width)} ${Math.round(r.height)}${css ? ' ' + css : ''}`);
       });
     }
+    // Unless --freeze asked for motion, every transition is finished first: Chrome's
+    // headless shot does not advance them, so a plain shot or measure would otherwise
+    // catch the page part-way (a bar title still closed, a ring not yet drawn).
+    if (o.freeze === null) d.getAnimations().forEach(a => a.finish());
     if (o.freeze !== null) {
       clearInterval(watching);
       out.push(`froze ${seen.size - before} animation${seen.size - before === 1 ? '' : 's'} at ${o.freeze}ms`);
@@ -106,7 +110,9 @@ f.onload = () => {
     el.click();
     setTimeout(() => click(i + 1), 600);
   };
-  const act = () => o.click.length ? setTimeout(() => click(0), 600) : report();
+  // The page reacts to a scroll a frame later, and to a stopped scroll after a timer, so a
+  // plain report waits as long as a click does before it reads the page.
+  const act = () => setTimeout(() => o.click.length ? click(0) : report(), 600);
   if (o.freeze !== null && !o.click.length) watch();
   setTimeout(() => {
     const t = o.at && d.querySelector(o.at);
