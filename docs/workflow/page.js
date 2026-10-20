@@ -350,9 +350,12 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   const dx = from.left - now.left, dy = from.top - now.top, lift = 14 + Math.min(26, Math.hypot(dx, dy) / 24);
   here.animate({transform: [`translate(${dx}px, ${dy}px)`, `translate(${dx / 2}px, ${dy / 2 - lift}px)`, 'none']}, settle);
 }
-// A way on, from its button or the game's keys. Focus that was on the ways on stays there.
-function follow(label, to) {
-  const focused = dock.contains(document.activeElement);
+// A way on, from its button or the game's keys. Played from the keys, or with focus already
+// on the ways on, focus goes to the new ways on, so Enter takes the way you see chosen and
+// never a step button left focused elsewhere on the page.
+const wayButtons = () => [...dock.querySelectorAll('.go')];
+function follow(label, to, keyed = false) {
+  const focused = keyed || dock.contains(document.activeElement);
   back = null;
   return go(to, {how: label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`, label})
     .then(() => { if (focused) (dock.querySelector('.go') || dock).focus(); });
@@ -424,22 +427,27 @@ document.addEventListener('keydown', event => {
   if (at === null || busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (panel.matches(':popover-open') || event.target.closest('input, textarea, select')) return;
   const ways = at === 'done' ? [] : answers.steps[at].next;
-  const take = way => follow(way.label, way.to || 'done');
+  const take = way => follow(way.label, way.to || 'done', true);
+  // The way chosen at a fork is also the focused one, so Enter and Space take it too.
+  const choose = index => { picked = index; paintGame(); wayButtons()[index].focus(); };
   if (event.key === 'ArrowRight') {
     event.preventDefault();
     if (picked >= 0) take(ways[picked]);
     else if (ways.length === 1) take(ways[0]);
-    else if (ways.length) { picked = 0; paintGame(); }
+    else if (ways.length) choose(0);
   } else if (event.key === 'ArrowLeft') {
     event.preventDefault();
     if (picked >= 0) { picked = -1; paintGame(); return; }
     const last = moves.pop();
-    if (last) go(last.at, {how: last.via, undo: last});
+    if (last) go(last.at, {how: last.via, undo: last}).then(() => (wayButtons()[0] || dock).focus());
   } else if (picked >= 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
     event.preventDefault();
-    picked = (picked + (event.key === 'ArrowDown' ? 1 : ways.length - 1)) % ways.length;
-    paintGame();
+    choose((picked + (event.key === 'ArrowDown' ? 1 : ways.length - 1)) % ways.length);
   }
+});
+// Tab onto the other way while choosing, and it becomes the chosen one.
+dock.addEventListener('focusin', event => {
+  if (picked >= 0 && event.target.matches('.go')) { picked = wayButtons().indexOf(event.target); paintGame(); }
 });
 // The dock's height keeps the page's end and the back-to-top button clear of it.
 new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);
