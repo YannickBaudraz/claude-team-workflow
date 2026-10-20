@@ -24,7 +24,8 @@ This file is the command line; the page is made in docs/workflow/:
     page.py      assembling the HTML
     page.css     the stylesheet; page.py fills in the palettes and the font faces
     theme.js     runs in the head: applies a pinned mode and palette before the page paints
-    page.js      the bar, its appearance menu and the skills list
+    page.js      the bar, its appearance menu, the skills list, and the step you are on
+                 with /ask-team's answer for it
 
 The page serves its own fonts from docs/fonts (SIL Open Font License, the licences
 sit beside them), copied next to the page when it is written elsewhere, so no
@@ -50,6 +51,7 @@ sys.dont_write_bytecode = True
 
 from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, ROOT, SKILL, STEP_SUMMARIES
 from workflow.page import build
+from workflow.render import answers
 from workflow.palettes import palette_problems, unchecked_backgrounds
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
 
@@ -80,6 +82,12 @@ def main():
             need('`' not in step['output'],
                  f'SKILL.md: step {number}\'s output names a command, which its card would show; '
                  'move it to the Command column')
+        # The dock's Session line is read from SKILL.md's Sessions paragraph; a rewording
+        # that stops it matching would leave the line empty without a word.
+        for number, answer in answers(router)['steps'].items():
+            need(number > router['review'] or answer['session'],
+                 f'SKILL.md: the Sessions paragraph names no session for step {number}, '
+                 'which the page\'s answer for that step would leave empty')
         for _, file, _ in FACES:
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as error:

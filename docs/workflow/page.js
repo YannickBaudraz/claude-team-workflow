@@ -186,3 +186,281 @@ try { saved = localStorage.getItem('group-by') || 'role'; } catch {}
 const choice = switcher.querySelector(`input[value="${saved}"]`);
 if (choice) { choice.checked = true; group(saved); }
 openTarget();
+
+// I'm on this step: a step's number, on its card or in the router's answer, says where you
+// are, and the dock answers the way /ask-team would: the command, the session, the gate, and
+// the ways on once the step is done. The steps before it settle back, a "You are here" tab
+// sits on its card, and from step to step that tab travels, so a loop shows where it goes
+// back to. Where you are is only in the address (?at=7, or ?at=done once the last epic
+// closes), so the browser's Back steps back and each project can keep its own link; the page
+// opened plainly starts with no step.
+const answers = JSON.parse(document.getElementById('answers').textContent);
+const dock = document.getElementById('dock'), where = document.querySelector('.where');
+const cards = new Map([...document.querySelectorAll('.card')].map(card => [+card.id.slice(5), card]));
+const here = document.createElement('span');
+here.className = 'here-mark';
+here.textContent = 'You are here';
+cards.forEach((card, number) => {
+  const badge = card.querySelector('.num'), button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'num';
+  button.dataset.at = number;
+  button.textContent = badge.textContent;
+  button.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-label', `I'm on step ${number}, ${answers.steps[number].name}`);
+  button.title = `I'm on step ${number}`;
+  badge.replaceWith(button);
+});
+const picks = [...document.querySelectorAll('button[data-at]')];
+let at = null, via = '';
+// The game: the loops counted so far (epic 2, ticket 3), the moves to undo, the way picked at a
+// fork while choosing (-1 when not), and whether a move is still under way.
+let score = {}, moves = [], picked = -1, busy = false;
+// The step button the dock was opened from with the keyboard: closing returns there.
+let back = null;
+function field(name, value) {
+  dock.querySelector(`.dock-${name}`).hidden = !value;
+  dock.querySelector(`.dock-${name} dd`).innerHTML = value;
+}
+function fill() {
+  const done = at === 'done', step = done ? null : answers.steps[at];
+  cards.forEach((card, number) => {
+    card.classList.toggle('behind', at !== null && (done || number < at));
+    card.classList.toggle('here', number === at);
+  });
+  picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
+  root.classList.toggle('has-dock', at !== null);
+  dock.hidden = at === null;
+  if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
+  if (at === null) return;
+  const badge = dock.querySelector('.dock-head .num'), role = dock.querySelector('.dock-role');
+  badge.hidden = done;
+  if (!done) { badge.className = `num p-${step.role}`; badge.textContent = at; }
+  const title = done ? 'Every epic is closed'
+    : Object.assign(document.createElement('a'), {href: `#step-${at}`, textContent: `Step ${at}, ${step.name}`});
+  dock.querySelector('.dock-step').replaceChildren(title);
+  role.textContent = done ? 'The roadmap is done' : step.label;
+  role.className = `role dock-role p-${done ? 'you' : step.role}`;
+  dock.querySelector('.dock-via').textContent = via;
+  dock.querySelector('.dock-via').hidden = !via;
+  // The game's score, only once a move has been played: it counts this run, not the project,
+  // which only /ask-team, reading the tracker, can tell.
+  const loops = done ? [] : step.loops.map(loop => `${loop} ${score[loop] || 1}`);
+  const counted = !moves.length ? '' : done ? `This run: ${score.epic || 1} epic${(score.epic || 1) > 1 ? 's' : ''}`
+    : loops.length ? `This run: ${loops.join(' · ')}` : '';
+  dock.querySelector('.dock-score').textContent = counted;
+  dock.querySelector('.dock-score').hidden = !counted;
+  const copy = text => text && navigator.clipboard ? '<button type="button" class="copy">Copy</button>' : '';
+  if (done) {
+    field('run', `For the next change: ${answers.end}${copy(answers.end_copy)}`);
+    field('session', '');
+    field('gate', '');
+  } else {
+    field('run', step.command + copy(step.copy));
+    field('session', step.session);
+    field('gate', step.gate ? `<span class="gate-mark"><span class="dia"></span>${step.gate}</span> ${step.gate_out}` : step.gate_out);
+  }
+  dock.querySelector('.dock-next').replaceChildren(...(done ? [] : step.next).map(({label, to}) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'go';
+    button.dataset.to = to || 'done';
+    button.dataset.label = label;
+    const why = document.createElement('b'), place = document.createElement('span'), arrow = document.createElement('i');
+    why.textContent = label;
+    place.textContent = !to ? 'the roadmap is done' : to === at ? `step ${to} again`
+      : `${to < at ? 'back to ' : ''}step ${to}, ${answers.steps[to].name}`;
+    arrow.className = 'ai';
+    button.append(why, place, arrow);
+    return button;
+  }));
+  dock.scrollTop = 0;  // a capped dock opens on its step, not where the last one was scrolled to
+  picked = -1;
+  paintGame();
+  measureDock();
+}
+// The dock's height keeps the page's end, the back-to-top button and whatever the page scrolls
+// to clear of it. Measured as soon as the dock is filled, so a scroll right after sees it.
+function measureDock() { root.style.setProperty('--dock', `${dock.offsetHeight}px`); }
+// The keys the game answers to, shown under the ways on where there is a keyboard; at a fork
+// being chosen, the ways not picked step back.
+function paintGame() {
+  const ways = [...dock.querySelectorAll('.go')], key = text => `<kbd>${text}</kbd>`;
+  dock.querySelector('.dock-next').classList.toggle('choosing', picked >= 0);
+  ways.forEach((way, index) => way.classList.toggle('chosen', index === picked));
+  dock.querySelector('.dock-keys').innerHTML = picked >= 0
+    ? `${key('↑')}${key('↓')} choose ${key('→')} go ${key('←')} back`
+    : (at === 'done' ? '' : `${key('→')} play `) + (moves.length ? `${key('←')} undo ` : '') + `${key('Esc')} leave`;
+}
+function address() {
+  const url = new URL(location.href);
+  if (at === null) url.searchParams.delete('at'); else url.searchParams.set('at', at);
+  return url;
+}
+function parse(value) {
+  return value === 'done' ? 'done' : Object.hasOwn(answers.steps, value ?? '') ? +value : null;
+}
+// Out of view, the page first glides to the card, centred between the bar and the dock;
+// then the tab moves.
+function glide(card) {
+  const box = card.getBoundingClientRect(), top = bar.offsetHeight;
+  const bottom = innerHeight - (dock.hidden ? Math.min(240, innerHeight * .3) : dock.offsetHeight);
+  if (box.top >= top + 8 && box.bottom <= bottom - 8) return Promise.resolve();
+  scrollTo({top: scrollY + box.top - top - Math.max(16, (bottom - top - box.height) / 2), behavior: 'smooth'});
+  return new Promise(resolve => {
+    const timer = setTimeout(resolve, 900);
+    addEventListener('scrollend', () => { clearTimeout(timer); resolve(); }, {once: true});
+  });
+}
+// The tab travels from its old card to its new one, measured before and after; the dock
+// rises when it opens and sinks when it closes. Plain animations, not a view transition:
+// Chrome on Android blinks the dock in one.
+const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
+async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
+  if (to === at && !label && !undo) return;
+  const was = at;
+  if (undo) score = undo.score;
+  else if (push && was !== null && to !== null) moves.push({at: was, via, score});
+  if (to === null) moves = [];
+  const unit = label && /^Another (\w+)/.exec(label)?.[1];
+  if (!undo) score = !label ? {} : label === 'Next epic' ? {epic: (score.epic || 1) + 1}
+    : unit ? {...score, [unit]: (score[unit] || 1) + 1} : score;
+  at = to;
+  via = how;
+  busy = true;
+  land(null);  // a card reached from a link loses its ring: the step you pick is the one marked
+  // A step that comes round again keeps the same address: no entry for Back to step over.
+  if (push && address().href !== location.href) history.pushState(null, '', address());
+  const card = cards.get(to);
+  if (still.matches) {
+    fill();
+    if (card) card.scrollIntoView({block: 'nearest'});
+    busy = false;
+    return;
+  }
+  if (card) await glide(card);
+  const from = here.isConnected ? here.getBoundingClientRect() : null;
+  if (to === null) await dock.animate({translate: ['0 0', '0 100%']}, {duration: 250, easing: 'cubic-bezier(.7,0,.84,0)'}).finished;
+  fill();
+  if (was === null) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  busy = false;
+  if (!here.isConnected) return;
+  // The tab hops like a piece on a board: up from its old card and down onto the new one, or
+  // in place when the step comes round again.
+  const now = here.getBoundingClientRect();
+  if (!from) {
+    here.animate({opacity: [0, 1], transform: ['translateY(-6px)', 'none']}, {duration: 300, easing: settle.easing});
+    return;
+  }
+  const dx = from.left - now.left, dy = from.top - now.top, lift = 14 + Math.min(26, Math.hypot(dx, dy) / 24);
+  here.animate({transform: [`translate(${dx}px, ${dy}px)`, `translate(${dx / 2}px, ${dy / 2 - lift}px)`, 'none']}, settle);
+}
+// A way on, from its button or the game's keys. Played from the keys, or with focus already
+// on the ways on, focus goes to the new ways on, so Enter takes the way you see chosen and
+// never a step button left focused elsewhere on the page.
+const wayButtons = () => [...dock.querySelectorAll('.go')];
+function follow(label, to, keyed = false) {
+  const focused = keyed || dock.contains(document.activeElement);
+  back = null;
+  return go(to, {how: label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`, label})
+    .then(() => { if (focused) (dock.querySelector('.go') || dock).focus(); });
+}
+// From the keyboard (a click with no pointer behind it), picking a step takes focus into the
+// dock, so its answer is read and Tab reaches it at once; a way on keeps focus on the ways on,
+// so Enter after Enter walks the flow; closing returns focus to where the dock was opened.
+function close() {
+  const from = back?.isConnected ? back : cards.get(at)?.querySelector('.num');
+  const focused = dock.contains(document.activeElement);
+  back = null;
+  go(null).then(() => {
+    if (focused && from) from.focus();
+  });
+}
+// For Tab, the dock sits right after the step button it answers, though it is drawn at the
+// window's foot: Tab from that button enters it, and leaving it, either way, comes back to
+// the page beside that button rather than at the page's start or end.
+const focusable = 'a[href], button, input, select, textarea, summary, [tabindex]';
+function tabbable(scope) {
+  return [...scope.querySelectorAll(focusable)].filter(el => el.tabIndex >= 0 && !el.disabled
+    && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+}
+function anchor() {
+  return back?.isConnected ? back : cards.get(at)?.querySelector('button.num') || null;
+}
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Tab' || at === null || event.altKey || event.ctrlKey || event.metaKey) return;
+  const from = anchor(), active = document.activeElement, inside = tabbable(dock);
+  if (!from || !inside.length) return;
+  const page = tabbable(document.body).filter(el => !dock.contains(el));
+  let target = null;
+  if (dock.contains(active)) {
+    if (event.shiftKey && (active === dock || active === inside[0])) target = from;
+    else if (!event.shiftKey && active === inside.at(-1)) target = page[page.indexOf(from) + 1] || page[0];
+  } else if (!event.shiftKey && active === from) target = inside[0];
+  else if (event.shiftKey && page[page.indexOf(active) - 1] === from) target = inside.at(-1);
+  if (!target) return;
+  event.preventDefault();
+  target.focus();
+});
+document.addEventListener('click', event => {
+  const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
+  const copy = event.target.closest('.copy'), keyed = event.detail === 0;
+  if (pick) {
+    if (keyed) back = pick;
+    go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
+  } else if (next) follow(next.dataset.label, parse(next.dataset.to));
+  else if (copy) {
+    // A browser can refuse the clipboard (a denied permission): say so rather than stay silent.
+    const said = text => { copy.textContent = text; setTimeout(() => { copy.textContent = 'Copy'; }, 1500); };
+    navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy)
+      .then(() => said('Copied'), () => said('Not copied'));
+  } else if (event.target.closest('.dock-close')) close();
+});
+// Escape closes the dock from anywhere, unless it is closing the appearance menu.
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && at !== null && !event.defaultPrevented && !panel.matches(':popover-open')) close();
+});
+addEventListener('popstate', () => {
+  moves = [];
+  go(parse(new URL(location.href).searchParams.get('at')), {push: false});
+});
+// The game, while a step is open: → plays it, to the next step or, at a fork, to choosing
+// between its ways with ↑ and ↓, then → again; ← undoes the last move, or the choosing.
+// Arrow keys only, never with a modifier: nothing scrolls sideways here, and ↑ ↓ are taken
+// only while choosing.
+document.addEventListener('keydown', event => {
+  if (at === null || busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (panel.matches(':popover-open') || event.target.closest('input, textarea, select')) return;
+  const ways = at === 'done' ? [] : answers.steps[at].next;
+  const take = way => follow(way.label, way.to || 'done', true);
+  // The way chosen at a fork is also the focused one, so Enter and Space take it too.
+  const choose = index => { picked = index; paintGame(); wayButtons()[index].focus(); };
+  if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    if (picked >= 0) take(ways[picked]);
+    else if (ways.length === 1) take(ways[0]);
+    else if (ways.length) choose(0);
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    if (picked >= 0) { picked = -1; paintGame(); return; }
+    const last = moves.pop();
+    if (last) go(last.at, {how: last.via, undo: last}).then(() => (wayButtons()[0] || dock).focus());
+  } else if (picked >= 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+    event.preventDefault();
+    choose((picked + (event.key === 'ArrowDown' ? 1 : ways.length - 1)) % ways.length);
+  }
+});
+// Tab onto the other way while choosing, and it becomes the chosen one.
+dock.addEventListener('focusin', event => {
+  if (picked >= 0 && event.target.matches('.go')) { picked = wayButtons().indexOf(event.target); paintGame(); }
+});
+new ResizeObserver(measureDock).observe(dock);
+where.hidden = false;
+{
+  // A step an earlier version of the page kept in the browser is dropped.
+  try { localStorage.removeItem('at'); } catch {}
+  const asked = parse(new URL(location.href).searchParams.get('at'));
+  at = asked;
+  fill();
+  if (cards.has(asked) && !location.hash) cards.get(asked).scrollIntoView({block: 'center'});
+}

@@ -168,6 +168,71 @@ def slug(text):
 
 
 def answer_html(router):
-    """What the router's answer holds, as SKILL.md lists it."""
+    """What the router's answer holds, as SKILL.md lists it, then a way to see it for a step:
+    a button per step, shown by page.js."""
     items = ''.join(f'<li>{md(cap(part))}</li>' for part in router['answer'])
-    return f'<div class="answer"><p class="answer-title">Its answer gives you</p><ol>{items}</ol></div>'
+    picks = ''.join(f'<button type="button" class="num p-{step["role"]}" data-at="{number}" aria-pressed="false" '
+                    f'aria-label="Step {number}, {esc(step["name"])}">{number}</button>'
+                    for number, step in router['steps'].items())
+    return (f'<div class="answer"><p class="answer-title">Its answer gives you</p><ol>{items}</ol>'
+            f'<div class="where" hidden><p class="where-title" id="where-title">Which step are you on?</p>'
+            f'<div class="where-steps" role="group" aria-labelledby="where-title">{picks}</div></div></div>')
+
+
+def answers(router):
+    """What /ask-team would answer at each step, for the page's "I'm on this step": the
+    command as SKILL.md writes it, the session Sessions names, what has to be approved
+    before the step after it, and where the step leads.
+
+    The ways out follow the flow's own loops: an optional step is taken only when its note
+    holds, a step repeated per story goes round again, the review sends changes back to the
+    first ticket step, the last ticket step leads to the close, and the close to the next
+    epic. A way out to 0 is the end of the roadmap."""
+    steps = router['steps']
+    sessions = ' '.join(router['session_rules'])
+    roles = {}
+    for word, per, lo, hi, extra in re.findall(
+            r'\b(product|tech lead|developer|reviewer)\b([^()]*)\((?:steps )?(\d+)(?: to (\d+))?([^)]*)\)', sessions):
+        extra = [] if '`' in extra else [part.strip() for part in extra.split(',') if part.strip()]
+        for number in range(int(lo), int(hi or lo) + 1):
+            roles[number] = ', '.join([cap(word)] + ([per.strip()] if per.strip() else []) + extra)
+    together = re.search(r'Keep steps (\d+) to (\d+)[^.]*\.', sessions)
+    # "In the other steps the user takes part, but nothing waits for a sign-off."
+    no_gate = next((cap(re.sub(r'^In the other steps,?\s*', '', voice(rule)))
+                    for rule in router['gate_rules'] if 'sign-off' in rule), '')
+    first_ticket, close = router['ticket'][0], router['close']
+    end = re.search(r'`([^`]+)`', ' '.join(router['ways']))
+
+    def ways_out(number):
+        step, after = steps[number], steps.get(number + 1)
+        if number == close:
+            return [('Next epic', router['lead'][0]), ('Last epic', 0)]
+        if number == router['review']:
+            return [('Approved', number + 1), ('Changes requested', first_ticket)]
+        if number == router['ticket'][-1]:
+            return [('Another ticket', first_ticket), ('Last ticket', close)]
+        if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket'):
+            unit = step['qual'][4:]
+            return [(f'Another {unit}', number), (f'Every {unit} ready', number + 1)]
+        if after and after['optional'] and number + 2 in steps:
+            return [(cap(re.sub(r'^only\s+', '', after['note'], flags=re.I)), number + 1), ('Otherwise', number + 2)]
+        return [('Done', number + 1)] if after else []
+
+    out = {}
+    for number, step in steps.items():
+        shown, mark = shown_output(step['output'])
+        session = roles.get(number, '')
+        if session and together and int(together.group(1)) < number <= int(together.group(2)):
+            session += '. ' + voice(together.group(0))
+        command = re.search(r'`([^`]+)`', step['command'])
+        out[number] = dict(
+            name=step['name'], role=step['role'], label=ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else ''),
+            command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
+            session=esc(session), gate=esc(mark) if step['gate'] else '',
+            gate_out=link_steps(md(shown)) if step['gate'] else esc(no_gate),
+            next=[dict(label=label, to=to) for label, to in ways_out(number)],
+            # The loops the step sits in, outermost first, for the page's count of them.
+            loops=(['epic'] if number >= router['lead'][0] else [])
+            + ([step['qual'][4:]] if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket') else [])
+            + (['ticket'] if number in router['ticket'] else []))
+    return dict(steps=out, end=md(f'`{end.group(1)}`') if end else '', end_copy=end.group(1) if end else '')
