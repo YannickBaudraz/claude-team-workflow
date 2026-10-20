@@ -325,7 +325,8 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   via = how;
   busy = true;
   land(null);  // a card reached from a link loses its ring: the step you pick is the one marked
-  if (push) history.pushState(null, '', address());
+  // A step that comes round again keeps the same address: no entry for Back to step over.
+  if (push && address().href !== location.href) history.pushState(null, '', address());
   const card = cards.get(to);
   if (still.matches) {
     fill();
