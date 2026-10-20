@@ -30,7 +30,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 | 8 | Refinement, per story | `/specification <story>`, then `/story-splitting` when it is too big, then `/find-gaps` | Story ready: rules, examples and acceptance criteria agreed. |
 | 9 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
 | 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/pair <dials>` | PR open with the template filled. |
-| 11 | Peer review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR>` and `/security-review` (it reads the current branch's diff, so on main it finds nothing). When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
+| 11 | Peer review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review` (it reads the current branch's diff, so on main it finds nothing; `--detach` because the build's worktree may still hold the branch). When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
 | 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green | The user merges: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>`. Then close the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
 | 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. The epic closes once the user confirms the verdict. |
 
