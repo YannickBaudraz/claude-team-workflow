@@ -236,10 +236,9 @@ function fill() {
   const badge = dock.querySelector('.dock-head .num'), role = dock.querySelector('.dock-role');
   badge.hidden = done;
   if (!done) { badge.className = `num p-${step.role}`; badge.textContent = at; }
-  const title = document.createElement('a');
-  title.href = `#step-${at}`;
-  title.textContent = `Step ${at}, ${step?.name}`;
-  dock.querySelector('.dock-step').replaceChildren(done ? 'Every epic is closed' : title);
+  const title = done ? 'Every epic is closed'
+    : Object.assign(document.createElement('a'), {href: `#step-${at}`, textContent: `Step ${at}, ${step.name}`});
+  dock.querySelector('.dock-step').replaceChildren(title);
   role.textContent = done ? 'The roadmap is done' : step.label;
   role.className = `role dock-role p-${done ? 'you' : step.role}`;
   dock.querySelector('.dock-via').textContent = via;
@@ -406,10 +405,10 @@ document.addEventListener('click', event => {
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
   } else if (next) follow(next.dataset.label, parse(next.dataset.to));
   else if (copy) {
-    navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy).then(() => {
-      copy.textContent = 'Copied';
-      setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
-    });
+    // A browser can refuse the clipboard (a denied permission): say so rather than stay silent.
+    const said = text => { copy.textContent = text; setTimeout(() => { copy.textContent = 'Copy'; }, 1500); };
+    navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy)
+      .then(() => said('Copied'), () => said('Not copied'));
   } else if (event.target.closest('.dock-close')) close();
 });
 // Escape closes the dock from anywhere, unless it is closing the appearance menu.
