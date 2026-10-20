@@ -60,7 +60,9 @@ def build(router, groups, kinds, sources, install, digest, version=None):
     legend = ''.join(f'<li class="p-{role}"><span class="sw"></span>{esc(name)}</li>'
                      for role, name in ROLE_NAMES.items())
     legend += ('<li><span class="dia"></span>Gate: you approve before moving on</li>'
-               '<li><span class="dash-sw"></span>Only when needed</li>')
+               '<li><span class="dash-sw"></span>Only when needed</li>'
+               # Only the script makes a step's number a button.
+               '<li class="pick-sw" hidden><span class="num">1</span>Pick the step you are on</li>')
     beats = f'<li class="arr" aria-hidden="true">{AI}</li>'.join(f'<li>{esc(beat)}</li>' for beat in router['beats'])
 
     # Name the steps the ticket path stands for.
@@ -148,7 +150,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
         items = ''.join(item(*entry) for entry in top)
         # Closed, a row lists its own skills by name and counts the ones they load.
         loaded = sum(len(entries) for entries in users.values())
-        items += f'<li class="also">+{loaded} more</li>' if loaded else ''
+        items += f'<li class="also"><button type="button" class="more">+{loaded} more</button></li>' if loaded else ''
         phase = ('Once per project' if key in router['project']
                  else 'Per epic' if key in router['lead'] or key == router['close']
                  else 'Per ticket' if key in router['ticket'] else OUTSIDE)
@@ -170,7 +172,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
     by_kind = {}
     for block in blocks:
         for name, where, does, tone in block['skills']:
-            step_tag = (f'<a class="tag step-tag p-{tone}" href="#step-{where.split()[-1]}">{esc(where)}</a>' if tone
+            step_tag = (f'<a class="tag step-tag p-{tone}" href="#step-{where.split()[-1]}">{esc(where)}{AI}</a>' if tone
                         else f'<span class="tag">{esc(where)}</span>')
             by_kind.setdefault(kind_of.get(kinds.get(name), 'You start it'), []).append(
                 f'<li><code>{esc(name)}</code>{step_tag}<p>{md(does)}</p>{source(name)}</li>')

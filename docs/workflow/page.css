@@ -39,7 +39,14 @@ h1{font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-.015em}
 .lede code{color:var(--ink)}
 .version{color:var(--muted);font-size:.875rem;margin:8px 0 0}
 code{font-family:var(--mono);font-size:.84em;font-weight:600;white-space:nowrap}
+/* What can be clicked says so before it is hovered: a link is underlined, quietly where
+   underlines would crowd (--hint), and its line darkens under the pointer; a button has a
+   fill, a frame or a chevron, and sinks a pixel when pressed. */
 a{color:inherit;text-underline-offset:.2em}
+:root{--hint:color-mix(in srgb,var(--muted) 45%,transparent)}
+:is(.step-ref,.term,.any-time a,.new-here a,.version a,.epic-note a,.foot a):hover{text-decoration-color:var(--ink);text-decoration-thickness:2px}
+.term:hover{text-decoration-style:solid}
+:is(button.num,.go,.copy,.all,.more,.theme,.dock-close):active{translate:0 1px}
 ::selection{background:var(--dev);color:var(--on-role)}
 :focus-visible{outline:2px solid var(--dev);outline-offset:2px;border-radius:3px}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
@@ -148,10 +155,11 @@ a{color:inherit;text-underline-offset:.2em}
 .num{width:26px;height:26px;border-radius:6px;background:var(--c);color:var(--on-role);display:grid;place-items:center;font-weight:700;font-size:.8125rem;flex:none;font-variant-numeric:tabular-nums;font-family:var(--body)}
 .role{font-size:.75rem;line-height:1.3;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);font-family:var(--body)}
 .card .title{font-size:1.1875rem;font-weight:700}
-/* The title takes you down to the step's skills: a plain link with an arrow pointing down, the
+/* The title takes you down to the step's skills: a link with an arrow pointing down, the
    way the skills list's "Back to step" points up; not a chevron, which would say it folds, and
-   not the glossary's dotted line. Hovered, it is underlined in the role colour. */
-.card .title a{display:inline-flex;align-items:center;gap:5px;text-decoration:underline solid transparent 3px;text-underline-offset:.28em}
+   not the glossary's dotted line. Its faint underline turns the role colour when hovered. */
+.card .title a{display:inline-flex;align-items:center;gap:5px;text-decoration:underline solid color-mix(in srgb,var(--muted) 30%,transparent) 1.5px;text-underline-offset:.28em}
+.card .title a:hover{text-decoration-thickness:2px}
 .card .title a:hover{text-decoration-color:var(--c)}
 .to-skills{display:inline-block;flex:none;width:15px;height:15px;background:var(--muted);-webkit-mask:var(--arrow) center/contain no-repeat;mask:var(--arrow) center/contain no-repeat;rotate:90deg}
 .card .title a:hover .to-skills{background:var(--c)}
@@ -212,7 +220,10 @@ a{color:inherit;text-underline-offset:.2em}
    comes from. Without the script every row stays open. */
 .groups{border-bottom:1px solid var(--rule)}
 .grouping .phase:last-child .groups{border-bottom:0}
-.tag.step-tag{background:var(--c);border-color:var(--c);color:var(--on-role);text-decoration:none}
+/* A step tag is a link up to its card: the arrow says so, as on "Back to step". */
+.tag.step-tag{display:inline-flex;align-items:center;gap:3px;background:var(--c);border-color:var(--c);color:var(--on-role);text-decoration:none}
+.step-tag .ai{width:11px;height:11px;transform:rotate(-90deg)}
+.step-tag:hover{text-decoration:underline;text-underline-offset:.2em}
 .group-by{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;border:0;padding:0;margin:0}
 .group-by legend{float:left;font-weight:600;font-size:.875rem;color:var(--muted)}
 .group-by .seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;background:var(--surface);overflow:hidden}
@@ -231,8 +242,11 @@ a{color:inherit;text-underline-offset:.2em}
 .skill-tools.stuck::before{content:"";position:absolute;z-index:-1;top:0;bottom:-1px;left:50%;width:100vw;translate:-50% 0;background:color-mix(in srgb,var(--tray) 70%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--rule);box-shadow:0 8px 20px -16px rgb(0 0 0 / .35)}
 .has-stuck-tools .bar{box-shadow:none}
 .group{scroll-margin-top:68px}
-/* A plain text button: the nav keeps the only bordered button in the header. */
-.all{font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;color:var(--ink);background:none;border:0;border-radius:6px;padding:5px 10px;margin-right:-10px}
+/* A text button: the nav keeps the only bordered button in the header. Its chevron, the
+   rows' own, points the way it will fold them. */
+.all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;color:var(--ink);background:none;border:0;border-radius:6px;padding:5px 10px;margin-right:-10px}
+.all::before{content:"";width:14px;height:14px;background:currentColor;-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat}
+.all.open::before{rotate:180deg}
 .all:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
 /* Rows reach 12px past the text on each side, so a highlighted row has room inside its own
    box; the rule between rows stays at the text's width. On the page's own paper, a row that
@@ -253,6 +267,14 @@ a{color:inherit;text-underline-offset:.2em}
 .toggle[aria-expanded="true"]::before{transform:none}
 .toggle:hover::before{background:var(--ink)}
 .toggle:hover .name{text-decoration:underline;text-underline-offset:.2em}
+/* Every row lights up under the pointer, open or closed. A closed row opens from anywhere on
+   it (page.js), so its chevron and name answer too; an open one closes only from its
+   heading, which leaves its text to select and its links to follow, so they answer only there. */
+.group.closed{cursor:pointer}
+.group:has(.toggle):hover{background:var(--surface)}
+.group:is(.closed:hover,:has(> .group-head .toggle:hover)) .toggle::before{background:var(--ink)}
+.group:is(.closed:hover,:has(> .group-head .toggle:hover)) .toggle .name{text-decoration:underline;text-underline-offset:.2em}
+.group:has(.toggle):hover::before,.group:has(.toggle):hover + .group::before{display:none}
 /* Where the role label shows, a step's heading is two lines, name over role: the badge
    grows to span both, with the chevron centred beside it. */
 #by-step:not([data-by="role"]) .group h4:not(:has(.toggle)),#by-step:not([data-by="role"]) .group .toggle{display:grid;grid-template-columns:auto auto minmax(0,1fr);column-gap:10px;row-gap:1px;align-items:center}
@@ -265,15 +287,20 @@ a{color:inherit;text-underline-offset:.2em}
 .group li.also{display:none}
 .group.closed .group-body > ul{display:flex;flex-wrap:wrap;gap:0 22px;padding-top:0}
 .group.closed .group-body > ul > li{display:block;line-height:28px}
-.group.closed li > :not(code),.group.closed details,.group.closed .back{display:none}
-.group.closed li.also{display:block;color:var(--muted);font-size:.875rem;font-weight:600}
-.back{display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:10px 0;font-size:.875rem;font-weight:600;color:var(--muted);text-decoration:none}
-.back .ai{width:16px;height:16px;transform:rotate(-90deg)}
-.back:hover{color:var(--ink);text-decoration:underline;text-underline-offset:.2em}
+.group.closed li > :not(code,.more),.group.closed details,.group.closed .back{display:none}
+.group.closed li.also{display:block}
+.more{padding:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:600;color:var(--muted);cursor:pointer;text-decoration:underline var(--hint) 1.5px;text-underline-offset:.2em}
+.more:hover{color:var(--ink);text-decoration-color:currentColor}
+/* Back to the step's card: a link like the card's title, underlined, its arrow in ink so it
+   reads as the way up rather than a muted caption. */
+.back{display:inline-flex;align-items:center;gap:6px;margin-top:2px;padding:10px 0;font-size:.875rem;font-weight:600;color:var(--ink);text-decoration:underline solid var(--hint) 1.5px;text-underline-offset:.25em}
+.back .ai{width:18px;height:18px;transform:rotate(-90deg)}
+.back:hover{text-decoration-color:var(--c,var(--ink));text-decoration-thickness:2px}
+.back:hover .ai{background:var(--c,var(--ink))}
 .group li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
 .group li p{flex-basis:100%;margin:0;color:var(--muted);font-size:.9375rem;line-height:1.45}
 .group li > code{font-size:.875rem}
-.src{font-size:.8125rem;color:var(--muted);text-decoration-color:var(--rule);padding:6px 0;margin:-6px 0}
+.src{font-size:.8125rem;color:var(--muted);text-decoration-color:var(--hint);padding:6px 0;margin:-6px 0}
 .group li > .src{flex-basis:100%}
 a.src:hover{color:var(--ink);text-decoration-color:currentColor}
 .step-ref{text-decoration-color:var(--muted)}
@@ -296,12 +323,14 @@ pre.shell{margin:0;background:var(--surface);border:1px solid var(--rule);border
 pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 .foot{color:var(--muted);font-size:.875rem;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--rule)}
 .foot code{font-size:.8125rem;white-space:normal}
-/* I'm on this step. A step's number is its button, outlined in its role colour so it reads as
-   one, and filled for the step you are on. The steps behind you settle onto the paper;
-   the step you are on is ringed in its role colour, with a "You are here" tab on its top
-   edge (page.js moves it). */
-button.num{border:0;padding:0;cursor:pointer;font:inherit;font-weight:700;font-size:.8125rem;font-family:var(--body);background:none;color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
-button.num:hover{box-shadow:inset 0 0 0 2.5px var(--c)}
+/* I'm on this step. A step's number is its button: a key tinted and framed in its role
+   colour, so it reads apart from the plain numbered badges, a shade deeper under the pointer,
+   and filled solid for the step you are on. The legend names it ("Pick the step you are on").
+   The steps behind you settle onto the paper; the step you are on is ringed in its role
+   colour, with a "You are here" tab on its top edge (page.js moves it). */
+:is(button.num,.pick-sw .num){border:0;padding:0;cursor:pointer;font:inherit;font-weight:700;font-size:.8125rem;font-family:var(--body);background:color-mix(in srgb,var(--c) 10%,var(--surface));color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
+.pick-sw .num{--c:var(--ink);width:20px;height:20px;border-radius:5px;font-size:.6875rem;cursor:default}
+button.num:hover{background:color-mix(in srgb,var(--c) 16%,var(--surface));box-shadow:inset 0 0 0 2px var(--c)}
 button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .card{position:relative}
 .card.behind{background:var(--paper)}
@@ -330,7 +359,7 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .here-mark.flying{position:fixed;translate:none;margin:0;box-sizing:border-box;z-index:7;pointer-events:none}
 .dock-score b{display:inline-block}
 .dock-step{margin:0;font-family:var(--display);font-size:1.1875rem;font-weight:700;line-height:1.2}
-.dock-step a{text-decoration:none}
+.dock-step a{text-decoration:underline solid var(--hint) 2px;text-underline-offset:.22em}
 .dock-step a:hover{text-decoration:underline solid var(--c) 2px;text-underline-offset:.22em}
 .dock-role{display:block;margin:3px 0 0}
 .dock-via{margin:2px 0 0;color:var(--muted);font-size:.8125rem;font-weight:600}
@@ -405,13 +434,13 @@ kbd + kbd{margin-left:-1px}
 @media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
 @media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 /* Motion only says what changed or where you are; nothing moves on its own. A new mode or
-   palette crossfades for everyone, the same page in new colours. The rest waits for
+   palette lands at once, nothing fading after it (.repaint). The rest waits for
    no reduced-motion preference: a card or a skills row reached from a link fades its ring in
    once the scroll has stopped (page.js marks it .landed), so it shows where the eye lands,
    not on the way; an opened row's descriptions fade in under their names; regrouped rows
    glide to their new place, and the "You are here" tab travels from step to step under the
    bar, the dock rising when it opens and sinking when it closes (page.js). */
-::view-transition-old(root),::view-transition-new(root){animation-duration:.25s}
+.repaint *,.repaint *::before,.repaint *::after{transition:none !important}
 @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
   .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}
   @starting-style{ .appearance:popover-open{opacity:0;translate:0 -4px} }
@@ -419,7 +448,7 @@ kbd + kbd{margin-left:-1px}
   .bar li:nth-child(2) a{transition:margin .35s cubic-bezier(.16,1,.3,1)}
   .bar a::after{transition:scale .25s cubic-bezier(.16,1,.3,1)}
   .theme .chev{transition:rotate .2s cubic-bezier(.16,1,.3,1)}
-  .toggle::before{transition:transform .2s cubic-bezier(.16,1,.3,1)}
+  .toggle::before{transition:transform .2s cubic-bezier(.16,1,.3,1)} .all::before{transition:rotate .2s cubic-bezier(.16,1,.3,1)}
   .group-by label,.appearance .seg label{transition:box-shadow .15s,color .15s}
   .group,.card{transition:box-shadow .3s ease-out,background-color .3s ease-out}
   .card .title a{transition:color .3s ease-out,text-decoration-color .3s ease-out}
