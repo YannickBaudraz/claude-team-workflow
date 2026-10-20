@@ -19,6 +19,8 @@ Done when you can list every acceptance criterion and the files and seams it tou
 
 ## 2. Branch
 
+Before creating the branch, apply the tracker doc's start-of-build status steps: promote newly unblocked tickets, then move this ticket to its start state.
+
 Create one branch for the ticket, named as the tracker doc says; without a convention, use `<ticket-id>-<short-slug>`. When other tickets are being built in parallel, work in a worktree.
 
 ## 3. Build test-first
