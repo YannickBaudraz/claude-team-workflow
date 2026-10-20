@@ -2,7 +2,7 @@
 import html
 import re
 
-from .config import ROLE_NAMES, TERMS
+from .config import ROLE_NAMES, STEP_SUMMARIES, TERMS
 from .sources import sentences
 
 esc = html.escape
@@ -101,7 +101,7 @@ def card_html(step, level=3):
             f'<h{level} class="title"><span class="vh">Step {number}, {esc(label)}: </span>'
             f'<a href="#skills-{number}">{esc(step["name"])}'
             f'<span class="vh">, its skills</span><i class="to-skills"></i></a></h{level}>{note}'
-            f'<p class="cmd-text">{md(step["command"])}</p>'
+            f'<p class="summary">{link_steps(md(STEP_SUMMARIES[number]))}</p>'
             + (f'<p class="repeat"><i class="loop"></i>Repeats for each {esc(step["qual"][4:])}</p>'
                if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket') else '')
             + (f'<div class="result">{result}</div>' if result else '') + '</article>')

@@ -150,8 +150,7 @@ a{color:inherit;text-underline-offset:.2em}
 .repeat{margin:0;display:flex;align-items:center;gap:6px;font-size:.8125rem;font-weight:700;color:var(--c)}
 .repeat .loop{width:15px;height:15px;background:var(--c)}
 .note{margin:-4px 0 0;color:var(--muted);font-size:.8125rem;line-height:1.4}
-.cmd-text{margin:0;font-size:.8438rem;line-height:1.6}
-.cmd-text code{font-size:.8125rem;white-space:normal;color:var(--ink)}
+.summary{margin:0;font-size:.8438rem;line-height:1.5}
 .arg{font-weight:400;color:var(--muted);white-space:normal}
 .result{margin-top:auto;padding-top:8px;border-top:1px solid var(--rule);display:grid;gap:8px}
 .out{margin:0;font-weight:600;font-size:.8438rem;line-height:1.4}
@@ -298,7 +297,6 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
   .group-body{padding-left:26px}
   .fork-note{grid-column:1}
   .bar .home a{font-size:.9375rem}
-  .cmd-text code{white-space:nowrap}
 }
 /* Side by side, a role label may wrap to two lines: every head keeps room for two,
    so the titles of a row line up. */
@@ -309,7 +307,7 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 /* A 360px phone fits the four links, the appearance button and GitHub only with tighter
    padding; the first link's text stays on the page's left edge, scrolled or not (these
    outrank the rules above). */
-@media (max-width: 420px){ .cmd-text code{white-space:normal;overflow-wrap:anywhere} .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
+@media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
 @media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
   .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}

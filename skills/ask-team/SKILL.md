@@ -22,7 +22,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 |---|---|---|---|
 | 1 | Discovery | `/grill-with-docs <idea>` (before any project folder exists: `/grill-me`) | Shared understanding; glossary terms and ADRs in the repo. Reads the domain doc first when one exists. |
 | 2 | Setup | `/project-setup`, then `/setup-matt-pocock-skills` | Project map, tracker doc, conventions. |
-| 3 | Fog (only when the way is unclear) | `/wayfinder` | Decisions on the tracker; then `/change-request` sizes the effort: more than one epic continues at step 4. |
+| 3 | Fog (only when the way is unclear) | `/wayfinder`, then `/change-request <effort>` once its map clears | Decisions on the tracker, and the effort sized: more than one epic continues at step 4. |
 | 4 | Problem and brief | `/define-problem-statement`, then `/develop-solution-brief` | Both approved by the user. |
 | 5 | Roadmap | `/user-story-mapping-workshop` | Story map cut into release slices; each slice is an epic. Approved. |
 | 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code | Design doc reviewed and approved. |
@@ -31,7 +31,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 | 9 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
 | 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/pair <dials>` | PR open with the template filled. |
 | 11 | Review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review`. When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
-| 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green | The user merges: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>`. Then close the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
+| 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green. To merge: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>` | The user merges. After the merge, the user closes the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
 | 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. The epic closes once the user confirms the verdict. |
 
 Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. With no ticket, the contract is the base branch's version of the doc the PR changes, and each line the PR rewrites in it goes to the user to approve before the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.

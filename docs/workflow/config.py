@@ -1,4 +1,5 @@
-"""Where the sources are, and the page's own frame: title, lede, glossary, roles, colours, fonts."""
+"""Where the sources are, and the page's own frame: title, lede, glossary, step summaries, roles,
+colours, fonts."""
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,6 +24,24 @@ TERMS = [
     ('Blocking edge', r'blocking edges?', 'A link saying one ticket has to be done before another can start.'),
     ('CI green', r'\bCI green\b', 'Every automated check on the pull request passes.'),
 ]
+# What happens in each step, one sentence for its card. The commands stay in SKILL.md, for
+# /ask-team to print, and in each step's skills; a card names none. The build fails when a
+# step has no sentence here.
+STEP_SUMMARIES = {
+    1: 'Claude questions you about the idea until it is clear, noting terms and decisions as it goes.',
+    2: "Claude chooses the project's tools and where each kind of document lives, keeping what an existing repo already has.",
+    3: 'The open decisions are mapped on the tracker and settled one at a time.',
+    4: 'The problem is framed, who it affects and how success is measured, then a one-page brief outlines the answer.',
+    5: 'A workshop with you maps what users do, step by step, and the stories under each step.',
+    6: "The epic's technical design is written up and its decisions recorded; a prototype answers what only running code can.",
+    7: "The epic's requirements are written down: what to build, why, and how success is measured.",
+    8: 'Each story is questioned one point at a time, split when it is too big, then checked for gaps.',
+    9: 'The work is cut into thin tickets, each one built and merged on its own.',
+    10: 'One ticket is built test-first on its own branch, by Claude alone or pairing with you.',
+    11: 'A fresh session reviews the PR for quality and security; you can review it yourself too.',
+    12: 'The PR is checked against its ticket, criterion by criterion, and every automated check has to pass.',
+    13: "The finished epic is judged from what it left behind, and Claude's setup is tuned from its sessions.",
+}
 
 # The router's Sessions section names these roles; the steps it leaves out are yours.
 ROLE_WORDS = {'product': 'product', 'tech lead': 'lead', 'developer': 'dev', 'reviewer': 'review'}

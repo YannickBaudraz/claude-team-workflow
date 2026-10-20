@@ -5,7 +5,9 @@ What the page says about the workflow comes from skills/ask-team/SKILL.md (the
 steps, how the router sizes a request, the ways in, the any-time skills, the
 session and gate rules) and skills/ask-team/REGISTRY.md (every skill, where it
 is used, what it does). SKILL.md speaks to Claude about "the user"; the page
-turns that into "you". Change those two files, never the page:
+turns that into "you". The one sentence on each step's card is the page's own,
+in docs/workflow/config.py: cards name no commands. Change those files, never
+the page:
 
     python3 docs/build-workflow.py                       # write docs/workflow.html to preview
     python3 docs/build-workflow.py --out _site/index.html
@@ -46,7 +48,7 @@ import sys
 # A planted change saved within the same second can otherwise run the old cached module.
 sys.dont_write_bytecode = True
 
-from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, ROOT, SKILL
+from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, ROOT, SKILL, STEP_SUMMARIES
 from workflow.page import build
 from workflow.palettes import palette_problems, unchecked_backgrounds
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
@@ -72,6 +74,12 @@ def main():
         router = read_router(SKILL)
         groups, kinds, sources = read_registry(REGISTRY, router['steps'])
         install = read_install(README)
+        need(sorted(STEP_SUMMARIES) == list(router['steps']),
+             'docs/workflow/config.py: STEP_SUMMARIES should hold one sentence per Main flow step')
+        for number, step in router['steps'].items():
+            need('`' not in step['output'],
+                 f'SKILL.md: step {number}\'s output names a command, which its card would show; '
+                 'move it to the Command column')
         for _, file, _ in FACES:
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as error:
