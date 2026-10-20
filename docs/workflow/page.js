@@ -274,6 +274,7 @@ function fill() {
     button.append(why, place, arrow);
     return button;
   }));
+  dock.scrollTop = 0;  // a capped dock opens on its step, not where the last one was scrolled to
   picked = -1;
   paintGame();
 }
