@@ -12,8 +12,7 @@ it in an iframe of the asked size, so any width works, under 500px too. Stored c
 set before the page runs (--theme pins a mode, --dark sets the system's), scrolling to --at is
 instant, so the shot never lands mid-scroll, and lands under every bar stuck to the top at that
 point, measured on the page. --click then clicks, and --freeze holds the animations that click
-starts at one moment, so a shot can show motion midway; without it, every animation is
-finished before reading or shooting. Each run gets a fresh browser profile.
+starts at one moment, so a shot can show motion midway. Each run gets a fresh browser profile.
 
 --measure prints every match of a selector as `selector [index] x y w h` in page pixels, plus
 each --style property computed on it. Chrome must run outside the Claude Code sandbox. CHROME
@@ -65,10 +64,7 @@ f.onload = () => {
       else act();
     }, 150);
   };
-  // Headless Chrome does not move a transition on by itself, so without --freeze every
-  // animation is finished first: what is read and shot is the page at rest.
   const report = () => {
-    if (o.freeze === null) d.getAnimations().forEach(a => a.finish());
     for (const sel of o.measure) {
       const all = d.querySelectorAll(sel);
       if (!all.length) out.push(sel + ' no match');
@@ -78,6 +74,10 @@ f.onload = () => {
         out.push(`${sel} [${i}] ${Math.round(r.left)} ${Math.round(r.top + w.scrollY)} ${Math.round(r.width)} ${Math.round(r.height)}${css ? ' ' + css : ''}`);
       });
     }
+    // Unless --freeze asked for motion, every transition is finished first: Chrome's
+    // headless shot does not advance them, so a plain shot or measure would otherwise
+    // catch the page part-way (a bar title still closed, a ring not yet drawn).
+    if (o.freeze === null) d.getAnimations().forEach(a => a.finish());
     if (o.freeze !== null) {
       clearInterval(watching);
       out.push(`froze ${seen.size - before} animation${seen.size - before === 1 ? '' : 's'} at ${o.freeze}ms`);
@@ -110,7 +110,9 @@ f.onload = () => {
     el.click();
     setTimeout(() => click(i + 1), 600);
   };
-  const act = () => o.click.length ? setTimeout(() => click(0), 600) : report();
+  // The page reacts to a scroll a frame later, and to a stopped scroll after a timer, so a
+  // plain report waits as long as a click does before it reads the page.
+  const act = () => setTimeout(() => o.click.length ? click(0) : report(), 600);
   if (o.freeze !== null && !o.click.length) watch();
   setTimeout(() => {
     const t = o.at && d.querySelector(o.at);
