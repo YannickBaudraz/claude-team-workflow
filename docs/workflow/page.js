@@ -292,6 +292,7 @@ async function go(to, how = '', push = true) {
   const was = at;
   at = to;
   via = how;
+  land(null);  // a card reached from a link loses its ring: the step you pick is the one marked
   if (push) history.pushState(null, '', address());
   try { to === null ? localStorage.removeItem('at') : localStorage.setItem('at', to); } catch {}
   const card = cards.get(to);
