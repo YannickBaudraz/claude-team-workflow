@@ -386,7 +386,13 @@ button.num:hover,button.num[aria-pressed="true"]{box-shadow:0 0 0 2px var(--surf
 /* Moving to another step, the tab travels from the old card to the new one; the dock rises
    from the window's foot the first time and sinks back when closed. */
 ::view-transition-group(here){animation-duration:.55s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
-::view-transition-group(dock){animation-duration:.3s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+/* The rest of the page stays out of it: drawn as a snapshot for the transition, the whole page
+   pales for a moment. It changes in place, the cards through their own transitions; an open
+   dock swaps its answer at once rather than showing two answers over each other. */
+:root.stepping{view-transition-name:none}
+::view-transition-group(dock){animation:none}
+::view-transition-old(dock):not(:only-child){display:none}
+::view-transition-new(dock):not(:only-child){animation:none}
 ::view-transition-new(dock):only-child{animation:dock-rise .35s cubic-bezier(.16,1,.3,1)}
 ::view-transition-old(dock):only-child{animation:dock-rise .25s cubic-bezier(.7,0,.84,0) reverse}
 ::view-transition-new(here):only-child{animation:here-drop .3s cubic-bezier(.16,1,.3,1)}

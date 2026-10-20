@@ -296,7 +296,8 @@ async function go(to, how = '', push = true) {
     return;
   }
   if (card) await glide(card);
-  document.startViewTransition(fill);
+  root.classList.add('stepping');
+  document.startViewTransition(fill).finished.finally(() => root.classList.remove('stepping'));
 }
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
