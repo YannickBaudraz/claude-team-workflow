@@ -211,19 +211,27 @@ cards.forEach((card, number) => {
   badge.replaceWith(button);
 });
 const picks = [...document.querySelectorAll('button[data-at]')];
-// The router's buttons are one stop for Tab: the arrow keys, Home and End move between them,
-// and the one Tab lands on is the step you are on, or step 1.
+// A set of buttons the arrow keys, Home and End move through. The router's step buttons and
+// the cards' are each one stop for Tab, the step you are on or step 1; the dock's ways on
+// stay a stop each.
 const chips = [...where.querySelectorAll('button[data-at]')];
-function rove(chip) { chips.forEach(other => { other.tabIndex = other === chip ? 0 : -1; }); }
-where.addEventListener('keydown', event => {
-  const index = chips.indexOf(event.target), last = chips.length - 1;
-  const to = {ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1, Home: 0, End: last}[event.key];
-  if (index < 0 || to === undefined) return;
-  event.preventDefault();
-  const chip = chips[to < 0 ? last : to > last ? 0 : to];
-  rove(chip);
-  chip.focus();
-});
+const badges = [...cards.values()].map(card => card.querySelector('button.num'));
+function rove(set, button) { set.forEach(other => { other.tabIndex = other === button ? 0 : -1; }); }
+function arrows(container, set, roving) {
+  container.addEventListener('keydown', event => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const buttons = set(), index = buttons.indexOf(event.target), last = buttons.length - 1;
+    const to = {ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1, Home: 0, End: last}[event.key];
+    if (index < 0 || to === undefined) return;
+    event.preventDefault();
+    const button = buttons[to < 0 ? last : to > last ? 0 : to];
+    if (roving) rove(buttons, button);
+    button.focus();
+  });
+}
+arrows(where, () => chips, true);
+arrows(document.querySelector('main'), () => badges, true);
+arrows(dock, () => [...dock.querySelectorAll('.go')], false);
 let at = null, via = '';
 // The step button the dock was opened from with the keyboard: closing returns there.
 let back = null;
@@ -238,7 +246,9 @@ function fill() {
     card.classList.toggle('here', number === at);
   });
   picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
-  if (!where.contains(document.activeElement)) rove(chips.find(chip => +chip.dataset.at === at) || chips[0]);
+  for (const set of [chips, badges]) {
+    if (!set.includes(document.activeElement)) rove(set, set.find(button => +button.dataset.at === at) || set[0]);
+  }
   root.classList.toggle('has-dock', at !== null);
   dock.hidden = at === null;
   if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
@@ -336,10 +346,36 @@ function close() {
   back = null;
   go(null).then(() => {
     if (!focused || !from) return;
-    if (chips.includes(from)) rove(from);
+    rove(chips.includes(from) ? chips : badges, from);
     from.focus();
   });
 }
+// For Tab, the dock sits right after the step button it answers, though it is drawn at the
+// window's foot: Tab from that button enters it, and leaving it, either way, comes back to
+// the page beside that button rather than at the page's start or end.
+const focusable = 'a[href], button, input, select, textarea, summary, [tabindex]';
+function tabbable(scope) {
+  return [...scope.querySelectorAll(focusable)].filter(el => el.tabIndex >= 0 && !el.disabled
+    && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+}
+function anchor() {
+  return back?.isConnected ? back : cards.get(at)?.querySelector('button.num') || null;
+}
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Tab' || at === null || event.altKey || event.ctrlKey || event.metaKey) return;
+  const from = anchor(), active = document.activeElement, inside = tabbable(dock);
+  if (!from || !inside.length) return;
+  const page = tabbable(document.body).filter(el => !dock.contains(el));
+  let target = null;
+  if (dock.contains(active)) {
+    if (event.shiftKey && (active === dock || active === inside[0])) target = from;
+    else if (!event.shiftKey && active === inside.at(-1)) target = page[page.indexOf(from) + 1] || page[0];
+  } else if (!event.shiftKey && active === from) target = inside[0];
+  else if (event.shiftKey && page[page.indexOf(active) - 1] === from) target = inside.at(-1);
+  if (!target) return;
+  event.preventDefault();
+  target.focus();
+});
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
   const copy = event.target.closest('.copy'), keyed = event.detail === 0;
@@ -348,6 +384,7 @@ document.addEventListener('click', event => {
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
   } else if (next) {
     const to = parse(next.dataset.to), label = next.dataset.label;
+    back = null;
     go(to, label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`)
       .then(() => (dock.querySelector('.go') || dock).focus());
   }
