@@ -13,7 +13,7 @@ web
 
 ## Product Purpose
 
-A personal workflow for new and existing projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, peer review, approval and a retro per epic. `/ask-team` is the entry point: it reads the project's state and prints the next command to paste, the session to run it in, and the gate before the step after it.
+A personal workflow for new and existing projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, review, approval and a retro per epic. `/ask-team` is the entry point: it reads the project's state and prints the next command to paste, the session to run it in, and the gate before the step after it.
 
 The workflow page (https://yannickbaudraz.github.io/claude-team-workflow/) shows the whole workflow on one page. Someone who opens it succeeds when they:
 

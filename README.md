@@ -1,6 +1,6 @@
 # Claude team workflow
 
-My personal workflow for new and existing projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, peer review, approval and a retro per epic.
+My personal workflow for new and existing projects with Claude Code, run the way an engineering team works: discovery, setup, roadmap, epics, refinement, tickets, test-first build, review, approval and a retro per epic.
 
 `/ask-team` is the entry point. A new project starts with `/grill-with-docs`; a feature, improvement or bug fix in an existing one starts with `/change-request`. It reads where the project stands and prints the next command to run, in which session, and what has to be approved before moving on. It routes across my own skills, Matt Pocock's plugin and a set of community skills, each picked for the step it does best.
 
