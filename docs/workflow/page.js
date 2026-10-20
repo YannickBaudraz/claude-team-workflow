@@ -267,12 +267,12 @@ function fill() {
     button.className = 'go';
     button.dataset.to = to || 'done';
     button.dataset.label = label;
-    const why = document.createElement('b'), where = document.createElement('span'), arrow = document.createElement('i');
+    const why = document.createElement('b'), place = document.createElement('span'), arrow = document.createElement('i');
     why.textContent = label;
-    where.textContent = !to ? 'the roadmap is done' : to === at ? `step ${to} again`
+    place.textContent = !to ? 'the roadmap is done' : to === at ? `step ${to} again`
       : `${to < at ? 'back to ' : ''}step ${to}, ${answers.steps[to].name}`;
     arrow.className = 'ai';
-    button.append(why, where, arrow);
+    button.append(why, place, arrow);
     return button;
   }));
   picked = -1;

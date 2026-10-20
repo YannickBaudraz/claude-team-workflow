@@ -51,6 +51,7 @@ sys.dont_write_bytecode = True
 
 from workflow.config import FACES, FONTS, PREVIEW, README, REGISTRY, ROOT, SKILL, STEP_SUMMARIES
 from workflow.page import build
+from workflow.render import answers
 from workflow.palettes import palette_problems, unchecked_backgrounds
 from workflow.sources import SourceError, need, read_install, read_registry, read_router
 
@@ -81,6 +82,12 @@ def main():
             need('`' not in step['output'],
                  f'SKILL.md: step {number}\'s output names a command, which its card would show; '
                  'move it to the Command column')
+        # The dock's Session line is read from SKILL.md's Sessions paragraph; a rewording
+        # that stops it matching would leave the line empty without a word.
+        for number, answer in answers(router)['steps'].items():
+            need(number > router['review'] or answer['session'],
+                 f'SKILL.md: the Sessions paragraph names no session for step {number}, '
+                 'which the page\'s answer for that step would leave empty')
         for _, file, _ in FACES:
             need(os.path.isfile(os.path.join(FONTS, file)), f'docs/fonts has no {file}')
     except SourceError as error:
