@@ -316,8 +316,8 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 @media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .router .cmd,.install .cmd{font-size:1.5rem} }
 @media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 /* Motion only says what changed or where you are; nothing moves on its own. A new mode or
-   palette crossfades for everyone, the same page in new colours. The rest waits for
-   no reduced-motion preference: a card or a skills row reached from a link fades its ring in
+   palette crossfades for everyone, the same page in new colours. The rest waits for no
+   reduced-motion preference: a card or a skills row reached from a link fades its ring in
    once the scroll has stopped (page.js marks it .landed), so it shows where the eye lands,
    not on the way; an opened row's descriptions fade in under their names; regrouped rows
    glide to their new place (page.js). */
