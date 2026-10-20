@@ -3,6 +3,7 @@
 page.css holds /* LIGHT_TOKENS */ and /* DARK_TOKENS */ where Reader's colour variables go,
 and /* PALETTES */ where the other palettes go; theme.js and page.js hold @PAPERS@ where
 each palette's paper colours go, for the browser's theme-color."""
+import json
 import os
 import re
 
@@ -10,7 +11,7 @@ from . import render
 from .config import (DARK, FACES, GROUP_TITLES, ICON, LEDE, LIGHT, OUTSIDE, PAGE_URL, PALETTE_SOURCES,
                      PALETTES, REGISTRY, REPO_URL, ROLE_NAMES, SKILL, TERMS, TITLE)
 from .palettes import PAPERS, palette_css, tokens
-from .render import (AI, answer_html, arr, card_html, esc, flow_html, link, link_steps, link_terms, md,
+from .render import (AI, answer_html, answers, arr, card_html, esc, flow_html, link, link_steps, link_terms, md,
                      slug, voice)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -198,6 +199,8 @@ def build(router, groups, kinds, sources, install, digest, version=None):
     built = (f'<p class="version">Version <a href="{REPO_URL}/commit/{version["full"]}"{NEW_TAB}><code>{version["short"]}</code>{NEW_TAB_NOTE}</a>'
              f' · <time datetime="{version["date"]}">{version["date"]}</time>'
              + (' · with local changes' if version['changed'] else '') + '</p>') if version else ''
+    # What /ask-team answers at each step, for page.js; a "</" can't end the script early.
+    answers_json = json.dumps(answers(router)).replace('</', '<\\/')
     preload = '\n'.join(f'<link rel="preload" href="fonts/{file}" as="font" type="font/woff2" crossorigin>'
                         for _, file, _ in FACES)
     page = f"""<!doctype html>
@@ -296,6 +299,13 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <p class="foot">This page is built by <a href="{REPO_URL}/blob/main/docs/build-workflow.py"{NEW_TAB}><code>docs/build-workflow.py</code>{NEW_TAB_NOTE}</a> from <code>skills/ask-team/SKILL.md</code> and <code>skills/ask-team/REGISTRY.md</code>, the files the router itself reads. Sources fingerprint {digest}, a hash of both files. The {credits} palettes keep their authors' published colours, apart from a few text colours changed to read at 4.5:1 or better, and Tokyo Night Day's blue text set in dark slate.</p>
 </section>
 </main>
+<aside class="dock" id="dock" aria-labelledby="dock-step" hidden><div class="dock-in">
+<div class="dock-head"><span class="num"></span><div><p class="dock-step" id="dock-step" aria-live="polite"></p><p class="role dock-role"></p><p class="dock-via"></p></div></div>
+<dl class="dock-answer"><div class="dock-run"><dt>Run</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
+<div class="dock-next" role="group" aria-label="When this step is done"></div>
+<button type="button" class="dock-close" aria-label="Close the answer"><i></i></button>
+</div></aside>
+<script type="application/json" id="answers">{answers_json}</script>
 <a class="to-top" href="#top"><i class="ai"></i><span class="vh">Back to top</span></a>
 <script>{BAR_JS}</script>
 </body>

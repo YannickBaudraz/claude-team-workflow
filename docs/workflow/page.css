@@ -17,6 +17,7 @@
   --sun:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4'/%3E%3C/svg%3E");
   --moon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/%3E%3C/svg%3E");
   --check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --close:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
   --system:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='2'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }
 /* The theme follows the system unless the toggle in the bar pins one (data-theme on html). */
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ /* DARK_TOKENS */ color-scheme:dark; } }
@@ -26,6 +27,7 @@
    palette's swatch in that menu; page.py writes them from config.PALETTES. */
 /* PALETTES */
 *,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
 html{scroll-padding-top:calc(var(--bar) + 16px)}
 body{margin:0;overflow-x:clip;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.55}
 .wrap,.bar-in{max-width:1300px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
@@ -288,6 +290,56 @@ pre.shell{margin:0;background:var(--surface);border:1px solid var(--rule);border
 pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 .foot{color:var(--muted);font-size:.875rem;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--rule)}
 .foot code{font-size:.8125rem;white-space:normal}
+/* I'm on this step. A step's number is its button: ringed on hover, ringed for good on the
+   step you are on. The steps behind you settle onto the paper with their number outlined;
+   the step you are on is ringed in its role colour, with a "You are here" tab on its top
+   edge (page.js moves it). */
+button.num{border:0;padding:0;cursor:pointer;font:inherit;font-weight:700;font-size:.8125rem;font-family:var(--body)}
+button.num:hover,button.num[aria-pressed="true"]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--c)}
+.card{position:relative}
+.card.behind{background:var(--paper)}
+.card.behind .num,.where .num.behind{background:none;color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
+.card.behind .num:hover{box-shadow:inset 0 0 0 1.5px var(--c),0 0 0 2px var(--paper),0 0 0 4px var(--c)}
+.card.behind :is(.summary,.out){color:var(--muted)}
+.card.here{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 24px -14px rgb(0 0 0 / .4)}
+.here-mark{position:absolute;top:0;left:11px;translate:0 -55%;padding:1px 7px;border-radius:5px;background:var(--c);color:var(--on-role);font-size:.6875rem;line-height:1.6;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;view-transition-name:here}
+/* In the router's answer: one button per step, in its role colour. */
+.where{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.where-title{margin:0 0 10px;font-size:.9375rem;font-weight:700}
+.where-steps{display:flex;flex-wrap:wrap;gap:8px}
+.where .num{width:30px;height:30px;border-radius:7px}
+.where .num[aria-pressed="true"]{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--c)}
+/* The dock: the answer for the step you are on, fixed to the window's foot. Wide, it reads
+   in a row, the step, then the answer, then the ways on; narrow, it stacks. */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--rule);box-shadow:0 -12px 28px -20px rgb(0 0 0 / .45);padding-bottom:env(safe-area-inset-bottom);view-transition-name:dock}
+.dock-in{position:relative;max-width:1300px;margin:0 auto;padding:16px clamp(16px,4vw,40px);display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr) minmax(0,auto) 36px;gap:12px 32px;align-items:center}
+.dock-head{display:flex;align-items:center;gap:12px;min-width:0}
+.dock-head .num{width:36px;height:36px;border-radius:8px;font-size:.9375rem}
+.dock-step{margin:0;font-family:var(--display);font-size:1.1875rem;font-weight:700;line-height:1.2}
+.dock-step a{text-decoration:none}
+.dock-step a:hover{text-decoration:underline solid var(--c) 2px;text-underline-offset:.22em}
+.dock-role{display:block;margin:3px 0 0}
+.dock-via{margin:2px 0 0;color:var(--muted);font-size:.8125rem;font-weight:600}
+.dock-answer{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;font-size:.875rem;line-height:1.45}
+.dock-answer > div{display:contents}
+.dock-answer dt{color:var(--muted);font-weight:600}
+.dock-answer dd{margin:0}
+.dock-answer code{white-space:normal}
+.dock-gate .gate-mark{display:inline-flex;margin-right:4px}
+.copy{margin-left:8px;padding:1px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;vertical-align:1px}
+.copy:hover{border-color:var(--muted)}
+.dock-next{display:grid;gap:6px;justify-items:stretch}
+.go{display:flex;align-items:center;gap:6px;padding:7px 10px 7px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-size:.875rem;text-align:left;cursor:pointer;white-space:nowrap}
+.go span{color:var(--muted)}
+.go b{font-weight:700}
+.go .ai{width:16px;height:16px;margin-left:auto;padding-left:4px;color:var(--muted)}
+.go:hover{border-color:var(--ink)}
+.go:hover .ai{color:var(--ink)}
+.dock-close{align-self:start;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
+.dock-close:hover{color:var(--ink);background:var(--paper)}
+.dock-close i{width:16px;height:16px;background:currentColor;-webkit-mask:var(--close) center/contain no-repeat;mask:var(--close) center/contain no-repeat}
+.has-dock body{padding-bottom:var(--dock,0px)}
+.has-dock .to-top{bottom:calc(var(--dock,0px) + 16px)}
 .p-product{--c:var(--product)} .p-lead{--c:var(--lead)} .p-dev{--c:var(--dev)} .p-review{--c:var(--review)} .p-you{--c:var(--you)}
 @media (max-width: 1100px){
   .wrap,.bar-in{max-width:calc(720px + 2 * clamp(16px,4vw,40px))}
@@ -303,6 +355,15 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
   .group-body{padding-left:26px}
   .fork-note{grid-column:1}
   .bar .home a{font-size:.9375rem}
+  .dock-in{grid-template-columns:minmax(0,1fr) 36px;gap:10px 16px;padding-block:12px}
+  .dock-close{grid-area:1 / 2;margin:-4px -8px 0 0}
+  .dock-answer,.dock-next{grid-column:1 / -1}
+  .dock-head .num{width:30px;height:30px;font-size:.875rem}
+  .dock-step{font-size:1.0625rem}
+  .dock-next{display:flex;flex-wrap:wrap;gap:6px}
+  .go{white-space:normal;flex:1 1 10rem;line-height:1.3;padding-block:6px}
+  .go{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 6px;align-items:center;align-content:center}
+  .go .ai{grid-area:1 / 2 / 3 / 3}
 }
 /* Side by side, a role label may wrap to two lines: every head keeps room for two,
    so the titles of a row line up. */
@@ -322,6 +383,15 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
    not on the way; an opened row's descriptions fade in under their names; regrouped rows
    glide to their new place (page.js). */
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.25s}
+/* Moving to another step, the tab travels from the old card to the new one; the dock rises
+   from the window's foot the first time and sinks back when closed. */
+::view-transition-group(here){animation-duration:.55s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+::view-transition-group(dock){animation-duration:.3s;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+::view-transition-new(dock):only-child{animation:dock-rise .35s cubic-bezier(.16,1,.3,1)}
+::view-transition-old(dock):only-child{animation:dock-rise .25s cubic-bezier(.7,0,.84,0) reverse}
+::view-transition-new(here):only-child{animation:here-drop .3s cubic-bezier(.16,1,.3,1)}
+@keyframes dock-rise{from{translate:0 100%}}
+@keyframes here-drop{from{opacity:0;translate:0 -6px}}
 @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} .to-top{transition:opacity .2s,translate .2s cubic-bezier(.2,.7,.3,1),visibility .2s}
   .appearance{transition:opacity .15s,translate .15s cubic-bezier(.2,.7,.3,1),overlay .15s allow-discrete,display .15s allow-discrete}
   @starting-style{ .appearance:popover-open{opacity:0;translate:0 -4px} }

@@ -186,3 +186,144 @@ try { saved = localStorage.getItem('group-by') || 'role'; } catch {}
 const choice = switcher.querySelector(`input[value="${saved}"]`);
 if (choice) { choice.checked = true; group(saved); }
 openTarget();
+
+// I'm on this step: a step's number, on its card or in the router's answer, says where you
+// are, and the dock answers the way /ask-team would: the command, the session, the gate, and
+// the ways on once the step is done. The steps before it settle back, a "You are here" tab
+// sits on its card, and from step to step that tab travels, so a loop shows where it goes
+// back to. Where you are is in the address (?at=7, or ?at=done once the last epic closes), so
+// the browser's Back steps back, and it is remembered for the next visit.
+const answers = JSON.parse(document.getElementById('answers').textContent);
+const dock = document.getElementById('dock'), where = document.querySelector('.where');
+const cards = new Map([...document.querySelectorAll('.card')].map(card => [+card.id.slice(5), card]));
+const here = document.createElement('span');
+here.className = 'here-mark';
+here.textContent = 'You are here';
+cards.forEach((card, number) => {
+  const badge = card.querySelector('.num'), button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'num';
+  button.dataset.at = number;
+  button.textContent = badge.textContent;
+  button.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-label', `I'm on step ${number}, ${answers.steps[number].name}`);
+  button.title = `I'm on step ${number}`;
+  badge.replaceWith(button);
+});
+const picks = [...document.querySelectorAll('button[data-at]')];
+let at = null, via = '';
+function field(name, value) {
+  dock.querySelector(`.dock-${name}`).hidden = !value;
+  dock.querySelector(`.dock-${name} dd`).innerHTML = value;
+}
+function fill() {
+  const done = at === 'done', step = done ? null : answers.steps[at];
+  cards.forEach((card, number) => {
+    card.classList.toggle('behind', at !== null && (done || number < at));
+    card.classList.toggle('here', number === at);
+  });
+  picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
+  root.classList.toggle('has-dock', at !== null);
+  dock.hidden = at === null;
+  if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
+  if (at === null) return;
+  const badge = dock.querySelector('.dock-head .num'), role = dock.querySelector('.dock-role');
+  badge.hidden = done;
+  if (!done) { badge.className = `num p-${step.role}`; badge.textContent = at; }
+  const title = document.createElement('a');
+  title.href = `#step-${at}`;
+  title.textContent = `Step ${at}, ${step?.name}`;
+  dock.querySelector('.dock-step').replaceChildren(done ? 'Every epic is closed' : title);
+  role.textContent = done ? 'The roadmap is done' : step.label;
+  role.className = `role dock-role p-${done ? 'you' : step.role}`;
+  dock.querySelector('.dock-via').textContent = via;
+  dock.querySelector('.dock-via').hidden = !via;
+  const copy = text => text && navigator.clipboard ? '<button type="button" class="copy">Copy</button>' : '';
+  if (done) {
+    field('run', `For the next change: ${answers.end}${copy(answers.end_copy)}`);
+    field('session', '');
+    field('gate', '');
+  } else {
+    field('run', step.command + copy(step.copy));
+    field('session', step.session);
+    field('gate', step.gate ? `<span class="gate-mark"><span class="dia"></span>${step.gate}</span> ${step.gate_out}` : step.gate_out);
+  }
+  dock.querySelector('.dock-next').replaceChildren(...(done ? [] : step.next).map(({label, to}) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'go';
+    button.dataset.to = to || 'done';
+    button.dataset.label = label;
+    const why = document.createElement('b'), where = document.createElement('span'), arrow = document.createElement('i');
+    why.textContent = label;
+    where.textContent = !to ? 'the roadmap is done' : to === at ? `step ${to} again`
+      : `${to < at ? 'back to ' : ''}step ${to}, ${answers.steps[to].name}`;
+    arrow.className = 'ai';
+    button.append(why, where, arrow);
+    return button;
+  }));
+}
+function address() {
+  const url = new URL(location.href);
+  if (at === null) url.searchParams.delete('at'); else url.searchParams.set('at', at);
+  return url;
+}
+function parse(value) {
+  return value === 'done' ? 'done' : Object.hasOwn(answers.steps, value ?? '') ? +value : null;
+}
+// Out of view, the page first glides to the card, centred between the bar and the dock;
+// then the tab moves.
+function glide(card) {
+  const box = card.getBoundingClientRect(), top = bar.offsetHeight;
+  const bottom = innerHeight - (dock.hidden ? Math.min(240, innerHeight * .3) : dock.offsetHeight);
+  if (box.top >= top + 8 && box.bottom <= bottom - 8) return Promise.resolve();
+  scrollTo({top: scrollY + box.top - top - Math.max(16, (bottom - top - box.height) / 2), behavior: 'smooth'});
+  return new Promise(resolve => {
+    const timer = setTimeout(resolve, 900);
+    addEventListener('scrollend', () => { clearTimeout(timer); resolve(); }, {once: true});
+  });
+}
+async function go(to, how = '', push = true) {
+  if (to === at) return;
+  at = to;
+  via = how;
+  if (push) history.pushState(null, '', address());
+  try { to === null ? localStorage.removeItem('at') : localStorage.setItem('at', to); } catch {}
+  const card = cards.get(to);
+  if (still.matches || !document.startViewTransition) {
+    fill();
+    if (card) card.scrollIntoView({block: 'nearest'});
+    return;
+  }
+  if (card) await glide(card);
+  document.startViewTransition(fill);
+}
+document.addEventListener('click', event => {
+  const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
+  const copy = event.target.closest('.copy');
+  if (pick) go(+pick.dataset.at);
+  else if (next) {
+    const to = parse(next.dataset.to), label = next.dataset.label;
+    go(to, label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`);
+  }
+  else if (copy) {
+    navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy).then(() => {
+      copy.textContent = 'Copied';
+      setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
+    });
+  } else if (event.target.closest('.dock-close')) go(null);
+});
+dock.addEventListener('keydown', event => { if (event.key === 'Escape') go(null); });
+addEventListener('popstate', () => go(parse(new URL(location.href).searchParams.get('at')), '', false));
+// The dock's height keeps the page's end and the back-to-top button clear of it.
+new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);
+where.hidden = false;
+{
+  const asked = parse(new URL(location.href).searchParams.get('at'));
+  let kept = null;
+  try { kept = parse(localStorage.getItem('at')); } catch {}
+  at = asked ?? kept;
+  if (at !== null && asked === null) history.replaceState(null, '', address());
+  fill();
+  if (cards.has(asked) && !location.hash) cards.get(asked).scrollIntoView({block: 'center'});
+}

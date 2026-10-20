@@ -24,7 +24,8 @@ This file is the command line; the page is made in docs/workflow/:
     page.py      assembling the HTML
     page.css     the stylesheet; page.py fills in the palettes and the font faces
     theme.js     runs in the head: applies a pinned mode and palette before the page paints
-    page.js      the bar, its appearance menu and the skills list
+    page.js      the bar, its appearance menu, the skills list, and the step you are on
+                 with /ask-team's answer for it
 
 The page serves its own fonts from docs/fonts (SIL Open Font License, the licences
 sit beside them), copied next to the page when it is written elsewhere, so no
