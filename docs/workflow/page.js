@@ -283,25 +283,32 @@ function glide(card) {
     addEventListener('scrollend', () => { clearTimeout(timer); resolve(); }, {once: true});
   });
 }
+// The tab travels from its old card to its new one, measured before and after; the dock
+// rises when it opens and sinks when it closes. Plain animations, not a view transition:
+// Chrome on Android blinks the dock in one.
+const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
 async function go(to, how = '', push = true) {
   if (to === at) return;
-  // An open dock that stays open changes in place, out of the transition; it only moves
-  // when it opens or closes.
-  const docking = (at === null) !== (to === null);
+  const was = at;
   at = to;
   via = how;
   if (push) history.pushState(null, '', address());
   try { to === null ? localStorage.removeItem('at') : localStorage.setItem('at', to); } catch {}
   const card = cards.get(to);
-  if (still.matches || !document.startViewTransition) {
+  if (still.matches) {
     fill();
     if (card) card.scrollIntoView({block: 'nearest'});
     return;
   }
   if (card) await glide(card);
-  root.classList.add('stepping');
-  root.classList.toggle('docking', docking);
-  document.startViewTransition(fill).finished.finally(() => root.classList.remove('stepping', 'docking'));
+  const from = here.isConnected ? here.getBoundingClientRect() : null;
+  if (to === null) await dock.animate({translate: ['0 0', '0 100%']}, {duration: 250, easing: 'cubic-bezier(.7,0,.84,0)'}).finished;
+  fill();
+  if (was === null) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  if (!here.isConnected) return;
+  const now = here.getBoundingClientRect();
+  here.animate(from ? {transform: [`translate(${from.left - now.left}px, ${from.top - now.top}px)`, 'none']}
+    : {opacity: [0, 1], transform: ['translateY(-6px)', 'none']}, from ? settle : {duration: 300, easing: settle.easing});
 }
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
