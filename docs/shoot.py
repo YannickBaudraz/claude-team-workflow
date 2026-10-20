@@ -5,12 +5,14 @@
     python3 docs/shoot.py --width 390 --dark --palette nord --at '#skills' --shot phone.png
     python3 docs/shoot.py --group-by moment --measure '.group h4 .role' --style padding-left
     python3 docs/shoot.py --root ../other-checkout --shot before.png  # build another copy
+    python3 docs/shoot.py --at '#skills' --click '[name=group-by][value=moment]' --freeze 150 --shot mid.png
 
 It builds the page from --root (this checkout by default) into a temporary folder, then loads
 it in an iframe of the asked size, so any width works, under 500px too. Stored choices are
 set before the page runs (--theme pins a mode, --dark sets the system's), scrolling to --at is
 instant, so the shot never lands mid-scroll, and lands under every bar stuck to the top at that
-point, measured on the page. Each run gets a fresh browser profile.
+point, measured on the page. --click then clicks, and --freeze holds the animations that click
+starts at one moment, so a shot can show motion midway. Each run gets a fresh browser profile.
 
 --measure prints every match of a selector as `selector [index] x y w h` in page pixels, plus
 each --style property computed on it. Chrome must run outside the Claude Code sandbox. CHROME
@@ -59,7 +61,7 @@ f.onload = () => {
     setTimeout(() => {
       const now = covered();
       if (Math.abs(now - cover) > 1 && tries) scroll(t, now, tries - 1);
-      else report();
+      else act();
     }, 150);
   };
   const report = () => {
@@ -72,13 +74,45 @@ f.onload = () => {
         out.push(`${sel} [${i}] ${Math.round(r.left)} ${Math.round(r.top + w.scrollY)} ${Math.round(r.width)} ${Math.round(r.height)}${css ? ' ' + css : ''}`);
       });
     }
+    if (o.freeze !== null) {
+      clearInterval(watching);
+      out.push(`froze ${seen.size - before} animation${seen.size - before === 1 ? '' : 's'} at ${o.freeze}ms`);
+    }
     document.getElementById('out').textContent = out.join('\\n') + '\\nDONE';
   };
+  // --freeze pauses each animation that starts after the last action, the last click or, with
+  // none, the load and the scroll, at that many ms into it: animations already running are
+  // left alone, and one that starts late, after a scroll settles, is still caught.
+  const seen = new Set();
+  let watching, before = 0;
+  const watch = () => {
+    d.getAnimations().forEach(a => seen.add(a));
+    before = seen.size;
+    watching = setInterval(() => d.getAnimations().forEach(a => {
+      if (seen.has(a)) return;
+      seen.add(a);
+      a.pause();
+      a.currentTime = o.freeze;
+    }), 5);
+  };
+  // --click clicks each match in turn, 600ms apart so what one starts has ended before the
+  // next, then waits for what the last one starts before reporting. The first waits as long,
+  // so the page has caught up with the scroll and nothing it starts there is in the frame.
+  const click = i => {
+    if (i === o.click.length) return setTimeout(report, 1500);
+    const el = d.querySelector(o.click[i]);
+    if (!el) { out.push('no match for --click ' + o.click[i]); return report(); }
+    if (i === o.click.length - 1 && o.freeze !== null) watch();
+    el.click();
+    setTimeout(() => click(i + 1), 600);
+  };
+  const act = () => o.click.length ? setTimeout(() => click(0), 600) : report();
+  if (o.freeze !== null && !o.click.length) watch();
   setTimeout(() => {
     const t = o.at && d.querySelector(o.at);
     if (o.at && !t) out.push('no match for --at ' + o.at);
     else if (t && !t.getClientRects().length) out.push('--at ' + o.at + ' is not shown, so nothing was scrolled');
-    if (t && t.getClientRects().length) scroll(t, covered(), 4); else report();
+    if (t && t.getClientRects().length) scroll(t, covered(), 4); else act();
   }, 300);
 };
 f.src = 'index.html';
@@ -96,6 +130,10 @@ def main():
     ap.add_argument('--group-by', choices=['role', 'moment', 'kind'], help="the skills list's grouping")
     ap.add_argument('--at', help='a selector to scroll to, its top just under the bars stuck at the top')
     ap.add_argument('--offset', type=int, default=16, help='room between those bars and --at (16)')
+    ap.add_argument('--click', action='append', default=[], metavar='SELECTOR',
+                    help='click the first match after loading and scrolling; repeat to click several in turn')
+    ap.add_argument('--freeze', type=int, metavar='MS',
+                    help='pause each animation the last click starts (or, without --click, the load) MS ms in')
     ap.add_argument('--shot', help='write a PNG screenshot here')
     ap.add_argument('--measure', action='append', default=[], metavar='SELECTOR')
     ap.add_argument('--style', action='append', default=[], metavar='PROPERTY')
@@ -112,16 +150,20 @@ def main():
             return 1
         store = {k: v for k, v in (('theme', a.theme), ('palette', a.palette), ('group-by', a.group_by)) if v}
         options = dict(width=a.width, height=a.height, store=store, at=a.at, offset=a.offset,
-                       measure=a.measure, style=a.style)
+                       measure=a.measure, style=a.style, click=a.click, freeze=a.freeze)
         with open(os.path.join(work, 'frame.html'), 'w', encoding='utf-8') as frame:
             frame.write(FRAME.replace('OPTIONS', json.dumps(options)))
-        chrome = [CHROME, '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
-                  '--allow-file-access-from-files', f'--user-data-dir={os.path.join(work, "profile")}',
-                  '--virtual-time-budget=5000'] + (['--force-dark-mode'] if a.dark else [])
+        # Each Chrome run gets its own profile: what a click stores, a grouping or a palette,
+        # must not carry over into the next run and leave its click nothing to change.
+        def chrome(profile):
+            return [CHROME, '--headless=new', '--no-sandbox', '--disable-gpu', '--hide-scrollbars',
+                    '--allow-file-access-from-files', f'--user-data-dir={os.path.join(work, profile)}',
+                    '--virtual-time-budget=5000'] + (['--force-dark-mode'] if a.dark else [])
         url = 'file://' + os.path.join(work, 'frame.html')
-        # A shot alone reads the page too when it scrolls, so a missing or hidden --at is said.
-        if a.measure or a.at:
-            dom = subprocess.run(chrome + ['--dump-dom', url], capture_output=True, text=True, timeout=90).stdout
+        # A shot alone reads the page too when it scrolls, clicks or freezes, so a missing
+        # selector is said, and how many animations were frozen.
+        if a.measure or a.at or a.click or a.freeze is not None:
+            dom = subprocess.run(chrome('read') + ['--dump-dom', url], capture_output=True, text=True, timeout=90).stdout
             found = dom.split('<pre id="out">', 1)[-1].split('</pre>', 1)[0]
             if 'DONE' not in found:
                 print('workflow shoot: the page did not finish loading in Chrome')
@@ -133,7 +175,7 @@ def main():
             # Chrome won't make a window under 500px wide; the iframe keeps the asked width,
             # and the shot is cropped back to it.
             shot = os.path.join(work, 'shot.png')
-            subprocess.run(chrome + [f'--window-size={max(a.width, 500)},{a.height}', f'--screenshot={shot}', url],
+            subprocess.run(chrome('shoot') + [f'--window-size={max(a.width, 500)},{a.height}', f'--screenshot={shot}', url],
                            capture_output=True, timeout=90)
             if not os.path.isfile(shot):
                 print('workflow shoot: Chrome wrote no screenshot')
