@@ -285,6 +285,9 @@ function glide(card) {
 }
 async function go(to, how = '', push = true) {
   if (to === at) return;
+  // An open dock that stays open changes in place, out of the transition; it only moves
+  // when it opens or closes.
+  const docking = (at === null) !== (to === null);
   at = to;
   via = how;
   if (push) history.pushState(null, '', address());
@@ -297,7 +300,8 @@ async function go(to, how = '', push = true) {
   }
   if (card) await glide(card);
   root.classList.add('stepping');
-  document.startViewTransition(fill).finished.finally(() => root.classList.remove('stepping'));
+  root.classList.toggle('docking', docking);
+  document.startViewTransition(fill).finished.finally(() => root.classList.remove('stepping', 'docking'));
 }
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
