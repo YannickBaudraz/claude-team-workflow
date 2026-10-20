@@ -19,9 +19,14 @@ Done when you can list every acceptance criterion and the files and seams it tou
 
 ## 2. Claim and branch
 
+Two tracker states come before the build (in Linear: Backlog and Todo):
+
+- **Waiting** holds what no one can build yet: specs, stories, untriaged issues, issues still waiting for their next command, and tickets with an open blocker.
+- **Ready** holds the tickets this skill could start now: made by `/to-tickets` or marked `ready-for-agent` by triage, every blocker closed, no one assigned.
+
 Before creating the branch, update the tracker, unless the tracker doc says otherwise:
 
-- **Promote.** Move each ticket whose blockers are now all closed from the tracker's waiting state to its ready state (in Linear: Backlog to Todo). A merge closes a blocker with no session there to promote what it unblocked, so every build start does it, for the whole project.
+- **Promote.** Move each waiting ticket that is now ready to the ready state, for the whole project; specs, stories and other issues never move. A merge closes a blocker with no session there to promote what it unblocked, so every build start does it. Tell the user which tickets moved.
 - **Claim.** Assign this ticket to the user and move it to the tracker's started state (in Linear: In Progress).
 
 Use the state names the tracker doc gives. When the tracker has no such states, only assign the ticket.
