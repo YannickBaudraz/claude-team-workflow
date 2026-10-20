@@ -32,10 +32,12 @@ function setPalette(palette) {
   remember('palette', palette, 'reader');
   paint();
 }
-// A new mode or palette crossfades in where the browser can (page.css times it).
+// A new mode or palette shows at once, everywhere: the transitions that cards and rows keep
+// for their own states are held off for the frame it lands in (page.css, .repaint).
 panel.addEventListener('change', e => {
-  const change = () => (e.target.name === 'mode' ? setTheme : setPalette)(e.target.value);
-  document.startViewTransition ? document.startViewTransition(change) : change();
+  root.classList.add('repaint');
+  (e.target.name === 'mode' ? setTheme : setPalette)(e.target.value);
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('repaint')));
 });
 // The panel sits in the top layer: it opens under its button, right edges aligned, and
 // never closer than 16px to either side of the window; its width is page.css's
@@ -132,7 +134,9 @@ function setOpen(row, open) {
   row.querySelector('.toggle').setAttribute('aria-expanded', open);
 }
 function label() {
-  all.textContent = groups.some(row => row.classList.contains('closed')) ? 'Expand all' : 'Collapse all';
+  const closed = groups.some(row => row.classList.contains('closed'));
+  all.textContent = closed ? 'Expand all' : 'Collapse all';
+  all.classList.toggle('open', !closed);
 }
 groups.forEach(row => {
   const heading = row.querySelector('h4'), toggle = document.createElement('button');
@@ -140,6 +144,13 @@ groups.forEach(row => {
   toggle.append(...heading.childNodes);
   heading.append(toggle);
   toggle.addEventListener('click', () => { setOpen(row, row.classList.contains('closed')); label(); });
+  // A closed row opens from anywhere on it too, "+2 more" included; that goes as the row
+  // opens, so focus moves to the heading.
+  row.addEventListener('click', event => {
+    if (!row.classList.contains('closed') || event.target.closest('a, button:not(.more)')) return;
+    setOpen(row, true); label();
+    if (event.target.closest('.more')) toggle.focus();
+  });
   setOpen(row, false);
 });
 all.hidden = false;
@@ -211,6 +222,7 @@ cards.forEach((card, number) => {
   button.title = `I'm on step ${number}`;
   badge.replaceWith(button);
 });
+document.querySelector('.pick-sw').hidden = false;
 const picks = [...document.querySelectorAll('button[data-at]')];
 let at = null, via = '';
 // The game: the loops counted so far (epic 2, ticket 3), the moves to undo, the way picked at a

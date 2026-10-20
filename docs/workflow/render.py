@@ -137,8 +137,9 @@ TERM_SKIP = re.compile(r'<(a|code|h[1-4]|title|script|style|summary)\b|class="[^
 
 
 def link_terms(markup):
-    """Link the first use of each glossary term, outside headings, links and code."""
-    todo = [(term, re.compile(rf'(?i){pattern}')) for term, pattern, _ in TERMS]
+    """Link the first use of each glossary term, outside headings, links and code. Its dotted
+    line promises a definition, so hovering one shows it."""
+    todo = [(term, re.compile(rf'(?i){pattern}'), meaning) for term, pattern, meaning in TERMS]
     parts = re.split(r'(<[^>]+>)', markup)
     stack = []
     for index, part in enumerate(parts):
@@ -150,15 +151,16 @@ def link_terms(markup):
                 stack.append(bool(TERM_SKIP.match(part) or TERM_SKIP.search(part)))
         elif part.strip() and not any(stack):
             # Find every term in the original text first, so no link lands inside another.
-            hits = sorted((found.start(), found.end(), term, pattern)
-                          for term, pattern in todo for found in [pattern.search(part)] if found)
+            hits = sorted((found.start(), found.end(), term, pattern, meaning)
+                          for term, pattern, meaning in todo for found in [pattern.search(part)] if found)
             out, at = [], 0
-            for start, end, term, pattern in hits:
+            for start, end, term, pattern, meaning in hits:
                 if start < at:
                     continue
-                out += [part[at:start], f'<a class="term" href="#term-{slug(term)}">{part[start:end]}</a>']
+                out += [part[at:start], f'<a class="term" href="#term-{slug(term)}" title="{esc(meaning)}">'
+                                        f'{part[start:end]}</a>']
                 at = end
-                todo.remove((term, pattern))
+                todo.remove((term, pattern, meaning))
             parts[index] = ''.join(out) + part[at:]
     return ''.join(parts)
 
