@@ -191,8 +191,9 @@ openTarget();
 // are, and the dock answers the way /ask-team would: the command, the session, the gate, and
 // the ways on once the step is done. The steps before it settle back, a "You are here" tab
 // sits on its card, and from step to step that tab travels, so a loop shows where it goes
-// back to. Where you are is in the address (?at=7, or ?at=done once the last epic closes), so
-// the browser's Back steps back, and it is remembered for the next visit.
+// back to. Where you are is only in the address (?at=7, or ?at=done once the last epic
+// closes), so the browser's Back steps back and each project can keep its own link; the page
+// opened plainly starts with no step.
 const answers = JSON.parse(document.getElementById('answers').textContent);
 const dock = document.getElementById('dock'), where = document.querySelector('.where');
 const cards = new Map([...document.querySelectorAll('.card')].map(card => [+card.id.slice(5), card]));
@@ -325,7 +326,6 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   busy = true;
   land(null);  // a card reached from a link loses its ring: the step you pick is the one marked
   if (push) history.pushState(null, '', address());
-  try { to === null ? localStorage.removeItem('at') : localStorage.setItem('at', to); } catch {}
   const card = cards.get(to);
   if (still.matches) {
     fill();
@@ -453,11 +453,10 @@ dock.addEventListener('focusin', event => {
 new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);
 where.hidden = false;
 {
+  // A step an earlier version of the page kept in the browser is dropped.
+  try { localStorage.removeItem('at'); } catch {}
   const asked = parse(new URL(location.href).searchParams.get('at'));
-  let kept = null;
-  try { kept = parse(localStorage.getItem('at')); } catch {}
-  at = asked ?? kept;
-  if (at !== null && asked === null) history.replaceState(null, '', address());
+  at = asked;
   fill();
   if (cards.has(asked) && !location.hash) cards.get(asked).scrollIntoView({block: 'center'});
 }
