@@ -243,8 +243,11 @@ function fill() {
   role.className = `role dock-role p-${done ? 'you' : step.role}`;
   dock.querySelector('.dock-via').textContent = via;
   dock.querySelector('.dock-via').hidden = !via;
-  const counted = done ? `${score.epic || 1} epic${(score.epic || 1) > 1 ? 's' : ''} played`
-    : step.loops.map(loop => `${cap(loop)} ${score[loop] || 1}`).join(' · ');
+  // The game's score, only once a move has been played: it counts this run, not the project,
+  // which only /ask-team, reading the tracker, can tell.
+  const loops = done ? [] : step.loops.map(loop => `${loop} ${score[loop] || 1}`);
+  const counted = !moves.length ? '' : done ? `This run: ${score.epic || 1} epic${(score.epic || 1) > 1 ? 's' : ''}`
+    : loops.length ? `This run: ${loops.join(' · ')}` : '';
   dock.querySelector('.dock-score').textContent = counted;
   dock.querySelector('.dock-score').hidden = !counted;
   const copy = text => text && navigator.clipboard ? '<button type="button" class="copy">Copy</button>' : '';
@@ -274,7 +277,6 @@ function fill() {
   picked = -1;
   paintGame();
 }
-const cap = text => text[0].toUpperCase() + text.slice(1);
 // The keys the game answers to, shown under the ways on where there is a keyboard; at a fork
 // being chosen, the ways not picked step back.
 function paintGame() {
