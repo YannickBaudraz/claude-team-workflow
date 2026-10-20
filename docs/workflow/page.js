@@ -32,7 +32,11 @@ function setPalette(palette) {
   remember('palette', palette, 'reader');
   paint();
 }
-panel.addEventListener('change', e => (e.target.name === 'mode' ? setTheme : setPalette)(e.target.value));
+// A new mode or palette crossfades in where the browser can (page.css times it).
+panel.addEventListener('change', e => {
+  const change = () => (e.target.name === 'mode' ? setTheme : setPalette)(e.target.value);
+  document.startViewTransition ? document.startViewTransition(change) : change();
+});
 // The panel sits in the top layer: it opens under its button, right edges aligned, and
 // never closer than 16px to either side of the window; its width is page.css's
 // min(264px, 100vw - 32px). A phone's address bar showing or hiding resizes the window,
@@ -96,6 +100,27 @@ function group(by) {
   }
   try { localStorage.setItem('group-by', by); } catch {}
 }
+// Regrouped, each row in view glides from where it was to its new place, so you can follow
+// it; one coming from far off starts a window's height away. The new headings and the list
+// by kind fade in. Without a reduced-motion preference only.
+const still = matchMedia('(prefers-reduced-motion: reduce)');
+function regroup(by) {
+  const was = byStep.hidden ? null : new Map(blocks.map(block => [block, block.getBoundingClientRect().top]));
+  group(by);
+  if (still.matches) return;
+  const settle = {duration: 450, easing: 'cubic-bezier(.16,1,.3,1)'};
+  if (!was || byStep.hidden) {
+    (byStep.hidden ? byKind : byStep).animate({opacity: [0, 1]}, {duration: 250});
+    return;
+  }
+  byStep.querySelectorAll('.phase-title').forEach(title => title.animate({opacity: [0, 1]}, {duration: 250}));
+  blocks.forEach(block => {
+    const box = block.getBoundingClientRect();
+    if (box.bottom < 0 || box.top > innerHeight) return;
+    const shift = Math.max(-innerHeight, Math.min(innerHeight, was.get(block) - box.top));
+    if (Math.abs(shift) > 1) block.animate({translate: [`0 ${shift}px`, '0 0']}, settle);
+  });
+}
 
 // Each row opens from its heading; one button opens or closes them all, and a card's
 // title opens the row of its step.
@@ -124,15 +149,36 @@ all.addEventListener('click', () => {
   label();
   status.textContent = open ? 'Every group expanded.' : 'Every group collapsed.';
 });
+const reached = hash => hash && document.getElementById(decodeURIComponent(hash.slice(1)));
+// A card or a skills row reached from a link is marked .landed once the scroll has been
+// still for a moment, so page.css fades its ring in where the eye arrives, not on the way.
+let waiting, settled;
+function land(target) {
+  removeEventListener('scroll', waiting);
+  document.querySelectorAll('.landed').forEach(el => el.classList.remove('landed'));
+  if (!target || !target.matches('.card, section.group')) return;
+  waiting = () => {
+    clearTimeout(settled);
+    settled = setTimeout(() => { removeEventListener('scroll', waiting); target.classList.add('landed'); }, 120);
+  };
+  addEventListener('scroll', waiting, {passive: true});
+  waiting();
+}
 function openTarget() {
-  const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  const target = reached(location.hash);
   if (target && target.matches('section.group')) { setOpen(target, true); label(); }
+  land(target);
 }
 addEventListener('hashchange', openTarget);
+// The same link again changes no hash but still scrolls there.
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href^="#"]');
+  if (link && link.hash === location.hash) land(reached(link.hash));
+});
 
 switcher.hidden = false;
 switcher.addEventListener('change', event => {
-  group(event.target.value);
+  regroup(event.target.value);
   status.textContent = 'Skills grouped by ' + event.target.parentElement.textContent.trim().toLowerCase() + '.';
 });
 let saved = 'role';
