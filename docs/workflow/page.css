@@ -320,6 +320,15 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .dock-in{position:relative;max-width:1300px;margin:0 auto;padding:16px clamp(16px,4vw,40px);display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr) minmax(0,auto) 36px;gap:12px 32px;align-items:center}
 .dock-head{display:flex;align-items:center;gap:12px;min-width:0}
 .dock-head .num{width:36px;height:36px;border-radius:8px;font-size:.9375rem}
+.dock-head .num svg{width:60%;height:60%;fill:none;stroke:currentColor;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1}
+/* The end of the roadmap is the game's one peak: its title at display strength, the check's
+   badge larger, and the tab lifting off the board drawn where it was. */
+.dock.end .dock-in{grid-template-columns:minmax(0,24rem) minmax(0,1fr) minmax(0,auto) 36px}
+.dock.end .dock-head{gap:16px}
+.dock.end .dock-head .num{width:48px;height:48px;border-radius:10px}
+.dock.end .dock-step{font-size:clamp(1.375rem,1.1rem + 1vw,1.75rem);letter-spacing:-.01em}
+.here-mark.flying{position:fixed;translate:none;margin:0;box-sizing:border-box;z-index:7;pointer-events:none}
+.dock-score b{display:inline-block}
 .dock-step{margin:0;font-family:var(--display);font-size:1.1875rem;font-weight:700;line-height:1.2}
 .dock-step a{text-decoration:none}
 .dock-step a:hover{text-decoration:underline solid var(--c) 2px;text-underline-offset:.22em}
@@ -377,6 +386,8 @@ kbd + kbd{margin-left:-1px}
   .dock-answer,.dock-play{grid-column:1 / -1}
   .dock-head .num{width:30px;height:30px;font-size:.875rem}
   .dock-step{font-size:1.0625rem}
+  .dock.end .dock-in{grid-template-columns:minmax(0,1fr) 36px}
+  .dock.end .dock-head .num{width:40px;height:40px}
   .dock-next{display:flex;flex-wrap:wrap;gap:6px}
   .go{white-space:normal;flex:1 1 10rem;line-height:1.3;padding-block:6px}
   .go{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 6px;align-items:center;align-content:center}

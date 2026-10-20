@@ -216,6 +216,8 @@ let at = null, via = '';
 // The game: the loops counted so far (epic 2, ticket 3), the moves to undo, the way picked at a
 // fork while choosing (-1 when not), and whether a move is still under way.
 let score = {}, moves = [], picked = -1, busy = false;
+// The end's landing animations, kept so the next move can stop them mid-flight.
+let landing = [];
 // The step button the dock was opened from with the keyboard: closing returns there.
 let back = null;
 function field(name, value) {
@@ -231,11 +233,14 @@ function fill() {
   picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
   root.classList.toggle('has-dock', at !== null);
   dock.hidden = at === null;
+  dock.classList.toggle('end', done);
   if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
   if (at === null) return;
   const badge = dock.querySelector('.dock-head .num'), role = dock.querySelector('.dock-role');
-  badge.hidden = done;
-  if (!done) { badge.className = `num p-${step.role}`; badge.textContent = at; }
+  // Once the last epic closes, the badge holds a check in your colour where the step's number was.
+  badge.className = `num p-${done ? 'you' : step.role}`;
+  if (done) badge.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  else badge.textContent = at;
   const title = done ? 'Every epic is closed'
     : Object.assign(document.createElement('a'), {href: `#step-${at}`, textContent: `Step ${at}, ${step.name}`});
   dock.querySelector('.dock-step').replaceChildren(title);
@@ -244,12 +249,16 @@ function fill() {
   dock.querySelector('.dock-via').textContent = via;
   dock.querySelector('.dock-via').hidden = !via;
   // The game's score, only once a move has been played: it counts this run, not the project,
-  // which only /ask-team, reading the tracker, can tell.
-  const loops = done ? [] : step.loops.map(loop => `${loop} ${score[loop] || 1}`);
-  const counted = !moves.length ? '' : done ? `This run: ${score.epic || 1} epic${(score.epic || 1) > 1 ? 's' : ''}`
-    : loops.length ? `This run: ${loops.join(' · ')}` : '';
-  dock.querySelector('.dock-score').textContent = counted;
-  dock.querySelector('.dock-score').hidden = !counted;
+  // which only /ask-team, reading the tracker, can tell. Each count is its own element, so
+  // go() can tick the one a move changed.
+  const tally = dock.querySelector('.dock-score'), epics = score.epic || 1;
+  const counts = done ? [['epic', '', ` epic${epics > 1 ? 's' : ''}`]] : step.loops.map(loop => [loop, `${loop} `, '']);
+  tally.hidden = !moves.length || !counts.length;
+  tally.replaceChildren('This run: ', ...counts.flatMap(([loop, before, after], index) => {
+    const count = Object.assign(document.createElement('b'), {textContent: score[loop] || 1});
+    count.dataset.loop = loop;
+    return [index ? ' · ' : '', before, count, after];
+  }));
   const copy = text => text && navigator.clipboard ? '<button type="button" class="copy">Copy</button>' : '';
   if (done) {
     field('run', `For the next change: ${answers.end}${copy(answers.end_copy)}`);
@@ -318,7 +327,10 @@ function glide(card) {
 const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
 async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   if (to === at && !label && !undo) return;
-  const was = at;
+  const was = at, before = score;
+  landing.forEach(animation => animation.cancel());  // a move made mid-flight stops it where it is
+  landing = [];
+  document.querySelector('.here-mark.flying')?.remove();
   if (undo) score = undo.score;
   else if (push && was !== null && to !== null) moves.push({at: was, via, score});
   if (to === null) moves = [];
@@ -341,8 +353,12 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   if (card) await glide(card);
   const from = here.isConnected ? here.getBoundingClientRect() : null;
   if (to === null) await dock.animate({translate: ['0 0', '0 100%']}, {duration: 250, easing: 'cubic-bezier(.7,0,.84,0)'}).finished;
+  // The last epic closed: the tab is lifted off the board, since no step is left to be on.
+  const flyer = to === 'done' && from ? pickUp(here) : null;
   fill();
   if (was === null) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  if (to === 'done' && was !== 'done') finish(flyer);
+  tick(before);
   busy = false;
   if (!here.isConnected) return;
   // The tab hops like a piece on a board: up from its old card and down onto the new one, or
@@ -354,6 +370,41 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   }
   const dx = from.left - now.left, dy = from.top - now.top, lift = 14 + Math.min(26, Math.hypot(dx, dy) / 24);
   here.animate({transform: [`translate(${dx}px, ${dy}px)`, `translate(${dx / 2}px, ${dy / 2 - lift}px)`, 'none']}, settle);
+}
+// The end of the roadmap, the one move that ends the game: the tab, held where it was on the
+// Retro card, lifts off the board and fades, then the dock's check draws itself in, in your
+// colour, as the tab was.
+function pickUp(tab) {
+  const box = tab.getBoundingClientRect(), look = getComputedStyle(tab);
+  const flyer = tab.cloneNode(true);
+  flyer.classList.add('flying');
+  flyer.setAttribute('aria-hidden', 'true');
+  Object.assign(flyer.style, {left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`,
+    height: `${box.height}px`, background: look.backgroundColor, color: look.color});
+  document.body.append(flyer);
+  return flyer;
+}
+function finish(flyer) {
+  const badge = dock.querySelector('.dock-head .num'), check = badge.querySelector('path');
+  let lifted = 0;
+  if (flyer) {
+    lifted = 220;
+    const leaving = flyer.animate({opacity: [1, 0], transform: ['none', 'translateY(-10px)']},
+      {duration: lifted, easing: 'cubic-bezier(.7,0,.84,0)'});
+    leaving.onfinish = () => flyer.remove();
+    landing.push(leaving);
+  }
+  landing.push(check.animate({strokeDashoffset: [1, 0]},
+    {duration: 420, delay: lifted, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'backwards'}));
+}
+// A loop counted (another ticket, the next epic) or undone: its count rolls to the new number,
+// up as it grows and down as an undo takes it back.
+function tick(before) {
+  dock.querySelectorAll('.dock-score [data-loop]').forEach(count => {
+    const was = before[count.dataset.loop] || 1, now = +count.textContent;
+    if (was === now) return;
+    count.animate({translate: [`0 ${now > was ? .7 : -.7}em`, '0 0'], opacity: [0, 1]}, {duration: 450, easing: settle.easing});
+  });
 }
 // A way on, from its button or the game's keys. Played from the keys, or with focus already
 // on the ways on, focus goes to the new ways on, so Enter takes the way you see chosen and
