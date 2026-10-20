@@ -176,7 +176,7 @@ def answer_html(router):
                     for number, step in router['steps'].items())
     return (f'<div class="answer"><p class="answer-title">Its answer gives you</p><ol>{items}</ol>'
             f'<div class="where" hidden><p class="where-title" id="where-title">Which step are you on?</p>'
-            f'<div class="where-steps" role="toolbar" aria-labelledby="where-title">{picks}</div></div></div>')
+            f'<div class="where-steps" role="group" aria-labelledby="where-title">{picks}</div></div></div>')
 
 
 def answers(router):
@@ -230,5 +230,9 @@ def answers(router):
             command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
             session=esc(session), gate=esc(mark) if step['gate'] else '',
             gate_out=link_steps(md(shown)) if step['gate'] else esc(no_gate),
-            next=[dict(label=label, to=to) for label, to in ways_out(number)])
+            next=[dict(label=label, to=to) for label, to in ways_out(number)],
+            # The loops the step sits in, outermost first, for the page's count of them.
+            loops=(['epic'] if number >= router['lead'][0] else [])
+            + ([step['qual'][4:]] if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket') else [])
+            + (['ticket'] if number in router['ticket'] else []))
     return dict(steps=out, end=md(f'`{end.group(1)}`') if end else '', end_copy=end.group(1) if end else '')

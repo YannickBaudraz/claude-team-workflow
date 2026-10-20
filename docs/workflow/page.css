@@ -328,7 +328,18 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .dock-gate .gate-mark{display:inline-flex;margin-right:4px}
 .copy{margin-left:8px;padding:1px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;vertical-align:1px}
 .copy:hover{border-color:var(--muted)}
+.dock-play{display:grid;gap:8px;min-width:0}
 .dock-next{display:grid;gap:6px;justify-items:stretch}
+/* The game: the loops counted so far under the step, and the keys under the ways on, shown
+   only where there is a keyboard. At a fork being chosen, the way picked is ringed in ink and
+   the other steps back. */
+.dock-score{margin:4px 0 0;font-size:.8125rem;font-weight:700;font-variant-numeric:tabular-nums}
+.dock-keys{display:none;margin:0;color:var(--muted);font-size:.75rem;font-weight:600}
+@media (hover: hover) and (pointer: fine){ .dock-keys{display:block} }
+kbd{display:inline-block;min-width:1.6em;margin-right:3px;padding:0 4px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:4px;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:.6875rem;line-height:1.5;text-align:center}
+kbd + kbd{margin-left:-1px}
+.dock-next.choosing .go:not(.chosen){color:var(--muted);border-style:dashed}
+.go.chosen{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .go{display:flex;align-items:center;gap:6px;padding:7px 10px 7px 12px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-size:.875rem;text-align:left;cursor:pointer;white-space:nowrap}
 .go span{color:var(--muted)}
 .go b{font-weight:700}
@@ -357,7 +368,7 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
   .bar .home a{font-size:.9375rem}
   .dock-in{grid-template-columns:minmax(0,1fr) 36px;gap:10px 16px;padding-block:12px}
   .dock-close{grid-area:1 / 2;margin:-4px -8px 0 0}
-  .dock-answer,.dock-next{grid-column:1 / -1}
+  .dock-answer,.dock-play{grid-column:1 / -1}
   .dock-head .num{width:30px;height:30px;font-size:.875rem}
   .dock-step{font-size:1.0625rem}
   .dock-next{display:flex;flex-wrap:wrap;gap:6px}

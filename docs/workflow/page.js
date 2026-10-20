@@ -211,28 +211,10 @@ cards.forEach((card, number) => {
   badge.replaceWith(button);
 });
 const picks = [...document.querySelectorAll('button[data-at]')];
-// A set of buttons the arrow keys, Home and End move through. The router's step buttons and
-// the cards' are each one stop for Tab, the step you are on or step 1; the dock's ways on
-// stay a stop each.
-const chips = [...where.querySelectorAll('button[data-at]')];
-const badges = [...cards.values()].map(card => card.querySelector('button.num'));
-function rove(set, button) { set.forEach(other => { other.tabIndex = other === button ? 0 : -1; }); }
-function arrows(container, set, roving) {
-  container.addEventListener('keydown', event => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const buttons = set(), index = buttons.indexOf(event.target), last = buttons.length - 1;
-    const to = {ArrowRight: index + 1, ArrowDown: index + 1, ArrowLeft: index - 1, ArrowUp: index - 1, Home: 0, End: last}[event.key];
-    if (index < 0 || to === undefined) return;
-    event.preventDefault();
-    const button = buttons[to < 0 ? last : to > last ? 0 : to];
-    if (roving) rove(buttons, button);
-    button.focus();
-  });
-}
-arrows(where, () => chips, true);
-arrows(document.querySelector('main'), () => badges, true);
-arrows(dock, () => [...dock.querySelectorAll('.go')], false);
 let at = null, via = '';
+// The game: the loops counted so far (epic 2, ticket 3), the moves to undo, the way picked at a
+// fork while choosing (-1 when not), and whether a move is still under way.
+let score = {}, moves = [], picked = -1, busy = false;
 // The step button the dock was opened from with the keyboard: closing returns there.
 let back = null;
 function field(name, value) {
@@ -246,9 +228,6 @@ function fill() {
     card.classList.toggle('here', number === at);
   });
   picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
-  for (const set of [chips, badges]) {
-    if (!set.includes(document.activeElement)) rove(set, set.find(button => +button.dataset.at === at) || set[0]);
-  }
   root.classList.toggle('has-dock', at !== null);
   dock.hidden = at === null;
   if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
@@ -264,6 +243,10 @@ function fill() {
   role.className = `role dock-role p-${done ? 'you' : step.role}`;
   dock.querySelector('.dock-via').textContent = via;
   dock.querySelector('.dock-via').hidden = !via;
+  const counted = done ? `${score.epic || 1} epic${(score.epic || 1) > 1 ? 's' : ''} played`
+    : step.loops.map(loop => `${cap(loop)} ${score[loop] || 1}`).join(' · ');
+  dock.querySelector('.dock-score').textContent = counted;
+  dock.querySelector('.dock-score').hidden = !counted;
   const copy = text => text && navigator.clipboard ? '<button type="button" class="copy">Copy</button>' : '';
   if (done) {
     field('run', `For the next change: ${answers.end}${copy(answers.end_copy)}`);
@@ -288,6 +271,19 @@ function fill() {
     button.append(why, where, arrow);
     return button;
   }));
+  picked = -1;
+  paintGame();
+}
+const cap = text => text[0].toUpperCase() + text.slice(1);
+// The keys the game answers to, shown under the ways on where there is a keyboard; at a fork
+// being chosen, the ways not picked step back.
+function paintGame() {
+  const ways = [...dock.querySelectorAll('.go')], key = text => `<kbd>${text}</kbd>`;
+  dock.querySelector('.dock-next').classList.toggle('choosing', picked >= 0);
+  ways.forEach((way, index) => way.classList.toggle('chosen', index === picked));
+  dock.querySelector('.dock-keys').innerHTML = picked >= 0
+    ? `${key('↑')}${key('↓')} choose ${key('→')} go ${key('←')} back`
+    : (at === 'done' ? '' : `${key('→')} play `) + (moves.length ? `${key('←')} undo ` : '') + `${key('Esc')} leave`;
 }
 function address() {
   const url = new URL(location.href);
@@ -313,11 +309,18 @@ function glide(card) {
 // rises when it opens and sinks when it closes. Plain animations, not a view transition:
 // Chrome on Android blinks the dock in one.
 const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
-async function go(to, how = '', push = true) {
-  if (to === at) return;
+async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
+  if (to === at && !label) return;
   const was = at;
+  if (undo) score = undo.score;
+  else if (push && was !== null && to !== null) moves.push({at: was, via, score});
+  if (to === null) moves = [];
+  const unit = label && /^Another (\w+)/.exec(label)?.[1];
+  if (!undo) score = !label ? {} : label === 'Next epic' ? {epic: (score.epic || 1) + 1}
+    : unit ? {...score, [unit]: (score[unit] || 1) + 1} : score;
   at = to;
   via = how;
+  busy = true;
   land(null);  // a card reached from a link loses its ring: the step you pick is the one marked
   if (push) history.pushState(null, '', address());
   try { to === null ? localStorage.removeItem('at') : localStorage.setItem('at', to); } catch {}
@@ -325,6 +328,7 @@ async function go(to, how = '', push = true) {
   if (still.matches) {
     fill();
     if (card) card.scrollIntoView({block: 'nearest'});
+    busy = false;
     return;
   }
   if (card) await glide(card);
@@ -332,10 +336,24 @@ async function go(to, how = '', push = true) {
   if (to === null) await dock.animate({translate: ['0 0', '0 100%']}, {duration: 250, easing: 'cubic-bezier(.7,0,.84,0)'}).finished;
   fill();
   if (was === null) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  busy = false;
   if (!here.isConnected) return;
+  // The tab hops like a piece on a board: up from its old card and down onto the new one, or
+  // in place when the step comes round again.
   const now = here.getBoundingClientRect();
-  here.animate(from ? {transform: [`translate(${from.left - now.left}px, ${from.top - now.top}px)`, 'none']}
-    : {opacity: [0, 1], transform: ['translateY(-6px)', 'none']}, from ? settle : {duration: 300, easing: settle.easing});
+  if (!from) {
+    here.animate({opacity: [0, 1], transform: ['translateY(-6px)', 'none']}, {duration: 300, easing: settle.easing});
+    return;
+  }
+  const dx = from.left - now.left, dy = from.top - now.top, lift = 14 + Math.min(26, Math.hypot(dx, dy) / 24);
+  here.animate({transform: [`translate(${dx}px, ${dy}px)`, `translate(${dx / 2}px, ${dy / 2 - lift}px)`, 'none']}, settle);
+}
+// A way on, from its button or the game's keys. Focus that was on the ways on stays there.
+function follow(label, to) {
+  const focused = dock.contains(document.activeElement);
+  back = null;
+  return go(to, {how: label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`, label})
+    .then(() => { if (focused) (dock.querySelector('.go') || dock).focus(); });
 }
 // From the keyboard (a click with no pointer behind it), picking a step takes focus into the
 // dock, so its answer is read and Tab reaches it at once; a way on keeps focus on the ways on,
@@ -345,9 +363,7 @@ function close() {
   const focused = dock.contains(document.activeElement);
   back = null;
   go(null).then(() => {
-    if (!focused || !from) return;
-    rove(chips.includes(from) ? chips : badges, from);
-    from.focus();
+    if (focused && from) from.focus();
   });
 }
 // For Tab, the dock sits right after the step button it answers, though it is drawn at the
@@ -382,12 +398,7 @@ document.addEventListener('click', event => {
   if (pick) {
     if (keyed) back = pick;
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
-  } else if (next) {
-    const to = parse(next.dataset.to), label = next.dataset.label;
-    back = null;
-    go(to, label === 'Done' || to === 'done' ? '' : `${label} at step ${at}`)
-      .then(() => (dock.querySelector('.go') || dock).focus());
-  }
+  } else if (next) follow(next.dataset.label, parse(next.dataset.to));
   else if (copy) {
     navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy).then(() => {
       copy.textContent = 'Copied';
@@ -399,7 +410,35 @@ document.addEventListener('click', event => {
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && at !== null && !event.defaultPrevented && !panel.matches(':popover-open')) close();
 });
-addEventListener('popstate', () => go(parse(new URL(location.href).searchParams.get('at')), '', false));
+addEventListener('popstate', () => {
+  moves = [];
+  go(parse(new URL(location.href).searchParams.get('at')), {push: false});
+});
+// The game, while a step is open: → plays it, to the next step or, at a fork, to choosing
+// between its ways with ↑ and ↓, then → again; ← undoes the last move, or the choosing.
+// Arrow keys only, never with a modifier: nothing scrolls sideways here, and ↑ ↓ are taken
+// only while choosing.
+document.addEventListener('keydown', event => {
+  if (at === null || busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (panel.matches(':popover-open') || event.target.closest('input, textarea, select')) return;
+  const ways = at === 'done' ? [] : answers.steps[at].next;
+  const take = way => follow(way.label, way.to || 'done');
+  if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    if (picked >= 0) take(ways[picked]);
+    else if (ways.length === 1) take(ways[0]);
+    else if (ways.length) { picked = 0; paintGame(); }
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    if (picked >= 0) { picked = -1; paintGame(); return; }
+    const last = moves.pop();
+    if (last) go(last.at, {how: last.via, undo: last});
+  } else if (picked >= 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+    event.preventDefault();
+    picked = (picked + (event.key === 'ArrowDown' ? 1 : ways.length - 1)) % ways.length;
+    paintGame();
+  }
+});
 // The dock's height keeps the page's end and the back-to-top button clear of it.
 new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);
 where.hidden = false;
