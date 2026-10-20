@@ -354,6 +354,7 @@ kbd + kbd{margin-left:-1px}
 .dock-close{align-self:start;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer}
 .dock-close:hover{color:var(--ink);background:var(--paper)}
 .dock-close i{width:16px;height:16px;background:currentColor;-webkit-mask:var(--close) center/contain no-repeat;mask:var(--close) center/contain no-repeat}
+.has-dock{scroll-padding-bottom:calc(var(--dock,0px) + 16px)}
 .has-dock body{padding-bottom:var(--dock,0px)}
 .has-dock .to-top{bottom:calc(var(--dock,0px) + 16px)}
 .p-product{--c:var(--product)} .p-lead{--c:var(--lead)} .p-dev{--c:var(--dev)} .p-review{--c:var(--review)} .p-you{--c:var(--you)}

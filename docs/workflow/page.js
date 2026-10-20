@@ -277,7 +277,11 @@ function fill() {
   dock.scrollTop = 0;  // a capped dock opens on its step, not where the last one was scrolled to
   picked = -1;
   paintGame();
+  measureDock();
 }
+// The dock's height keeps the page's end, the back-to-top button and whatever the page scrolls
+// to clear of it. Measured as soon as the dock is filled, so a scroll right after sees it.
+function measureDock() { root.style.setProperty('--dock', `${dock.offsetHeight}px`); }
 // The keys the game answers to, shown under the ways on where there is a keyboard; at a fork
 // being chosen, the ways not picked step back.
 function paintGame() {
@@ -450,8 +454,7 @@ document.addEventListener('keydown', event => {
 dock.addEventListener('focusin', event => {
   if (picked >= 0 && event.target.matches('.go')) { picked = wayButtons().indexOf(event.target); paintGame(); }
 });
-// The dock's height keeps the page's end and the back-to-top button clear of it.
-new ResizeObserver(() => root.style.setProperty('--dock', `${dock.offsetHeight}px`)).observe(dock);
+new ResizeObserver(measureDock).observe(dock);
 where.hidden = false;
 {
   // A step an earlier version of the page kept in the browser is dropped.
