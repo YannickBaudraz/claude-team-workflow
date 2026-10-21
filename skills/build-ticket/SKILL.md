@@ -31,6 +31,8 @@ Before creating the branch, update the tracker, unless the tracker doc says othe
 
 Use the state names the tracker doc gives. When the tracker has no such states, only assign the ticket.
 
+The claim lasts until the pull request moves the ticket to review. When the build stops before that, tell the user the ticket is still claimed, and unassign it and move it back to the ready state unless they keep it.
+
 Create one branch for the ticket, named as the tracker doc says; without a convention, use `<ticket-id>-<short-slug>`. When other tickets are being built in parallel, work in a worktree.
 
 ## 3. Build test-first
