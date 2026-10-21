@@ -29,7 +29,7 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 | 7 | PRD, per epic | `/deliver-prd <epic>` | PRD in the epic's home (project map). Approved. |
 | 8 | Refinement, per story | `/specification <story>`, then `/story-splitting` when it is too big, then `/find-gaps` | Story ready: rules, examples and acceptance criteria agreed. |
 | 9 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
-| 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/pair <dials>` | PR open with the template filled. |
+| 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/build-ticket <ticket> pair <dials>` | PR open with the template filled. |
 | 11 | Review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review`. When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
 | 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green. To merge: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>` | The user merges. After the merge, the user closes the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
 | 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. The epic closes once the user confirms the verdict. |
