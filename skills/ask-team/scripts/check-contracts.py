@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check that the workflow's hand-offs close: SKILL.md's step contracts against the
+"""Check that the workflow's hand-offs close: FLOW.md's step contracts against the
 registry, the project map template and this repo's skills.
 
 - Every step of the main flow has a contract, and every contract row a step or a way in.
@@ -8,6 +8,8 @@ registry, the project map template and this repo's skills.
   names the output, or a sentence of its Arguments creates, writes or saves it. A skill of
   this repo says it in its own SKILL.md.
 - Every home is a row of the project map template, a tool of its Tools table, or a path.
+- Every document a gated step makes has a maker that writes its approval line, the
+  `Approved by <name> on <date>` FLOW.md defines, in its Arguments or its own SKILL.md.
 - Every command this repo's workflow skills name is in the registry.
 
 Reads only files in this repo, so CI can run it. Exit code 1 when anything is wrong.
@@ -18,10 +20,12 @@ import sys
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 SKILLS = os.path.dirname(os.path.dirname(HERE))
-SKILL = os.path.join(SKILLS, "ask-team", "SKILL.md")
+FLOW = os.path.join(SKILLS, "ask-team", "FLOW.md")
 REGISTRY = os.path.join(SKILLS, "ask-team", "REGISTRY.md")
 MAP = os.path.join(SKILLS, "ask-team", "templates", "project-map.md")
-WORKFLOW_SKILLS = ["ask-team", "build-ticket", "change-request", "epic-retro", "project-setup"]
+# The files of this repo's workflow skills whose commands must be in the registry.
+WORKFLOW_FILES = ["ask-team/SKILL.md", "ask-team/ROUTER.md", "ask-team/FLOW.md", "build-ticket/SKILL.md",
+                  "change-request/SKILL.md", "epic-retro/SKILL.md", "project-setup/SKILL.md"]
 # A sentence that hands a skill an output to make: "Save where the map puts the PRD".
 MAKING = re.compile(r"\b(creat|writ|sav|publish|post|mark|record|open)\w*", re.I)
 
@@ -64,12 +68,17 @@ def says_it_makes(text, output, sentences_only):
 
 
 problems = []
-router = open(SKILL, encoding="utf-8").read()
+router = open(FLOW, encoding="utf-8").read()
 
-steps = [int(m) for m in re.findall(r"^\|\s*(\d+)\s*\|", section(router, "Main flow"), re.M)]
+flow_rows = re.findall(r"^\|\s*(\d+)\s*\|.*\|(.*)\|\s*$", section(router, "Main flow"), re.M)
+steps = [int(number) for number, _ in flow_rows]
+# A gated step's output is approved, as the page reads it too; the merge is step 12's own gate.
+gated = {int(number) for number, output in flow_rows if re.search(r"\bapproved\b", output, re.I)}
+# Homes that hold tracker items or pull requests: approved by being published or merged.
+NOT_DOCUMENTS = {"Issue tracker", "Epics, stories and tickets", "Code host"}
 contract_tables = tables(section(router, "Step contracts"))
 if len(contract_tables) != 2:
-    sys.exit("PROBLEM SKILL.md: Step contracts should hold two tables, the steps and the outputs")
+    sys.exit("PROBLEM FLOW.md: Step contracts should hold two tables, the steps and the outputs")
 step_rows, output_rows = contract_tables[0][1:], contract_tables[1][1:]
 
 registry = {}
@@ -126,6 +135,19 @@ for output, makers, home in output_rows:
                             f"nor its Arguments say so")
     if not (home in kinds or re.fullmatch(r"`[^`]+`", home)):
         problems.append(f"Step contracts: {output} lives in '{home}', which is not a row of the project map")
+for output, home in outputs.items():
+    if home in NOT_DOCUMENTS:
+        continue
+    for step in (at for at in made_at.get(output, []) if at in gated):
+        makers = [m.strip().strip("`") for m in output_rows[[r[0] for r in output_rows].index(output)][1].split(",")]
+        writers = [m for m in makers if re.match(rf"{step}\b", registry.get(m, {}).get("used at", ""))]
+        for maker in writers:
+            row = registry[maker]
+            own = os.path.join(SKILLS, maker.lstrip("/"), "SKILL.md")
+            text = (open(own, encoding="utf-8").read() if row["source"].strip("`") == "YannickBaudraz/claude-team-workflow"
+                    and os.path.exists(own) else row.get("arguments", ""))
+            if "Approved by" not in text:
+                problems.append(f"Step contracts: step {step} is gated, but {maker} never writes the approval line on the {output}")
 for output in made_at:
     if output not in outputs:
         problems.append(f"Step contracts: {output} is made but has no row saying who makes it and where it lives")
@@ -142,11 +164,11 @@ for key, groups in needs.items():
                 any(not isinstance(at, int) or at < key for at in made_at.get(alt, [])) for alt in group):
             problems.append(f"Step contracts: step {key} needs {' or '.join(group)}, made by no earlier step or way in")
 
-for name in WORKFLOW_SKILLS:
-    text = open(os.path.join(SKILLS, name, "SKILL.md"), encoding="utf-8").read()
+for name in WORKFLOW_FILES:
+    text = open(os.path.join(SKILLS, name), encoding="utf-8").read()
     for command in sorted(set(re.findall(r"`(/[a-z][a-z0-9:-]*)", text))):
         if command not in registry and command.lstrip("/") not in registry:
-            problems.append(f"{name}/SKILL.md names {command}, which is not in the registry")
+            problems.append(f"{name} names {command}, which is not in the registry")
 
 print(f"{len(steps)} steps and {len(outputs)} outputs checked")
 for problem in problems:

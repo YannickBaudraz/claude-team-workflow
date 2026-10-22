@@ -11,5 +11,6 @@
   "must": [
     "(?i)approv"
   ],
-  "next": "^(?![\\s\\S]*/specification)"
+  "next": "^(?![\\s\\S]*/specification)",
+  "light": "^(?![\\s\\S]*/specification)"
 }

@@ -12,5 +12,6 @@
     "issues/6-where-the-shared-pantry-lives.md": "Type: issue\nStatus: open\nParent: 4\nLabels: wayfinder:research\n\n# Where the shared pantry lives\n\nWhich storage could hold a shared pantry: a file in a synced folder, a small server, a hosted database?\n",
     "issues/7-how-edits-merge.md": "Type: issue\nStatus: open\nParent: 4\nLabels: wayfinder:grilling\nBlocked by: 6\n\n# How edits merge\n\nHow two housemates' edits merge.\n"
   },
-  "next": "^/wayfinder\\s+#?4\\b"
+  "next": "^/wayfinder\\s+#?4\\b",
+  "light": "^/ask-team$"
 }

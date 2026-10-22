@@ -65,6 +65,6 @@ Done when each convention exists where the map says, every added line was approv
 
 ## 6. Hand over
 
-Tell the user to type `/setup-matt-pocock-skills` next, with the tracker and the labels from the map; when the tracker already has open issues, add one line to the tracker doc it writes: issues opened before today's date have not been triaged. Name `/ci-cd-and-automation` only when the repo has no CI and has code to build.
+Tell the user to type `/setup-matt-pocock-skills` next, with the tracker and the labels from the map; when the tracker already has open issues, add one line to the tracker doc it writes: issues opened before today's date have not been triaged. Add one more line to it: a document is approved when it ends with `Approved by <name> on <date>`, written when the user approves it. Name `/ci-cd-and-automation` only when the repo has no CI and has code to build.
 
 When `/change-request` sent the user here, the change continues in this session. Otherwise point them to `/ask-team` for the next step.

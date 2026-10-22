@@ -5,5 +5,6 @@
     "setup",
     "brief"
   ],
-  "next": "/user-story-mapping-workshop"
+  "next": "/user-story-mapping-workshop",
+  "light": "/user-story-mapping-workshop"
 }

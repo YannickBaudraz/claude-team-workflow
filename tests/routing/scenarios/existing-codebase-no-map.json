@@ -4,5 +4,6 @@
     "base",
     "code"
   ],
-  "next": "/project-setup"
+  "next": "/project-setup",
+  "light": "^/ask-team$"
 }

@@ -4,5 +4,6 @@
     "base"
   ],
   "git": false,
-  "next": "/grill-with-docs|/grill-me"
+  "next": "/grill-with-docs|/grill-me",
+  "light": "^/ask-team$"
 }

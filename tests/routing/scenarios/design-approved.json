@@ -7,5 +7,6 @@
     "roadmap",
     "design"
   ],
-  "next": "/deliver-prd\\s+#?1\\b"
+  "next": "/deliver-prd\\s+#?1\\b",
+  "light": "/deliver-prd\\s+#?1\\b"
 }

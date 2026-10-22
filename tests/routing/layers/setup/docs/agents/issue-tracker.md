@@ -9,4 +9,4 @@ Each file starts with header lines, then the body:
 - `Parent:` the parent's id, when it has one
 - `Labels:` comma-separated: `bug`, `enhancement`, `ready-for-agent`, `ready-for-human`
 
-An approval is written in the document or issue it approves, as a line `Approved by the user on <date>`.
+Issues opened before 2026-10-01 have not been triaged. A document is approved when it ends with `Approved by <name> on <date>`, written when the user approves it.

@@ -9,5 +9,6 @@
   "must": [
     "/change-request"
   ],
-  "next": "(?m)^/change-request"
+  "next": "(?m)^/change-request",
+  "light": "^/ask-team$"
 }

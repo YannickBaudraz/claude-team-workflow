@@ -6,5 +6,6 @@
     "brief",
     "roadmap"
   ],
-  "next": "/technical-writing|/writing-design-docs"
+  "next": "/technical-writing|/writing-design-docs",
+  "light": "/technical-writing|/writing-design-docs"
 }

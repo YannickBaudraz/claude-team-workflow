@@ -1,6 +1,7 @@
 ---
 name: ask-team
-description: Ask which skill to run next in a project worked the way an engineering team works, from discovery to retro. A router over the team workflow's skills.
+description: Ask which skill to run next in a project worked the way an engineering team works, from discovery to retro. A router over the team workflow's skills; with next, a short answer between two steps.
+argument-hint: "[next | <request>]"
 disable-model-invocation: true
 ---
 
@@ -8,118 +9,26 @@ disable-model-invocation: true
 
 The project is worked the way a real engineering team works: discovery, roadmap, epics, refinement, tickets, test-first build, review, approval, retro. This skill tells the user which command to run next, with what arguments, in which session. It never runs the step itself: it **prints the next command**, ready to paste.
 
-Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact command, whether Claude may load it on its own, what it calls, and the arguments that redirect it to this workflow's conventions. A skill missing from the registry is not part of the workflow.
+Never open, list or search `.claude/ask-team/`. The answers saved there are for the user to reread; reading them would carry an old reading into this one. The state comes only from the project map, the tracker and the documents in their homes.
 
-## How to route
+With the argument **next** alone, give the light answer below. With any other argument, or none, read [ROUTER.md](ROUTER.md) and follow it.
 
-1. **Read the state.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it). No map yet: the project is before setup. With a map, read the tracker doc it names and check what exists and what is approved: the problem statement and brief, the roadmap, each epic's design doc and PRD, its stories, tickets, open PRs, and retros, and the sized issues whose next step has not started. Read each one against the step contracts below: an output exists when it is in its home and its maker made it. The **frontier** is the first step whose input exists and whose output does not. When the map's Roadmap row says the roadmap is planned at step 4 only when wanted, steps 4 and 5 are not a frontier: with nothing in flight, offer `/change-request` for a change, or step 4 to plan the product.
-2. **Size the request.** A change to an existing project that is not sized yet goes to `/change-request <change>` first: it diagnoses or grills the change as needed, sizes it with the user and writes it as one issue for the next session to start from; this router only reads those issues. A *spike* (one question to answer) goes to `prototype` or `research`; its answer goes on the request's issue when it has one, and the request is sized again. A *bounded* change (one ticket's worth) goes straight to the ticket path: write the ticket, then build it. An *architectural* change, or a new product, takes the main flow. Teams don't write a PRD for a typo.
-3. **Answer** with: what you found for each step up to the frontier (its home and whether it is approved), the step and why it is next, which session to run it in (see Sessions), what has to be approved before the step after it, the next command with its arguments, and what comes after it. Always in this form, so the user finds each part in the same place:
+## Next: the light answer
+
+A quick check between two steps. Read [FLOW.md](FLOW.md), and of [REGISTRY.md](REGISTRY.md) only the row of the command you print; leave ROUTER.md unread.
+
+1. **Find what is in flight.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it) and the tracker doc it names, and list the tracker's open items once.
+2. **Probe the steps** of what is in flight, in order, against their outputs in FLOW.md's step contracts: is each output in its home, does a gated step's document end with its approval line (FLOW.md), are its items in the tracker. Check that each one is there; never read a document through. The first step whose output is missing or unapproved is the answer. An open sized issue outside any epic is its own line of work: its Next line is the command. So is a ticket marked ready for an agent: `/build-ticket <id>`.
+3. **Answer** in this form and nothing else, and save nothing:
 
    ~~~markdown
-   | Step | Home | Found | Approved |
-   |---|---|---|---|
-   | <each step up to the frontier> | <its home> | <what is there, or **missing**> | <yes and the date, **no**, or no gate> |
-
-   **Step <n>, <name>.** <why it is next: its input exists and its output does not>
-   **Session:** <which session runs it>
-   **Gate:** <what the user approves before the step after it, or none>
+   Done up to step <n>: <what the probes found, in one line>
+   **Step <n>, <name>** · <its session> · <its gate, or no gate>
 
    **Next**
    ```
-   <the command with its arguments>
+   <the command, with the Arguments of its REGISTRY.md row, or what the user does first>
    ```
-
-   **After that:** <the steps that follow, in order, each with its command, its gate, and what it leaves when done (its outputs in the step contracts): at least the next one, and on through this session's steps>
    ~~~
 
-   The table is how the user catches a misread state before running anything: name what you did not find as plainly as what you did. When a gate or a choice comes before any command can run, the Next block says what the user does first, and never holds a command that cannot run yet; for a choice, one line per option. Done when the user can paste the Next block and knows where.
-4. **Save the answer** when it is about the project in this folder: the one whose map you read, or the codebase you are setting up; never for an idea asked from another project's folder. Write it, exactly as printed, to `.claude/ask-team/` in the main checkout (the first path `git worktree list` prints; this folder when it is not a git repo): as `latest.md`, and as `<yyyy-mm-dd-hhmm>-<step-n or the way in>.md` beside it. Start both with the date, the commit, and a line saying the tracker wins when they disagree. When `.claude/ask-team/.gitignore` is missing, create it holding `*`, so git ignores the folder whatever the project's own rules say. These files are all this skill writes. The user rereads them after clearing the context; when nothing was saved, say why in one line.
-
-## Main flow
-
-| # | Step | Command | Output, and the gate before moving on |
-|---|---|---|---|
-| 1 | Discovery | `/grill-with-docs <idea>` (before any project folder exists: `/grill-me`) | Shared understanding; glossary terms and ADRs in the repo. Reads the domain doc first when one exists. |
-| 2 | Setup | `/project-setup`, then `/setup-matt-pocock-skills` | Project map, tracker doc, conventions. |
-| 3 | Fog (only when the way is unclear) | `/wayfinder`, then `/change-request <effort>` once its map clears | Decisions on the tracker, and the effort sized: more than one epic continues at step 4. |
-| 4 | Problem and brief | `/define-problem-statement`, then `/develop-solution-brief` | Both approved by the user. |
-| 5 | Roadmap | `/user-story-mapping-workshop` | Story map cut into release slices; each slice is an epic. Approved. |
-| 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code | Design doc reviewed and approved. |
-| 7 | PRD, per epic | `/deliver-prd <epic>` | PRD in the epic's home (project map). Approved. |
-| 8 | Refinement, per story | `/specification <story>`, then `/story-splitting` when it is too big, then `/find-gaps` | Story ready: rules, examples and acceptance criteria agreed. |
-| 9 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
-| 10 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/build-ticket <ticket> pair <dials>` | PR open with the template filled. |
-| 11 | Review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review`. When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
-| 12 | Approval | `/acceptance-review <PR> against <ticket>`; CI green. To merge: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>` | The user merges. After the merge, the user closes the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
-| 13 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. The epic closes once the user confirms the verdict. |
-
-Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. With no ticket, the contract is the base branch's version of the doc the PR changes, and each line the PR rewrites in it goes to the user to approve before the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
-
-## Step contracts
-
-What each step needs before it starts and what it leaves behind. A way in is a row too: what it makes is there for any step after setup. `scripts/check-contracts.py` checks that every need is made by an earlier step or a way in, that each maker says it makes its output, and that every home is a row of the project map.
-
-| Step | Needs | Makes |
-|---|---|---|
-| 1 | idea (outside) | glossary terms, ADRs |
-| 2 | — | project map, tracker doc, definition of done, coding standards, PR template |
-| 3 | effort (outside), project map | decision tickets, sized issue |
-| 4 | project map | problem statement, solution brief |
-| 5 | solution brief | story map, epic |
-| 6 | epic | design doc, ADRs |
-| 7 | epic, design doc | PRD, story |
-| 8 | story | refined story |
-| 9 | refined story or sized issue or epic | ticket |
-| 10 | ticket, definition of done, coding standards, PR template | pull request |
-| 11 | pull request, ticket, coding standards | review |
-| 12 | pull request, review, ticket | merged pull request |
-| 13 | epic, PRD, merged pull request | retro |
-| `/change-request` | change (outside) or triaged issue, project map | sized issue, story, epic |
-| `/triage` | report (outside), tracker doc | triaged issue, ticket |
-
-| Output | Made by | Lives in |
-|---|---|---|
-| glossary terms | `/grill-with-docs`, `domain-modeling` | Glossary for this repo's code |
-| ADRs | `/grill-with-docs`, `domain-modeling` | ADRs |
-| project map | `/project-setup` | Documentation |
-| tracker doc | `/setup-matt-pocock-skills` | `docs/agents/issue-tracker.md` |
-| definition of done | `/project-setup` | Definition of done |
-| coding standards | `/project-setup` | Coding standards |
-| PR template | `/project-setup` | Code host |
-| decision tickets | `/wayfinder` | Issue tracker |
-| sized issue | `/change-request` | Issue tracker |
-| triaged issue | `/triage` | Issue tracker |
-| problem statement | `/define-problem-statement` | Problem statement and solution brief |
-| solution brief | `/develop-solution-brief` | Problem statement and solution brief |
-| story map | `/user-story-mapping-workshop` | Roadmap |
-| epic | `/user-story-mapping-workshop`, `/change-request` | Epics, stories and tickets |
-| design doc | `/writing-design-docs` | Design docs |
-| PRD | `/deliver-prd` | PRDs |
-| story | `/deliver-prd`, `/change-request` | Epics, stories and tickets |
-| refined story | `/specification` | Epics, stories and tickets |
-| ticket | `/to-tickets`, `/triage` | Epics, stories and tickets |
-| pull request | `/build-ticket` | Code host |
-| review | `/code-review-and-quality` | Code host |
-| merged pull request | the user | Code host |
-| retro | `/epic-retro` | Retros |
-
-## Ways in
-
-- A feature, an improvement or a bug fix the user brings to an existing project: `/change-request <change>`.
-- A bug report or request that arrived from outside: `/triage`. A bounded one it marks ready for an agent is already a ticket, built at step 10; anything bigger is marked ready for a human, and `/change-request <issue>` then sizes it from its brief, without a second grilling.
-- Something broken that resists a first look: `diagnosing-bugs` loads on its own; for a hard one, `/diagnosing-bugs` explicitly.
-- Production incident: `/engineering:incident-response`.
-- A huge, foggy effort: `/change-request <effort>`, like any change. When the way is unclear, its Next line sends the effort to `/wayfinder`; once the map clears, `/change-request <map>` sizes and places it, instead of going straight to step 4.
-
-## Any time
-
-`research` (a cited write-up of primary sources), `codebase-design` (deep-module vocabulary), `domain-modeling` (a contested term, an ADR), `wizard` (steps only the user can take), `lesson-learned`, `/handoff` (only when the work moves to another folder, tool or person).
-
-## Sessions
-
-One role per session, as on a team: product (steps 1 to 5, and `/change-request`), tech lead per epic (6 to 9), developer per ticket (10), reviewer per PR (11, always a fresh session). The tracker item is the hand-off between roles: the next session starts from its id, not from a summary. At a boundary inside one role, continue while the next phase needs this one's reasoning; otherwise clear. Keep steps 6 to 9 of one epic in one session when they fit.
-
-## Maintenance
-
-After installing, removing or updating a skill of this workflow, or changing this file, update [REGISTRY.md](REGISTRY.md), its Does line included, and run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`. It checks that every skill named here is in the registry, that each skill's visibility matches the settings, that no skill calls one Claude cannot load, that the step contracts close, through `scripts/check-contracts.py`, and that the workflow page can still be built from this file and the registry. CI runs the contract check on every pull request. The contract check proves that no hand-off is missing, not that a skill does what its row says; `tests/routing/run.py` in this repo runs this router on fixture projects and checks the command it answers. Run it after changing this file. When a real project gets a wrong answer, add its state as a scenario there before fixing the router. GitHub publishes that page on every push to `main`.
+Hand over instead of guessing. When there is no project map, or the state takes judgement (more than one thing in flight, such as two started epics, an epic and a sized issue outside it, a wayfinder map or an issue no one has triaged; an output there without the input it needs; a choice to offer, such as a project whose roadmap is planned only when wanted with nothing in flight), say what in one line, and put `/ask-team` in the Next block.

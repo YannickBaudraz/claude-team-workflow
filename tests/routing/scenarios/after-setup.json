@@ -4,5 +4,6 @@
     "base",
     "setup"
   ],
-  "next": "/define-problem-statement"
+  "next": "/define-problem-statement",
+  "light": "/define-problem-statement"
 }

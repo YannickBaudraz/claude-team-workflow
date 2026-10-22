@@ -7,12 +7,18 @@ own. The runner copies them into a fresh git repo, runs `claude -p /ask-team` th
 read-only tools, except writing in .claude/ask-team/, and checks the answer: that it has the
 router's form (the state table, the Session, Gate, Next and After that parts), and what its
 Next block holds. It also checks what the router saved: latest.md and a dated copy holding
-the same answer, beside a .gitignore holding `*`, and nothing git can see.
+the same answer, beside a .gitignore holding `*`, and nothing git can see. And it checks that
+no tool call read, searched or listed .claude/ask-team/: saved answers are for the user.
+
+A scenario with a `light` regex also runs as `/ask-team next`, the light answer: a few lines
+and a Next block matching it (`^/ask-team$` when the light answer should hand over), and
+nothing saved.
 
     ask       what the user brings, appended to /ask-team (default: nothing)
     next      a regex the answer's Next block must match
     must      regexes the whole answer must match
     must_not  regexes it must not match
+    light     a regex the Next block of `/ask-team next` must match (default: not run light)
     saves     whether the router saves its answer here (default: true)
     git       whether the project is a git repo (default: true)
 
@@ -27,6 +33,7 @@ and takes a minute or two; run it when the workflow changes, not on every commit
     python3 tests/routing/run.py sized-* --runs 3   # some scenarios, three times each
     python3 tests/routing/run.py --keep             # keep the projects, to look inside
     python3 tests/routing/run.py --model claude-opus-5-5 --effort medium
+    python3 tests/routing/run.py --mode light       # only the light answers
 
 Answers are saved in tests/routing/results/<time>/, with report.md: the commit and model
 tested, and per scenario its fixture, what it expects, each run's verdict and full answer.
@@ -75,7 +82,11 @@ def build(scenario, where):
 
 def grade(scenario, answer):
     """The reasons this answer fails the scenario; empty when it passes."""
-    failures = [f"no {part}" for part, pattern in FORM.items() if not re.search(pattern, answer, re.M)]
+    if scenario.get("mode") == "light":
+        lines = [line for line in answer.splitlines() if line.strip()]
+        failures = [f"the light answer runs to {len(lines)} lines"] if len(lines) > 10 else []
+    else:
+        failures = [f"no {part}" for part, pattern in FORM.items() if not re.search(pattern, answer, re.M)]
     block = next_block(answer)
     if not block:
         return failures + ["no Next block"]
@@ -105,8 +116,12 @@ def saved(scenario, answer, where):
     folder = os.path.join(where, ".claude", "ask-team")
     failures = []
     if not scenario.get("saves", True):
-        if os.path.exists(folder):
-            failures.append("saved its answer here, though the answer is not about this folder's project")
+        # What the scenario put there, if anything, stays as it was.
+        given = {path: text for path, text in scenario.get("files", {}).items() if path.startswith(".claude/ask-team/")}
+        found = {os.path.relpath(os.path.join(root, f), where): open(os.path.join(root, f), encoding="utf-8").read()
+                 for root, _, files in os.walk(folder) for f in files}
+        if found != given:
+            failures.append("wrote in .claude/ask-team/, though this answer saves nothing")
     elif not os.path.exists(os.path.join(folder, "latest.md")):
         failures.append("no .claude/ask-team/latest.md")
     else:
@@ -129,25 +144,52 @@ def saved(scenario, answer, where):
     return failures
 
 
+# A reading verb in a shell command; cp, mkdir and printf only write.
+READING = re.compile(r"\b(cat|less|more|head|tail|grep|rg|ls|find|sed|awk|wc|diff|tree|stat|file)\b")
+
+
+def peeked(calls):
+    """The tool calls that read, searched or listed .claude/ask-team/, which the router never does."""
+    found = []
+    for tool, given in calls:
+        text = json.dumps(given)
+        if ".claude/ask-team" not in text and not (tool in ("Glob", "Grep") and ".claude" in text):
+            continue
+        # A heredoc's body is what gets written, and `cat >` writes: neither reads.
+        command = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", "", given.get("command", ""), flags=re.S)
+        command = re.sub(r"\bcat\s*>", "", command)
+        if tool in ("Read", "Glob", "Grep") or (tool == "Bash" and READING.search(command)):
+            found.append(f"{tool} {text[:120]}")
+    return [f"looked into .claude/ask-team/: {call}" for call in found]
+
+
 def run_once(name, scenario, number, results, args):
     where = tempfile.mkdtemp(prefix=f"routing-{name}-")
     try:
         build(scenario, where)
-        command = ["claude", "-p", " ".join(["/ask-team", scenario.get("ask", "")]).strip(), "--output-format", "json", "--allowedTools", TOOLS,
-                   "--disallowedTools", "NotebookEdit", "--max-turns", "40"]
+        asked = "/ask-team next" if scenario.get("mode") == "light" else " ".join(["/ask-team", scenario.get("ask", "")]).strip()
+        command = ["claude", "-p", asked, "--output-format", "stream-json", "--verbose",
+                   "--allowedTools", TOOLS, "--disallowedTools", "NotebookEdit", "--max-turns", "40"]
         if args.model:
             command += ["--model", args.model]
         if args.effort:
             command += ["--effort", args.effort]
         done = subprocess.run(command, cwd=where, capture_output=True, text=True, timeout=900)
-        try:
-            output = json.loads(done.stdout)
-        except json.JSONDecodeError:
-            output = {"result": done.stdout + done.stderr, "total_cost_usd": 0}
+        output, calls = {"result": done.stdout[-2000:] + done.stderr[-2000:]}, []
+        for line in done.stdout.splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if event.get("type") == "assistant":
+                calls += [(block.get("name"), block.get("input", {})) for block in event["message"].get("content", [])
+                          if block.get("type") == "tool_use"]
+            elif event.get("type") == "result":
+                output = event
         answer = output.get("result") or ""
         with open(os.path.join(results, f"{name}-{number}.md"), "w", encoding="utf-8") as out:
             out.write(answer)
-        failures = grade(scenario, answer) + saved(scenario, answer, where)
+        failures = grade(scenario, answer) + saved(scenario, answer, where) + peeked(calls)
         return dict(name=name, number=number, failures=failures, answer=answer,
                     cost=output.get("total_cost_usd") or 0, models=sorted(output.get("modelUsage", {})),
                     where=where)
@@ -187,11 +229,13 @@ def report(scenarios, outcomes, tested, effort):
         lines += ["", f"## {name}", "", f"**{ok}/{len(outcomes[name])} pass.** {scenario['why']}", "",
                   f"- Project: layers {layers}" + (f", plus {', '.join(f'`{f}`' for f in scenario['files'])}"
                                                     if scenario.get("files") else ""),
-                  f"- Request: {scenario['ask'] if scenario.get('ask') else 'none, plain `/ask-team`'}",
-                  f"- Expects: the router's form, and a Next block matching `{scenario.get('next', '')}`"
+                  f"- Asked: " + ("`/ask-team next`, the light answer" if scenario.get("mode") == "light"
+                                  else scenario["ask"] if scenario.get("ask") else "plain `/ask-team`"),
+                  f"- Expects: " + ("a light answer of a few lines" if scenario.get("mode") == "light" else "the router's form")
+                  + f", and a Next block matching `{scenario.get('next', '')}`"
                   + "".join(f"; the answer matches `{m}`" for m in scenario.get("must", []))
                   + "".join(f"; the answer does not match `{m}`" for m in scenario.get("must_not", [])),
-                  f"- Scenario file: [{name}.json]({tested['blob']}/scenarios/{name}.json)", "",
+                  f"- Scenario file: [{name.removesuffix('-next')}.json]({tested['blob']}/scenarios/{name.removesuffix('-next')}.json)", "",
                   "| Run | Verdict | Next block |", "|---|---|---|"]
         for run in outcomes[name]:
             verdict = "pass" if not run["failures"] else "FAIL: " + "; ".join(run["failures"])
@@ -209,6 +253,8 @@ def main():
     parser.add_argument("-j", "--jobs", type=int, default=4, help="runs at once")
     parser.add_argument("--model", help="model for the runs (default: Claude Code's)")
     parser.add_argument("--effort", help="effort for the runs (default: your settings for the model)")
+    parser.add_argument("--mode", choices=("full", "light", "both"), default="both",
+                        help="run /ask-team, /ask-team next, or both (default)")
     parser.add_argument("--keep", action="store_true", help="keep each run's project")
     args = parser.parse_args()
 
@@ -216,7 +262,11 @@ def main():
     for file in sorted(os.listdir(SCENARIOS)):
         name = file.removesuffix(".json")
         if file.endswith(".json") and (not args.names or any(fnmatch.fnmatch(name, n) for n in args.names)):
-            scenarios[name] = json.load(open(os.path.join(SCENARIOS, file), encoding="utf-8"))
+            scenario = json.load(open(os.path.join(SCENARIOS, file), encoding="utf-8"))
+            if args.mode != "light":
+                scenarios[name] = scenario
+            if args.mode != "full" and "light" in scenario:
+                scenarios[f"{name}-next"] = {**scenario, "mode": "light", "next": scenario["light"], "saves": False}
     if not scenarios:
         sys.exit("no scenario matches")
     results = os.path.join(HERE, "results", time.strftime("%Y%m%d-%H%M%S"))
