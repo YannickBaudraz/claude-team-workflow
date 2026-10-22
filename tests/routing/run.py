@@ -22,7 +22,9 @@ and takes a minute or two; run it when the workflow changes, not on every commit
     python3 tests/routing/run.py sized-* --runs 3   # some scenarios, three times each
     python3 tests/routing/run.py --keep             # keep the projects, to look inside
 
-Answers are saved in tests/routing/results/<time>/. Exit code 1 when any run fails.
+Answers are saved in tests/routing/results/<time>/, with report.md: the commit and model
+tested, and per scenario its fixture, what it expects, each run's verdict and full answer.
+Post it on the pull request as the proof. Exit code 1 when any run fails.
 """
 import argparse
 import concurrent.futures
@@ -63,10 +65,9 @@ def build(scenario, where):
 
 def grade(scenario, answer):
     """The reasons this answer fails the scenario; empty when it passes."""
-    runs = re.findall(r"^\W*Run:\s*(.+?)\s*$", answer, re.M)
-    if not runs:
+    run = last_run_line(answer)
+    if not run:
         return ["no `Run:` line"]
-    run = runs[-1].replace("`", "")
     failures = []
     if "run" in scenario and not re.search(scenario["run"], run):
         failures.append(f"Run line '{run}' does not match /{scenario['run']}/")
@@ -75,6 +76,11 @@ def grade(scenario, answer):
     failures += [f"answer has /{pattern}/" for pattern in scenario.get("must_not", [])
                  if re.search(pattern, answer)]
     return failures
+
+
+def last_run_line(answer):
+    runs = re.findall(r"^\W*Run:\s*(.+?)\s*$", answer, re.M)
+    return runs[-1].replace("`", "") if runs else ""
 
 
 def run_once(name, scenario, number, results, args):
@@ -93,10 +99,57 @@ def run_once(name, scenario, number, results, args):
         answer = output.get("result") or ""
         with open(os.path.join(results, f"{name}-{number}.md"), "w", encoding="utf-8") as out:
             out.write(answer)
-        return name, number, grade(scenario, answer), output.get("total_cost_usd", 0), where
+        return dict(name=name, number=number, failures=grade(scenario, answer), answer=answer,
+                    cost=output.get("total_cost_usd") or 0, models=sorted(output.get("modelUsage", {})),
+                    where=where)
     finally:
         if not args.keep:
             shutil.rmtree(where, ignore_errors=True)
+
+
+def commit():
+    """The commit under test, its GitHub tree URL, and whether tracked files differ from it."""
+    git = lambda *a: subprocess.run(["git", *a], cwd=HERE, capture_output=True, text=True).stdout.strip()
+    sha = git("rev-parse", "HEAD")
+    remote = re.sub(r"\.git$", "", re.sub(r"^git@github\.com:", "https://github.com/", git("remote", "get-url", "origin")))
+    return dict(sha=sha, tree=f"{remote}/tree/{sha}/tests/routing", blob=f"{remote}/blob/{sha}/tests/routing",
+                dirty=bool(git("status", "--porcelain", "--untracked-files=no")))
+
+
+def report(scenarios, outcomes, tested):
+    """The proof for a pull request: what was tested, and every run's answer."""
+    runs = [run for name in scenarios for run in outcomes[name]]
+    models = sorted({model for run in runs for model in run["models"]})
+    passed = sum(1 for run in runs if not run["failures"])
+    lines = [f"# Routing scenarios: {passed}/{len(runs)} runs pass", "",
+             f"Commit `{tested['sha'][:7]}`{' with local changes' if tested['dirty'] else ''}, "
+             f"{time.strftime('%Y-%m-%d %H:%M')}, model {', '.join(models) or 'unknown'}, "
+             f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
+             "in a fresh git repo built from the scenario's layers, with read-only tools; "
+             "it passes when the answer's last `Run:` line matches.", "",
+             "| Scenario | Expects `Run:` to match | Runs passed |", "|---|---|---|"]
+    for name, scenario in scenarios.items():
+        ok = sum(1 for run in outcomes[name] if not run["failures"])
+        lines.append(f"| [{name}](#{name}) | `{scenario.get('run', '')}` | {ok}/{len(outcomes[name])} |")
+    for name, scenario in scenarios.items():
+        ok = sum(1 for run in outcomes[name] if not run["failures"])
+        layers = ", ".join(f"[{layer}]({tested['tree']}/layers/{layer})" for layer in scenario["layers"])
+        lines += ["", f"## {name}", "", f"**{ok}/{len(outcomes[name])} pass.** {scenario['why']}", "",
+                  f"- Project: layers {layers}" + (f", plus {', '.join(f'`{f}`' for f in scenario['files'])}"
+                                                    if scenario.get("files") else ""),
+                  f"- Request: {scenario['ask'] if scenario.get('ask') else 'none, plain `/ask-team`'}",
+                  f"- Expects: `Run:` matches `{scenario.get('run', '')}`"
+                  + "".join(f"; the answer matches `{m}`" for m in scenario.get("must", []))
+                  + "".join(f"; the answer does not match `{m}`" for m in scenario.get("must_not", [])),
+                  f"- Scenario file: [{name}.json]({tested['blob']}/scenarios/{name}.json)", "",
+                  "| Run | Verdict | `Run:` line |", "|---|---|---|"]
+        for run in outcomes[name]:
+            verdict = "pass" if not run["failures"] else "FAIL: " + "; ".join(run["failures"])
+            lines.append(f"| {run['number']} | {verdict} | {last_run_line(run['answer']).replace('|', '\\|')} |")
+        for run in outcomes[name]:
+            lines += ["", f"<details><summary>Run {run['number']}: the router's full answer</summary>", "",
+                      run["answer"].strip(), "", "</details>"]
+    return "\n".join(lines) + "\n"
 
 
 def main():
@@ -118,27 +171,32 @@ def main():
     results = os.path.join(HERE, "results", time.strftime("%Y%m%d-%H%M%S"))
     os.makedirs(results)
 
-    outcomes, cost = {}, 0.0
+    tested = commit()
+    outcomes = {}
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         futures = [pool.submit(run_once, name, scenario, number, results, args)
                    for name, scenario in scenarios.items() for number in range(1, args.runs + 1)]
         for future in concurrent.futures.as_completed(futures):
-            name, number, failures, run_cost, where = future.result()
-            outcomes.setdefault(name, []).append((number, failures, where))
-            cost += run_cost or 0
+            outcome = future.result()
+            outcomes.setdefault(outcome["name"], []).append(outcome)
+    for runs in outcomes.values():
+        runs.sort(key=lambda run: run["number"])
 
     failed = 0
     for name in scenarios:
-        runs = sorted(outcomes[name])
-        passed = sum(1 for _, failures, _ in runs if not failures)
+        runs = outcomes[name]
+        passed = sum(1 for run in runs if not run["failures"])
         failed += len(runs) - passed
         print(f"{'PASS' if passed == len(runs) else 'FAIL'} {name}: {passed}/{len(runs)}")
-        for number, failures, where in runs:
-            for failure in failures:
-                print(f"     run {number}: {failure}")
+        for run in runs:
+            for failure in run["failures"]:
+                print(f"     run {run['number']}: {failure}")
             if args.keep:
-                print(f"     run {number}: project kept in {where}")
-    print(f"answers in {os.path.relpath(results)}; cost ${cost:.2f}")
+                print(f"     run {run['number']}: project kept in {run['where']}")
+    with open(os.path.join(results, "report.md"), "w", encoding="utf-8") as out:
+        out.write(report(scenarios, outcomes, tested))
+    cost = sum(run["cost"] for runs in outcomes.values() for run in runs)
+    print(f"answers and report.md in {os.path.relpath(results)}; cost ${cost:.2f}")
     sys.exit(1 if failed else 0)
 
 
