@@ -1,0 +1,12 @@
+{
+  "why": "A new idea asked from inside another project's repo: no folder exists for it, so grill without docs, and leave this repo's saved answers alone.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "A separate idea, not for Pantry: a recipe planner app. Nothing exists for it yet, not even a folder.",
+  "next": "^/grill-me",
+  "saves": false
+}

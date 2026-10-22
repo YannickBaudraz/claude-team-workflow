@@ -4,13 +4,17 @@
 Each scenario in scenarios/*.json names the layers that make its project, in order,
 from layers/ (a later layer's file replaces an earlier one's), plus any files of its
 own. The runner copies them into a fresh git repo, runs `claude -p /ask-team` there with
-read-only tools, and checks the answer: that it has the router's form (the state table, the
-Session, Gate, Next and After that parts), and what its Next block holds:
+read-only tools, except writing in .claude/ask-team/, and checks the answer: that it has the
+router's form (the state table, the Session, Gate, Next and After that parts), and what its
+Next block holds. It also checks what the router saved: latest.md and a dated copy holding
+the same answer, beside a .gitignore holding `*`, and nothing git can see.
 
     ask       what the user brings, appended to /ask-team (default: nothing)
     next      a regex the answer's Next block must match
     must      regexes the whole answer must match
     must_not  regexes it must not match
+    saves     whether the router saves its answer here (default: true)
+    git       whether the project is a git repo (default: true)
 
 `_CLAUDE.md` in a layer becomes the project's CLAUDE.md; under its own name it would load
 as instructions in sessions working on this repo.
@@ -43,7 +47,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 LAYERS = os.path.join(HERE, "layers")
 SCENARIOS = os.path.join(HERE, "scenarios")
-TOOLS = "Read,Glob,Grep,Bash(git log:*),Bash(git status:*),Bash(ls:*)"
+TOOLS = ("Read,Glob,Grep,Bash(git log:*),Bash(git status:*),Bash(git worktree list:*),Bash(git rev-parse:*),"
+         "Bash(ls:*),Bash(date:*),Write(./.claude/ask-team/**),Edit(./.claude/ask-team/**)")
 GIT = {"GIT_AUTHOR_NAME": "Fixture", "GIT_AUTHOR_EMAIL": "fixture@example.com",
        "GIT_COMMITTER_NAME": "Fixture", "GIT_COMMITTER_EMAIL": "fixture@example.com",
        "GIT_AUTHOR_DATE": "2026-10-01T09:00:00", "GIT_COMMITTER_DATE": "2026-10-01T09:00:00"}
@@ -59,8 +64,11 @@ def build(scenario, where):
     for root, _, files in os.walk(where):
         if "_CLAUDE.md" in files:
             os.replace(os.path.join(root, "_CLAUDE.md"), os.path.join(root, "CLAUDE.md"))
+    if not scenario.get("git", True):
+        return
     env = {**os.environ, **GIT}
-    for command in (["git", "init", "-q", "-b", "main"], ["git", "add", "-A"],
+    # The user's global excludes may ignore CLAUDE.md or .claude: a fixture holds what its layers say.
+    for command in (["git", "init", "-q", "-b", "main"], ["git", "-c", "core.excludesFile=/dev/null", "add", "-A"],
                     ["git", "commit", "-q", "-m", "Fixture state"]):
         subprocess.run(command, cwd=where, env=env, check=True)
 
@@ -92,12 +100,41 @@ def next_block(answer):
     return blocks[-1].strip() if blocks else ""
 
 
+def saved(scenario, answer, where):
+    """The reasons what the router saved, or left for git to see, fails the scenario."""
+    folder = os.path.join(where, ".claude", "ask-team")
+    failures = []
+    if not scenario.get("saves", True):
+        if os.path.exists(folder):
+            failures.append("saved its answer here, though the answer is not about this folder's project")
+    elif not os.path.exists(os.path.join(folder, "latest.md")):
+        failures.append("no .claude/ask-team/latest.md")
+    else:
+        latest = open(os.path.join(folder, "latest.md"), encoding="utf-8").read()
+        if next_block(latest) != next_block(answer):
+            failures.append("latest.md does not hold the printed answer's Next block")
+        if not [f for f in os.listdir(folder) if re.fullmatch(r"\d{4}-\d{2}-\d{2}-\d{4}-.+\.md", f)]:
+            failures.append("no dated copy beside latest.md")
+        ignore = os.path.join(folder, ".gitignore")
+        if not os.path.exists(ignore) or open(ignore).read().strip() != "*":
+            failures.append(".claude/ask-team/.gitignore does not hold *")
+    if scenario.get("git", True):
+        # Without the user's global excludes, which may already ignore .claude: only the
+        # project's own rules and the folder's .gitignore count, as on any other machine.
+        seen = subprocess.run(["git", "-c", "core.excludesFile=/dev/null", "status", "--porcelain",
+                               "--untracked-files=all"], cwd=where,
+                              capture_output=True, text=True).stdout.strip()
+        if seen:
+            failures.append("git sees: " + seen.replace("\n", ", "))
+    return failures
+
+
 def run_once(name, scenario, number, results, args):
     where = tempfile.mkdtemp(prefix=f"routing-{name}-")
     try:
         build(scenario, where)
         command = ["claude", "-p", " ".join(["/ask-team", scenario.get("ask", "")]).strip(), "--output-format", "json", "--allowedTools", TOOLS,
-                   "--disallowedTools", "Write,Edit,NotebookEdit", "--max-turns", "40"]
+                   "--disallowedTools", "NotebookEdit", "--max-turns", "40"]
         if args.model:
             command += ["--model", args.model]
         if args.effort:
@@ -110,7 +147,8 @@ def run_once(name, scenario, number, results, args):
         answer = output.get("result") or ""
         with open(os.path.join(results, f"{name}-{number}.md"), "w", encoding="utf-8") as out:
             out.write(answer)
-        return dict(name=name, number=number, failures=grade(scenario, answer), answer=answer,
+        failures = grade(scenario, answer) + saved(scenario, answer, where)
+        return dict(name=name, number=number, failures=failures, answer=answer,
                     cost=output.get("total_cost_usd") or 0, models=sorted(output.get("modelUsage", {})),
                     where=where)
     finally:

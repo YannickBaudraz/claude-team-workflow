@@ -30,10 +30,11 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
    <the command with its arguments>
    ```
 
-   **After that:** <the steps that follow, in order, each with its command and gate: at least the next one, and on through this session's steps>
+   **After that:** <the steps that follow, in order, each with its command, its gate, and what it leaves when done (its outputs in the step contracts): at least the next one, and on through this session's steps>
    ~~~
 
    The table is how the user catches a misread state before running anything: name what you did not find as plainly as what you did. When a gate or a choice comes before any command can run, the Next block says what the user does first, and never holds a command that cannot run yet; for a choice, one line per option. Done when the user can paste the Next block and knows where.
+4. **Save the answer** when it is about the project in this folder: the one whose map you read, or the codebase you are setting up; never for an idea asked from another project's folder. Write it, exactly as printed, to `.claude/ask-team/` in the main checkout (the first path `git worktree list` prints; this folder when it is not a git repo): as `latest.md`, and as `<yyyy-mm-dd-hhmm>-<step-n or the way in>.md` beside it. Start both with the date, the commit, and a line saying the tracker wins when they disagree. When `.claude/ask-team/.gitignore` is missing, create it holding `*`, so git ignores the folder whatever the project's own rules say. These files are all this skill writes. The user rereads them after clearing the context; when nothing was saved, say why in one line.
 
 ## Main flow
 
