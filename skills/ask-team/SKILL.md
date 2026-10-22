@@ -3,6 +3,8 @@ name: ask-team
 description: Ask which skill to run next in a project worked the way an engineering team works, from discovery to retro. A router over the team workflow's skills; with next, a short answer between two steps.
 argument-hint: "[next | <request>]"
 disable-model-invocation: true
+model: claude-opus-5-5
+effort: medium
 ---
 
 # Ask team

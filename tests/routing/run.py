@@ -199,6 +199,13 @@ def commit():
                 dirty=bool(git("status", "--porcelain", "--untracked-files=no")))
 
 
+def pinned():
+    """The model and effort the skill's frontmatter pins: they override the session's."""
+    skill = open(os.path.expanduser("~/.claude/skills/ask-team/SKILL.md"), encoding="utf-8").read()
+    front = re.match(r"---\n(.*?)\n---", skill, re.S).group(1)
+    return {key: value.strip() for key, value in re.findall(r"^(model|effort):(.*)$", front, re.M)}
+
+
 def report(scenarios, outcomes, tested, effort):
     """The proof for a pull request: what was tested, and every run's answer."""
     runs = [run for name in scenarios for run in outcomes[name]]
@@ -207,7 +214,7 @@ def report(scenarios, outcomes, tested, effort):
     lines = [f"# Routing scenarios: {passed}/{len(runs)} runs pass", "",
              f"Commit `{tested['sha'][:7]}`{' with local changes' if tested['dirty'] else ''}, "
              f"{time.strftime('%Y-%m-%d %H:%M')}, model {', '.join(models) or 'unknown'}, "
-             f"effort {effort or 'from your settings'}, "
+             f"effort {pinned().get('effort') and pinned()['effort'] + ' (pinned by the skill)' or effort or 'from your settings'}, "
              f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
              "in a fresh git repo built from the scenario's layers, with read-only tools; "
              "it passes when the answer has the router's form and its Next block matches.", "",
