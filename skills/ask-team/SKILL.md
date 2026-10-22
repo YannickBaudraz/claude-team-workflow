@@ -90,7 +90,7 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 - A bug report or request that arrived from outside: `/triage`. A bounded one it marks ready for an agent is already a ticket, built at step 10; anything bigger is marked ready for a human, and `/change-request <issue>` then sizes it from its brief, without a second grilling.
 - Something broken that resists a first look: `diagnosing-bugs` loads on its own; for a hard one, `/diagnosing-bugs` explicitly.
 - Production incident: `/engineering:incident-response`.
-- A huge, foggy effort: `/wayfinder`. Once its map clears, `/change-request <effort>` sizes and places it, instead of going straight to step 4.
+- A huge, foggy effort: `/change-request <effort>`, like any change. When the way is unclear, its Next line sends the effort to `/wayfinder`; once the map clears, `/change-request <map>` sizes and places it, instead of going straight to step 4.
 
 ## Any time
 

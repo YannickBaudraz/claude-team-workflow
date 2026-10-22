@@ -1,0 +1,11 @@
+{
+  "why": "A feature brought to a set-up project goes to /change-request to be sized, never straight to a PRD or tickets.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "Add a command to remove an item from the pantry entirely.",
+  "run": "^/change-request"
+}

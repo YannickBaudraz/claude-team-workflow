@@ -1,0 +1,13 @@
+{
+  "why": "An issue that came from outside, with no triage label: /triage first.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "files": {
+    "issues/8-crash-on-empty-store.md": "Type: issue\nStatus: open\nLabels:\n\n# Crash when the store file is empty\n\nOpened by a user: `pantry list` crashes with a JSON error when `~/.pantry.json` is empty.\n"
+  },
+  "run": "^/triage"
+}

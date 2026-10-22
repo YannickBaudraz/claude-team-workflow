@@ -1,0 +1,15 @@
+{
+  "why": "/change-request placed a story in an open epic at refinement: refine it, as its Next line says.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "design",
+    "prd-approved"
+  ],
+  "files": {
+    "issues/5-add-with-no-unit.md": "Type: story\nStatus: open\nParent: 1\nLabels: enhancement, ready-for-human\n\n# Add an item counted in pieces\n\nAs a cook, I add eggs without a unit, so things counted in pieces fit too. Decided: a missing unit means pieces. Open: how `use` reads a missing unit.\n\nSize: fits epic #1\nNext: /specification #5\n"
+  },
+  "run": "^/specification\\s+#?5\\b"
+}

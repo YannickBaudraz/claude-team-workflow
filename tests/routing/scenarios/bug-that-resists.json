@@ -1,0 +1,11 @@
+{
+  "why": "A bug whose cause is unknown is diagnosed, by diagnosing-bugs or through /change-request, which diagnoses before sizing.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "`pantry use` sometimes subtracts the quantity twice, and I couldn't find why.",
+  "run": "diagnosing-bugs|^/change-request"
+}

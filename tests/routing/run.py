@@ -6,6 +6,7 @@ from layers/ (a later layer's file replaces an earlier one's), plus any files of
 own. The runner copies them into a fresh git repo, runs `claude -p /ask-team` there with
 read-only tools, and checks the answer:
 
+    ask       what the user brings, appended to /ask-team (default: nothing)
     run       a regex the answer's last `Run:` line must match
     must      regexes the whole answer must match
     must_not  regexes it must not match
@@ -80,7 +81,7 @@ def run_once(name, scenario, number, results, args):
     where = tempfile.mkdtemp(prefix=f"routing-{name}-")
     try:
         build(scenario, where)
-        command = ["claude", "-p", "/ask-team", "--output-format", "json", "--allowedTools", TOOLS,
+        command = ["claude", "-p", " ".join(["/ask-team", scenario.get("ask", "")]).strip(), "--output-format", "json", "--allowedTools", TOOLS,
                    "--disallowedTools", "Write,Edit,NotebookEdit", "--max-turns", "40"]
         if args.model:
             command += ["--model", args.model]

@@ -1,0 +1,11 @@
+{
+  "why": "A huge, foggy effort goes through /change-request like any change; it sends the effort to /wayfinder when the way is unclear.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "We want Pantry to sync between devices, be shared by housemates, and maybe get a web version. We don't know where to start or what it would take.",
+  "run": "^/change-request"
+}

@@ -1,0 +1,11 @@
+{
+  "why": "A production incident goes to the incident response, not the change flow.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "Production incident: this morning's release corrupts users' pantry files, and users are reporting lost data right now.",
+  "run": "incident-response"
+}
