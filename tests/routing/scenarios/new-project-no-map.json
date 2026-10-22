@@ -1,0 +1,8 @@
+{
+  "why": "A new project with only an idea in its README: discovery comes before setup.",
+  "layers": [
+    "base"
+  ],
+  "next": "/grill-with-docs|/grill-me",
+  "light": "^/ask-team$"
+}

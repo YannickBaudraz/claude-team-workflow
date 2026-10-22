@@ -1,0 +1,9 @@
+{
+  "why": "A project folder that is not a git repo yet: discovery first, and the answer is still saved in the folder, ignored by git once it starts.",
+  "layers": [
+    "base"
+  ],
+  "git": false,
+  "next": "/grill-with-docs|/grill-me",
+  "light": "^/ask-team$"
+}

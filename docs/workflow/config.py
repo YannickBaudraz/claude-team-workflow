@@ -3,7 +3,8 @@ colours, fonts."""
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SKILL = os.path.join(ROOT, 'skills', 'ask-team', 'SKILL.md')
+# The router: the skill, its full reading and its flow, read as one text.
+SKILL = [os.path.join(ROOT, 'skills', 'ask-team', name) for name in ('SKILL.md', 'ROUTER.md', 'FLOW.md')]
 REGISTRY = os.path.join(ROOT, 'skills', 'ask-team', 'REGISTRY.md')
 README = os.path.join(ROOT, 'README.md')
 PREVIEW = os.path.join(ROOT, 'docs', 'workflow.html')

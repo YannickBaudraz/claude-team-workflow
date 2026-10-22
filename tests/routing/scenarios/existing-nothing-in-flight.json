@@ -1,0 +1,14 @@
+{
+  "why": "An existing codebase whose map plans the roadmap only when wanted, with nothing in flight: offer /change-request, with step 4 at most as a second option.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "must": [
+    "/change-request"
+  ],
+  "next": "(?m)^/change-request",
+  "light": "^/ask-team$"
+}

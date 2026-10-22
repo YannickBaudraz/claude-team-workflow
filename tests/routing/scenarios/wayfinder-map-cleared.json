@@ -1,0 +1,17 @@
+{
+  "why": "A wayfinder map whose decision tickets are all closed and with no fog left: size the effort with /change-request.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "files": {
+    "issues/4-sync-and-sharing.md": "Type: issue\nStatus: open\nLabels: wayfinder:map\n\n# Sync and sharing\n\n## Destination\nA decision on how Pantry syncs between devices and is shared, ready to size.\n\n## Decisions so far\n- [Who shares a pantry](5-who-shares-a-pantry.md): one household, everyone edits.\n- [Where the shared pantry lives](6-where-the-shared-pantry-lives.md): a file in a folder the household already syncs.\n- [How edits merge](7-how-edits-merge.md): last write wins per item, with a log.\n\n## Not yet specified\nNothing: the way is clear.\n",
+    "issues/5-who-shares-a-pantry.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:grilling\n\n# Who shares a pantry\n\nResolved: one household, everyone edits.\n",
+    "issues/6-where-the-shared-pantry-lives.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:research\n\n# Where the shared pantry lives\n\nResolved: a file in a folder the household already syncs.\n",
+    "issues/7-how-edits-merge.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:grilling\n\n# How edits merge\n\nResolved: last write wins per item, with a log.\n"
+  },
+  "next": "^/change-request\\s+#?4\\b",
+  "light": "^/change-request\\s+#?4\\b"
+}

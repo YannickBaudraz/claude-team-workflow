@@ -1,0 +1,9 @@
+{
+  "why": "Setup is done and nothing is planned: the problem statement comes first.",
+  "layers": [
+    "base",
+    "setup"
+  ],
+  "next": "/define-problem-statement",
+  "light": "/define-problem-statement"
+}

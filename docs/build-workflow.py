@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the team workflow page, the whole workflow on one HTML page.
 
-What the page says about the workflow comes from skills/ask-team/SKILL.md (the
+What the page says about the workflow comes from skills/ask-team/SKILL.md, ROUTER.md and FLOW.md (the
 steps, how the router sizes a request, the ways in, the any-time skills, the
 session and gate rules) and skills/ask-team/REGISTRY.md (every skill, where it
 is used, what it does). SKILL.md speaks to Claude about "the user"; the page
@@ -107,7 +107,7 @@ def main():
         return 0
     out = args[args.index('--out') + 1] if '--out' in args else PREVIEW
     built = version()
-    digest = hashlib.sha256(open(SKILL, 'rb').read() + open(REGISTRY, 'rb').read()).hexdigest()[:10]
+    digest = hashlib.sha256(b''.join(open(path, 'rb').read() for path in [*SKILL, REGISTRY])).hexdigest()[:10]
     out_dir = os.path.dirname(os.path.abspath(out))
     os.makedirs(out_dir, exist_ok=True)
     with open(out, 'w', encoding='utf-8') as page:

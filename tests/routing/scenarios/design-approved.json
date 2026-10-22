@@ -1,0 +1,12 @@
+{
+  "why": "Epic #1's design doc is approved and it has no PRD: step 7 for #1.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "design"
+  ],
+  "next": "/deliver-prd\\s+#?1\\b",
+  "light": "/deliver-prd\\s+#?1\\b"
+}

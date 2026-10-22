@@ -1,0 +1,11 @@
+{
+  "why": "The story map is approved and its epics are in the tracker: the first epic's design is next.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap"
+  ],
+  "next": "/technical-writing|/writing-design-docs",
+  "light": "/technical-writing|/writing-design-docs"
+}

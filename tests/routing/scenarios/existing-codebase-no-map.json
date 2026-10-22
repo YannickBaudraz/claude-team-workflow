@@ -1,0 +1,9 @@
+{
+  "why": "An existing codebase with no project map joins the workflow through setup.",
+  "layers": [
+    "base",
+    "code"
+  ],
+  "next": "/project-setup",
+  "light": "^/ask-team$"
+}

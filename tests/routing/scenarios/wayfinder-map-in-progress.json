@@ -1,0 +1,17 @@
+{
+  "why": "A wayfinder map with an open, unblocked decision ticket: continue the map.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "files": {
+    "issues/4-sync-and-sharing.md": "Type: issue\nStatus: open\nLabels: wayfinder:map\n\n# Sync and sharing\n\n## Destination\nA decision on how Pantry syncs between devices and is shared, ready to size.\n\n## Decisions so far\n- [Who shares a pantry](5-who-shares-a-pantry.md): one household, everyone edits.\n\n## Not yet specified\n- Conflict handling, once the storage is chosen.\n",
+    "issues/5-who-shares-a-pantry.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:grilling\n\n# Who shares a pantry\n\nResolved: one household, everyone edits.\n",
+    "issues/6-where-the-shared-pantry-lives.md": "Type: issue\nStatus: open\nParent: 4\nLabels: wayfinder:research\n\n# Where the shared pantry lives\n\nWhich storage could hold a shared pantry: a file in a synced folder, a small server, a hosted database?\n",
+    "issues/7-how-edits-merge.md": "Type: issue\nStatus: open\nParent: 4\nLabels: wayfinder:grilling\nBlocked by: 6\n\n# How edits merge\n\nHow two housemates' edits merge.\n"
+  },
+  "next": "^/wayfinder\\s+#?4\\b",
+  "light": "^/wayfinder\\s+#?4\\b"
+}
