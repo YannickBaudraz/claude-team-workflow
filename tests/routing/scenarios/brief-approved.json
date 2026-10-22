@@ -1,0 +1,5 @@
+{
+  "why": "The problem statement and brief are approved and there is no story map: step 5.",
+  "layers": ["base", "setup", "brief"],
+  "run": "/user-story-mapping-workshop"
+}

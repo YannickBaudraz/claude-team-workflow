@@ -4,8 +4,8 @@
 For every skill row: the skill exists on disk (or is built in), its visibility
 matches its frontmatter and ~/.claude/settings.json, every skill it calls can
 actually be called, and it says what it does. Every skill SKILL.md names is in
-the registry, and the workflow page can still be built from SKILL.md and the
-registry. Exit code 1 when anything is wrong.
+the registry, the step contracts close (check-contracts.py), and the workflow page
+can still be built from SKILL.md and the registry. Exit code 1 when anything is wrong.
 """
 import glob
 import json
@@ -20,6 +20,7 @@ SKILL = os.path.join(os.path.dirname(REGISTRY), "SKILL.md")
 # The repo this skill is linked from: <repo>/skills/ask-team/scripts/check-registry.py
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 BUILD_PAGE = os.path.join(REPO, "docs", "build-workflow.py")
+CONTRACTS = os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-contracts.py")
 SETTINGS = json.load(open(f"{HOME}/.claude/settings.json"))
 PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
@@ -151,6 +152,11 @@ for token in re.findall(r"`([^`]+)`", open(SKILL).read().split("## Maintenance")
 for command in sorted(named):
     if command.lstrip("/") not in table:
         problems.append(f"SKILL.md names {command}, which is missing from the registry")
+
+contracts = subprocess.run([sys.executable, CONTRACTS], capture_output=True, text=True)
+problems += [line[len("PROBLEM "):] for line in contracts.stdout.splitlines() if line.startswith("PROBLEM ")]
+if contracts.returncode and not contracts.stdout.count("PROBLEM "):
+    problems.append((contracts.stderr or contracts.stdout).strip())
 
 if os.path.exists(BUILD_PAGE):
     page = subprocess.run([sys.executable, BUILD_PAGE, "--check"], capture_output=True, text=True)

@@ -12,9 +12,9 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 
 ## How to route
 
-1. **Read the state.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it). No map yet: the project is before setup. With a map, read the tracker doc it names and check what exists and what is approved: the problem statement and brief, the roadmap, each epic's design doc and PRD, its stories, tickets, open PRs, and retros, and the sized issues whose next step has not started. The **frontier** is the first step whose input exists and whose output does not. When the map's Roadmap row says the roadmap is planned at step 4 only when wanted, steps 4 and 5 are not a frontier: with nothing in flight, offer `/change-request` for a change, or step 4 to plan the product.
+1. **Read the state.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it). No map yet: the project is before setup. With a map, read the tracker doc it names and check what exists and what is approved: the problem statement and brief, the roadmap, each epic's design doc and PRD, its stories, tickets, open PRs, and retros, and the sized issues whose next step has not started. Read each one against the step contracts below: an output exists when it is in its home and its maker made it. The **frontier** is the first step whose input exists and whose output does not. When the map's Roadmap row says the roadmap is planned at step 4 only when wanted, steps 4 and 5 are not a frontier: with nothing in flight, offer `/change-request` for a change, or step 4 to plan the product.
 2. **Size the request.** A change to an existing project that is not sized yet goes to `/change-request <change>` first: it diagnoses or grills the change as needed, sizes it with the user and writes it as one issue for the next session to start from; this router only reads those issues. A *spike* (one question to answer) goes to `prototype` or `research`; its answer goes on the request's issue when it has one, and the request is sized again. A *bounded* change (one ticket's worth) goes straight to the ticket path: write the ticket, then build it. An *architectural* change, or a new product, takes the main flow. Teams don't write a PRD for a typo.
-3. **Answer** with: the step and why it is next, the exact command with its arguments, which session to run it in (see Sessions), and what has to be approved before the step after it. Done when the user can paste the command and knows where.
+3. **Answer** with: what you found for each step up to the frontier (its home and whether it is approved), the step and why it is next, the exact command with its arguments, which session to run it in (see Sessions), and what has to be approved before the step after it. Done when the user can paste the command and knows where. The first part is how the user catches a misread state before running anything: name what you did not find as plainly as what you did. End with the command alone on the last line, as `Run: <command>`, or `Run: none, <what the user decides first>` when a gate or a choice comes before any command.
 
 ## Main flow
 
@@ -36,6 +36,54 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 
 Approval gates are the user's: never treat a step as approved because its output exists. Steps 4 to 7, 9 and 12 have one: later steps build on what they produce, and at 12 the gate is the merge. With no ticket, the contract is the base branch's version of the doc the PR changes, and each line the PR rewrites in it goes to the user to approve before the merge. In the other steps the user takes part, but nothing waits for a sign-off. At the gates, the user's sizing preference applies: about 7 epics per roadmap and about 7 stories per epic, never more than 9. Past that, propose a split before approval.
 
+## Step contracts
+
+What each step needs before it starts and what it leaves behind. A way in is a row too: what it makes is there for any step after setup. `scripts/check-contracts.py` checks that every need is made by an earlier step or a way in, that each maker says it makes its output, and that every home is a row of the project map.
+
+| Step | Needs | Makes |
+|---|---|---|
+| 1 | idea (outside) | glossary terms, ADRs |
+| 2 | — | project map, tracker doc, definition of done, coding standards, PR template |
+| 3 | effort (outside), project map | decision tickets, sized issue |
+| 4 | project map | problem statement, solution brief |
+| 5 | solution brief | story map, epic |
+| 6 | epic | design doc, ADRs |
+| 7 | epic, design doc | PRD, story |
+| 8 | story | refined story |
+| 9 | refined story or sized issue or epic | ticket |
+| 10 | ticket, definition of done, coding standards, PR template | pull request |
+| 11 | pull request, ticket, coding standards | review |
+| 12 | pull request, review, ticket | merged pull request |
+| 13 | epic, PRD, merged pull request | retro |
+| `/change-request` | change (outside) or triaged issue, project map | sized issue, story, epic |
+| `/triage` | report (outside), tracker doc | triaged issue, ticket |
+
+| Output | Made by | Lives in |
+|---|---|---|
+| glossary terms | `/grill-with-docs`, `domain-modeling` | Glossary for this repo's code |
+| ADRs | `/grill-with-docs`, `domain-modeling` | ADRs |
+| project map | `/project-setup` | Documentation |
+| tracker doc | `/setup-matt-pocock-skills` | `docs/agents/issue-tracker.md` |
+| definition of done | `/project-setup` | Definition of done |
+| coding standards | `/project-setup` | Coding standards |
+| PR template | `/project-setup` | Code host |
+| decision tickets | `/wayfinder` | Issue tracker |
+| sized issue | `/change-request` | Issue tracker |
+| triaged issue | `/triage` | Issue tracker |
+| problem statement | `/define-problem-statement` | Problem statement and solution brief |
+| solution brief | `/develop-solution-brief` | Problem statement and solution brief |
+| story map | `/user-story-mapping-workshop` | Roadmap |
+| epic | `/user-story-mapping-workshop`, `/change-request` | Epics, stories and tickets |
+| design doc | `/writing-design-docs` | Design docs |
+| PRD | `/deliver-prd` | PRDs |
+| story | `/deliver-prd`, `/change-request` | Epics, stories and tickets |
+| refined story | `/specification` | Epics, stories and tickets |
+| ticket | `/to-tickets`, `/triage` | Epics, stories and tickets |
+| pull request | `/build-ticket` | Code host |
+| review | `/code-review-and-quality` | Code host |
+| merged pull request | the user | Code host |
+| retro | `/epic-retro` | Retros |
+
 ## Ways in
 
 - A feature, an improvement or a bug fix the user brings to an existing project: `/change-request <change>`.
@@ -54,4 +102,4 @@ One role per session, as on a team: product (steps 1 to 5, and `/change-request`
 
 ## Maintenance
 
-After installing, removing or updating a skill of this workflow, or changing this file, update [REGISTRY.md](REGISTRY.md), its Does line included, and run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`. It checks that every skill named here is in the registry, that each skill's visibility matches the settings, that no skill calls one Claude cannot load, and that the workflow page can still be built from this file and the registry. GitHub publishes that page on every push to `main`.
+After installing, removing or updating a skill of this workflow, or changing this file, update [REGISTRY.md](REGISTRY.md), its Does line included, and run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`. It checks that every skill named here is in the registry, that each skill's visibility matches the settings, that no skill calls one Claude cannot load, that the step contracts close, through `scripts/check-contracts.py`, and that the workflow page can still be built from this file and the registry. CI runs the contract check on every pull request. The contract check proves that no hand-off is missing, not that a skill does what its row says; `tests/routing/run.py` in this repo runs this router on fixture projects and checks the command it answers. Run it after changing this file. When a real project gets a wrong answer, add its state as a scenario there before fixing the router. GitHub publishes that page on every push to `main`.

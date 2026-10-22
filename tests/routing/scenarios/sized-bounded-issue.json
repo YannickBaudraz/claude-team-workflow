@@ -1,0 +1,13 @@
+{
+  "why": "/change-request sized a bounded change and wrote its Next line: tickets for it, not the roadmap.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "files": {
+    "issues/3-list-in-alphabetical-order.md": "Type: issue\nStatus: open\nLabels: enhancement, ready-for-human\n\n# List items in alphabetical order\n\n`pantry list` prints items in the order they were added. Decided: sort by name, case-insensitive. Open: nothing.\n\nSize: bounded\nNext: /to-tickets #3\n"
+  },
+  "run": "/to-tickets\\s+#?3\\b"
+}

@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Check the step contracts
+        run: python3 skills/ask-team/scripts/check-contracts.py
       - name: Build the page
         run: python3 docs/build-workflow.py --out _site/index.html
       - uses: actions/upload-pages-artifact@v5
