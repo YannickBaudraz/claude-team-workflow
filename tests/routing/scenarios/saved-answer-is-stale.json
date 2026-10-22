@@ -8,10 +8,11 @@
     "design"
   ],
   "files": {
-    ".claude/ask-team/latest.md": "Date: 2026-10-09 10:00\nCommit: 1a2b3c4\n\n| Step | Home | Found | Approved |\n|---|---|---|---|\n| 7 PRD for #1 | docs/prd/1-walking-skeleton.md | there | yes, 2026-10-09 |\n| 8 Refinement | issues/ | stories #3 and #4 refined | no gate |\n\n**Step 9, tickets for #1.** Every story is refined.\n**Session:** tech lead for epic #1.\n**Gate:** you approve the tickets before they are published.\n\n**Next**\n```\n/to-tickets #1\n```\n\n**After that:** step 10, `/build-ticket <ticket id>` per ticket.\n",
-    ".claude/ask-team/2026-10-09-1000-step-9.md": "Date: 2026-10-09 10:00\nCommit: 1a2b3c4\n\n| Step | Home | Found | Approved |\n|---|---|---|---|\n| 7 PRD for #1 | docs/prd/1-walking-skeleton.md | there | yes, 2026-10-09 |\n| 8 Refinement | issues/ | stories #3 and #4 refined | no gate |\n\n**Step 9, tickets for #1.** Every story is refined.\n**Session:** tech lead for epic #1.\n**Gate:** you approve the tickets before they are published.\n\n**Next**\n```\n/to-tickets #1\n```\n\n**After that:** step 10, `/build-ticket <ticket id>` per ticket.\n",
+    ".claude/ask-team/latest.md": "Date: 2026-10-09 10:00\nCommit: 1a2b3c4 (STALE-ROUTE-7F3A)\n\n| Step | Home | Found | Approved |\n|---|---|---|---|\n| 7 PRD for #1 | docs/prd/1-walking-skeleton.md | there | yes, 2026-10-09 |\n| 8 Refinement | issues/ | stories #3 and #4 refined | no gate |\n\n**Step 9, tickets for #1.** Every story is refined.\n**Session:** tech lead for epic #1.\n**Gate:** you approve the tickets before they are published.\n\n**Next**\n```\n/to-tickets #1\n```\n\n**After that:** step 10, `/build-ticket <ticket id>` per ticket.\n",
+    ".claude/ask-team/2026-10-09-1000-step-9-STALE-ROUTE-7F3A.md": "Date: 2026-10-09 10:00\nCommit: 1a2b3c4 (STALE-ROUTE-7F3A)\n\n| Step | Home | Found | Approved |\n|---|---|---|---|\n| 7 PRD for #1 | docs/prd/1-walking-skeleton.md | there | yes, 2026-10-09 |\n| 8 Refinement | issues/ | stories #3 and #4 refined | no gate |\n\n**Step 9, tickets for #1.** Every story is refined.\n**Session:** tech lead for epic #1.\n**Gate:** you approve the tickets before they are published.\n\n**Next**\n```\n/to-tickets #1\n```\n\n**After that:** step 10, `/build-ticket <ticket id>` per ticket.\n",
     ".claude/ask-team/.gitignore": "*\n"
   },
   "next": "/deliver-prd\\s+#?1\\b",
-  "light": "/deliver-prd\\s+#?1\\b"
+  "light": "/deliver-prd\\s+#?1\\b",
+  "planted": "STALE-ROUTE-7F3A"
 }

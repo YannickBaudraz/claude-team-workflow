@@ -11,7 +11,7 @@ The project is worked the way a real engineering team works: discovery, roadmap,
 
 Never open, list or search `.claude/ask-team/`. The answers saved there are for the user to reread; reading them would carry an old reading into this one. The state comes only from the project map, the tracker and the documents in their homes.
 
-With the argument **next** alone, give the light answer below. With any other argument, or none, read [ROUTER.md](ROUTER.md) and follow it.
+Without the argument **next** alone, stop reading here: read [ROUTER.md](ROUTER.md) now, and answer in its form. The light answer below is only for **next**.
 
 ## Next: the light answer
 
@@ -19,7 +19,7 @@ A quick check between two steps. Read [FLOW.md](FLOW.md), and of [REGISTRY.md](R
 
 1. **Find what is in flight.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it) and the tracker doc it names, and list the tracker's open items once.
 2. **Probe the steps** of what is in flight, in order, against their outputs in FLOW.md's step contracts: is each output in its home, does a gated step's document end with its approval line (FLOW.md), are its items in the tracker. Check that each one is there; never read a document through. The first step whose output is missing or unapproved is the answer. An open sized issue outside any epic is its own line of work: its Next line is the command. So is a ticket marked ready for an agent: `/build-ticket <id>`.
-3. **Answer** in this form and nothing else, and save nothing:
+3. **Answer** in this form and nothing else, its labels exactly as written, and save nothing:
 
    ~~~markdown
    Done up to step <n>: <what the probes found, in one line>

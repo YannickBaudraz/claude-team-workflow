@@ -7,8 +7,9 @@ own. The runner copies them into a fresh git repo, runs `claude -p /ask-team` th
 read-only tools, except writing in .claude/ask-team/, and checks the answer: that it has the
 router's form (the state table, the Session, Gate, Next and After that parts), and what its
 Next block holds. It also checks what the router saved: latest.md and a dated copy holding
-the same answer, beside a .gitignore holding `*`, and nothing git can see. And it checks that
-no tool call read, searched or listed .claude/ask-team/: saved answers are for the user.
+the same answer, beside a .gitignore holding `*`, and nothing git can see. A scenario that
+plants an old answer marks it with its `planted` string, and fails when that string comes back
+in any tool result: read, listed or searched, the old answer reached the context.
 
 A scenario with a `light` regex also runs as `/ask-team next`, the light answer: a few lines
 and a Next block matching it (`^/ask-team$` when the light answer should hand over), and
@@ -144,26 +145,13 @@ def saved(scenario, answer, where):
     return failures
 
 
-# A reading verb in a shell command; cp, mkdir and printf only write.
-READING = re.compile(r"\b(cat|less|more|head|tail|grep|rg|ls|find|sed|awk|wc|diff|tree|stat|file)\b")
-
-
-def peeked(calls):
-    """The tool calls that read, searched or listed .claude/ask-team/, which the router never does."""
-    found = []
-    for tool, given in calls:
-        text = json.dumps(given)
-        if ".claude/ask-team" not in text and not (tool in ("Glob", "Grep") and ".claude" in text):
-            continue
-        # A heredoc's body is what gets written, and `cat >` writes: neither reads.
-        command = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", "", given.get("command", ""), flags=re.S)
-        command = re.sub(r"\bcat\s*>", "", command)
-        # A find that prunes the folder keeps out of it.
-        command = re.sub(r"-path\s+\S*\.claude/ask-team\S*\s+-prune", "", command)
-        if tool in ("Read", "Glob", "Grep") or (tool == "Bash" and ".claude/ask-team" in command
-                                                 and READING.search(command)):
-            found.append(f"{tool} {text[:120]}")
-    return [f"looked into .claude/ask-team/: {call}" for call in found]
+def peeked(scenario, results_seen):
+    """Whether a planted old answer, marked by the scenario's `planted` string in its content and
+    file names, came back in any tool result: read, listed or searched, it reached the context."""
+    marker = scenario.get("planted")
+    if marker and any(marker in text for text in results_seen):
+        return [f"an old saved answer reached the context: a tool result holds {marker}"]
+    return []
 
 
 def run_once(name, scenario, number, results, args):
@@ -178,21 +166,22 @@ def run_once(name, scenario, number, results, args):
         if args.effort:
             command += ["--effort", args.effort]
         done = subprocess.run(command, cwd=where, capture_output=True, text=True, timeout=900)
-        output, calls = {"result": done.stdout[-2000:] + done.stderr[-2000:]}, []
+        output, seen = {"result": done.stdout[-2000:] + done.stderr[-2000:]}, []
         for line in done.stdout.splitlines():
             try:
                 event = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if event.get("type") == "assistant":
-                calls += [(block.get("name"), block.get("input", {})) for block in event["message"].get("content", [])
-                          if block.get("type") == "tool_use"]
+            if event.get("type") == "user":
+                content = event.get("message", {}).get("content", [])
+                seen += [json.dumps(block.get("content", "")) for block in content
+                         if isinstance(block, dict) and block.get("type") == "tool_result"]
             elif event.get("type") == "result":
                 output = event
         answer = output.get("result") or ""
         with open(os.path.join(results, f"{name}-{number}.md"), "w", encoding="utf-8") as out:
             out.write(answer)
-        failures = grade(scenario, answer) + saved(scenario, answer, where) + peeked(calls)
+        failures = grade(scenario, answer) + saved(scenario, answer, where) + peeked(scenario, seen)
         return dict(name=name, number=number, failures=failures, answer=answer,
                     cost=output.get("total_cost_usd") or 0, models=sorted(output.get("modelUsage", {})),
                     where=where)
@@ -269,7 +258,8 @@ def main():
             if args.mode != "light":
                 scenarios[name] = scenario
             if args.mode != "full" and "light" in scenario:
-                scenarios[f"{name}-next"] = {**scenario, "mode": "light", "next": scenario["light"], "saves": False}
+                scenarios[f"{name}-next"] = {**{k: v for k, v in scenario.items() if k not in ("must", "must_not")},
+                                             "mode": "light", "next": scenario["light"], "saves": False}
     if not scenarios:
         sys.exit("no scenario matches")
     results = os.path.join(HERE, "results", time.strftime("%Y%m%d-%H%M%S"))
