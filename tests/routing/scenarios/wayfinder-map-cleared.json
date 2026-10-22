@@ -13,5 +13,5 @@
     "issues/7-how-edits-merge.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:grilling\n\n# How edits merge\n\nResolved: last write wins per item, with a log.\n"
   },
   "next": "^/change-request\\s+#?4\\b",
-  "light": "^/ask-team$"
+  "light": "^/change-request\\s+#?4\\b"
 }

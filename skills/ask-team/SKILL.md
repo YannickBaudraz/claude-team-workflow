@@ -19,7 +19,7 @@ Without the argument **next** alone, stop reading here: read [ROUTER.md](ROUTER.
 A quick check between two steps. Read [FLOW.md](FLOW.md), and of [REGISTRY.md](REGISTRY.md) only the row of the command you print; leave ROUTER.md unread.
 
 1. **Find what is in flight.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it) and the tracker doc it names, and list the tracker's open items once.
-2. **Probe the steps** of what is in flight, in order, against their outputs in FLOW.md's step contracts: is each output in its home, does a gated step's document end with its approval line (FLOW.md), are its items in the tracker. Check that each one is there; never read a document through. The first step whose output is missing or unapproved is the answer. An open sized issue outside any epic is its own line of work: its Next line is the command. So is a ticket marked ready for an agent: `/build-ticket <id>`.
+2. **Probe the steps** of what is in flight, in order, against their outputs in FLOW.md's step contracts: is each output in its home, does a gated step's document end with its approval line (FLOW.md), are its items in the tracker. Check that each one is there; never read a document through. The first step whose output is missing or unapproved is the answer. An open sized issue outside any epic is its own line of work: its Next line is the command. So is a ticket marked ready for an agent: `/build-ticket <id>`. So is a wayfinder map: with a ticket still open, `/wayfinder <map>`; with every ticket closed, `/change-request <map>`.
 3. **Answer** in this form and nothing else, its labels exactly as written, and save nothing:
 
    ~~~markdown
@@ -32,4 +32,4 @@ A quick check between two steps. Read [FLOW.md](FLOW.md), and of [REGISTRY.md](R
    ```
    ~~~
 
-Hand over instead of guessing. When there is no project map, or the state takes judgement (more than one thing in flight, such as two started epics, an epic and a sized issue outside it, a wayfinder map or an issue no one has triaged; an output there without the input it needs; a choice to offer, such as a project whose roadmap is planned only when wanted with nothing in flight), say what in one line, and put `/ask-team` in the Next block.
+Hand over instead of guessing. When there is no project map, or the state takes judgement (more than one thing in flight, such as two started epics, or an epic and a sized issue or wayfinder map outside it; an issue no one has triaged; an output there without the input it needs; a choice to offer, such as a project whose roadmap is planned only when wanted with nothing in flight), say what in one line, and put `/ask-team` in the Next block.

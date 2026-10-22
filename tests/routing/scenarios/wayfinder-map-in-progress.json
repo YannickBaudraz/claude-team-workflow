@@ -13,5 +13,5 @@
     "issues/7-how-edits-merge.md": "Type: issue\nStatus: open\nParent: 4\nLabels: wayfinder:grilling\nBlocked by: 6\n\n# How edits merge\n\nHow two housemates' edits merge.\n"
   },
   "next": "^/wayfinder\\s+#?4\\b",
-  "light": "^/ask-team$"
+  "light": "^/wayfinder\\s+#?4\\b"
 }
