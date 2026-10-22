@@ -8,7 +8,7 @@ The steps, what each needs and leaves behind, and who works them. Both readings 
 |---|---|---|---|
 | 1 | Discovery | `/grill-with-docs <idea>` (before any project folder exists: `/grill-me`) | Shared understanding; glossary terms and ADRs in the repo. Reads the domain doc first when one exists. |
 | 2 | Setup | `/project-setup`, then `/setup-matt-pocock-skills` | Project map, tracker doc, conventions. |
-| 3 | Fog (only when the way is unclear) | `/wayfinder`, then `/change-request <effort>` once its map clears | Decisions on the tracker, and the effort sized: more than one epic continues at step 4. |
+| 3 | Fog (only when the way is unclear) | `/wayfinder <map>` to continue a map, `/wayfinder` alone to chart one; then `/change-request <map>` once it clears | Decisions on the tracker, and the effort sized: more than one epic continues at step 4. |
 | 4 | Problem and brief | `/define-problem-statement`, then `/develop-solution-brief` | Both approved by the user. |
 | 5 | Roadmap | `/user-story-mapping-workshop` | Story map cut into release slices; each slice is an epic. Approved. |
 | 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code | Design doc reviewed and approved. |
