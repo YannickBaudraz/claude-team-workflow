@@ -158,7 +158,10 @@ def peeked(calls):
         # A heredoc's body is what gets written, and `cat >` writes: neither reads.
         command = re.sub(r"<<-?\s*['\"]?(\w+)['\"]?.*?\n\1\b", "", given.get("command", ""), flags=re.S)
         command = re.sub(r"\bcat\s*>", "", command)
-        if tool in ("Read", "Glob", "Grep") or (tool == "Bash" and READING.search(command)):
+        # A find that prunes the folder keeps out of it.
+        command = re.sub(r"-path\s+\S*\.claude/ask-team\S*\s+-prune", "", command)
+        if tool in ("Read", "Glob", "Grep") or (tool == "Bash" and ".claude/ask-team" in command
+                                                 and READING.search(command)):
             found.append(f"{tool} {text[:120]}")
     return [f"looked into .claude/ask-team/: {call}" for call in found]
 
