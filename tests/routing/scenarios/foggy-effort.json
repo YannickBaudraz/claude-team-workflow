@@ -7,5 +7,5 @@
     "existing"
   ],
   "ask": "We want Pantry to sync between devices, be shared by housemates, and maybe get a web version. We don't know where to start or what it would take.",
-  "run": "^/change-request"
+  "next": "^/change-request"
 }

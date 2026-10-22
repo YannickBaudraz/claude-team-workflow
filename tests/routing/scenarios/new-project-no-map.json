@@ -3,5 +3,5 @@
   "layers": [
     "base"
   ],
-  "run": "/grill-with-docs|/grill-me"
+  "next": "/grill-with-docs|/grill-me"
 }

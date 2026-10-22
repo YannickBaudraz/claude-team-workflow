@@ -9,5 +9,5 @@
   "files": {
     "issues/8-crash-on-empty-store.md": "Type: issue\nStatus: open\nLabels:\n\n# Crash when the store file is empty\n\nOpened by a user: `pantry list` crashes with a JSON error when `~/.pantry.json` is empty.\n"
   },
-  "run": "^/triage"
+  "next": "^/triage"
 }

@@ -4,10 +4,11 @@
 Each scenario in scenarios/*.json names the layers that make its project, in order,
 from layers/ (a later layer's file replaces an earlier one's), plus any files of its
 own. The runner copies them into a fresh git repo, runs `claude -p /ask-team` there with
-read-only tools, and checks the answer:
+read-only tools, and checks the answer: that it has the router's form (the state table, the
+Session, Gate, Next and After that parts), and what its Next block holds:
 
     ask       what the user brings, appended to /ask-team (default: nothing)
-    run       a regex the answer's last `Run:` line must match
+    next      a regex the answer's Next block must match
     must      regexes the whole answer must match
     must_not  regexes it must not match
 
@@ -66,12 +67,12 @@ def build(scenario, where):
 
 def grade(scenario, answer):
     """The reasons this answer fails the scenario; empty when it passes."""
-    run = last_run_line(answer)
-    if not run:
-        return ["no `Run:` line"]
-    failures = []
-    if "run" in scenario and not re.search(scenario["run"], run):
-        failures.append(f"Run line '{run}' does not match /{scenario['run']}/")
+    failures = [f"no {part}" for part, pattern in FORM.items() if not re.search(pattern, answer, re.M)]
+    block = next_block(answer)
+    if not block:
+        return failures + ["no Next block"]
+    if "next" in scenario and not re.search(scenario["next"], block):
+        failures.append(f"Next block '{block}' does not match /{scenario['next']}/")
     failures += [f"answer lacks /{pattern}/" for pattern in scenario.get("must", [])
                  if not re.search(pattern, answer)]
     failures += [f"answer has /{pattern}/" for pattern in scenario.get("must_not", [])
@@ -79,9 +80,16 @@ def grade(scenario, answer):
     return failures
 
 
-def last_run_line(answer):
-    runs = re.findall(r"^\W*Run:\s*(.+?)\s*$", answer, re.M)
-    return runs[-1].replace("`", "") if runs else ""
+# The parts of the router's answer, as SKILL.md's Answer item lays them out.
+FORM = {"state table": r"^\|\s*Step\s*\|\s*Home\s*\|\s*Found\s*\|\s*Approved\s*\|",
+        "Session line": r"^\*\*Session:\*\*", "Gate line": r"^\*\*Gate:\*\*",
+        "After that line": r"^\*\*After that:\*\*"}
+
+
+def next_block(answer):
+    """What the answer's last Next block holds, one line per option."""
+    blocks = re.findall(r"^\*\*Next\*\*\s*\n+```[^\n]*\n(.*?)\n```", answer, re.M | re.S)
+    return blocks[-1].strip() if blocks else ""
 
 
 def run_once(name, scenario, number, results, args):
@@ -130,11 +138,11 @@ def report(scenarios, outcomes, tested, effort):
              f"effort {effort or 'from your settings'}, "
              f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
              "in a fresh git repo built from the scenario's layers, with read-only tools; "
-             "it passes when the answer's last `Run:` line matches.", "",
-             "| Scenario | Expects `Run:` to match | Runs passed |", "|---|---|---|"]
+             "it passes when the answer has the router's form and its Next block matches.", "",
+             "| Scenario | Expects Next to match | Runs passed |", "|---|---|---|"]
     for name, scenario in scenarios.items():
         ok = sum(1 for run in outcomes[name] if not run["failures"])
-        lines.append(f"| [{name}](#{name}) | `{scenario.get('run', '')}` | {ok}/{len(outcomes[name])} |")
+        lines.append(f"| [{name}](#{name}) | `{scenario.get('next', '')}` | {ok}/{len(outcomes[name])} |")
     for name, scenario in scenarios.items():
         ok = sum(1 for run in outcomes[name] if not run["failures"])
         layers = ", ".join(f"[{layer}]({tested['tree']}/layers/{layer})" for layer in scenario["layers"])
@@ -142,14 +150,14 @@ def report(scenarios, outcomes, tested, effort):
                   f"- Project: layers {layers}" + (f", plus {', '.join(f'`{f}`' for f in scenario['files'])}"
                                                     if scenario.get("files") else ""),
                   f"- Request: {scenario['ask'] if scenario.get('ask') else 'none, plain `/ask-team`'}",
-                  f"- Expects: `Run:` matches `{scenario.get('run', '')}`"
+                  f"- Expects: the router's form, and a Next block matching `{scenario.get('next', '')}`"
                   + "".join(f"; the answer matches `{m}`" for m in scenario.get("must", []))
                   + "".join(f"; the answer does not match `{m}`" for m in scenario.get("must_not", [])),
                   f"- Scenario file: [{name}.json]({tested['blob']}/scenarios/{name}.json)", "",
-                  "| Run | Verdict | `Run:` line |", "|---|---|---|"]
+                  "| Run | Verdict | Next block |", "|---|---|---|"]
         for run in outcomes[name]:
             verdict = "pass" if not run["failures"] else "FAIL: " + "; ".join(run["failures"])
-            lines.append(f"| {run['number']} | {verdict} | {last_run_line(run['answer']).replace('|', '\\|')} |")
+            lines.append(f"| {run['number']} | {verdict} | {next_block(run['answer']).replace('|', '\\|').replace(chr(10), ' / ')} |")
         for run in outcomes[name]:
             lines += ["", f"<details><summary>Run {run['number']}: the router's full answer</summary>", "",
                       run["answer"].strip(), "", "</details>"]

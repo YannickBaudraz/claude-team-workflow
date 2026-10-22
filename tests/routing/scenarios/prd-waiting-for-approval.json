@@ -1,6 +1,15 @@
 {
   "why": "A PRD that exists but is not approved holds the gate: refinement must not start.",
-  "layers": ["base", "setup", "brief", "roadmap", "design", "prd-draft"],
-  "run": "^(?!.*/specification)",
-  "must": ["(?i)approv"]
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "design",
+    "prd-draft"
+  ],
+  "must": [
+    "(?i)approv"
+  ],
+  "next": "^(?![\\s\\S]*/specification)"
 }

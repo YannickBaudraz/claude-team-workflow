@@ -14,7 +14,26 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 
 1. **Read the state.** Find the project map (the project's `CLAUDE.md` or `AGENTS.md` points to it). No map yet: the project is before setup. With a map, read the tracker doc it names and check what exists and what is approved: the problem statement and brief, the roadmap, each epic's design doc and PRD, its stories, tickets, open PRs, and retros, and the sized issues whose next step has not started. Read each one against the step contracts below: an output exists when it is in its home and its maker made it. The **frontier** is the first step whose input exists and whose output does not. When the map's Roadmap row says the roadmap is planned at step 4 only when wanted, steps 4 and 5 are not a frontier: with nothing in flight, offer `/change-request` for a change, or step 4 to plan the product.
 2. **Size the request.** A change to an existing project that is not sized yet goes to `/change-request <change>` first: it diagnoses or grills the change as needed, sizes it with the user and writes it as one issue for the next session to start from; this router only reads those issues. A *spike* (one question to answer) goes to `prototype` or `research`; its answer goes on the request's issue when it has one, and the request is sized again. A *bounded* change (one ticket's worth) goes straight to the ticket path: write the ticket, then build it. An *architectural* change, or a new product, takes the main flow. Teams don't write a PRD for a typo.
-3. **Answer** with: what you found for each step up to the frontier (its home and whether it is approved), the step and why it is next, the exact command with its arguments, which session to run it in (see Sessions), and what has to be approved before the step after it. Done when the user can paste the command and knows where. The first part is how the user catches a misread state before running anything: name what you did not find as plainly as what you did. End with the command alone on the last line, as `Run: <command>`, or `Run: none, <what the user decides first>` when a gate or a choice comes before any command.
+3. **Answer** with: what you found for each step up to the frontier (its home and whether it is approved), the step and why it is next, which session to run it in (see Sessions), what has to be approved before the step after it, the next command with its arguments, and what comes after it. Always in this form, so the user finds each part in the same place:
+
+   ~~~markdown
+   | Step | Home | Found | Approved |
+   |---|---|---|---|
+   | <each step up to the frontier> | <its home> | <what is there, or **missing**> | <yes and the date, **no**, or no gate> |
+
+   **Step <n>, <name>.** <why it is next: its input exists and its output does not>
+   **Session:** <which session runs it>
+   **Gate:** <what the user approves before the step after it, or none>
+
+   **Next**
+   ```
+   <the command with its arguments>
+   ```
+
+   **After that:** <the steps that follow, in order, each with its command and gate: at least the next one, and on through this session's steps>
+   ~~~
+
+   The table is how the user catches a misread state before running anything: name what you did not find as plainly as what you did. When a gate or a choice comes before any command can run, the Next block says what the user does first, and never holds a command that cannot run yet; for a choice, one line per option. Done when the user can paste the Next block and knows where.
 
 ## Main flow
 

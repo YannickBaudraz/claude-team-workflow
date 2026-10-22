@@ -12,5 +12,5 @@
     "issues/6-where-the-shared-pantry-lives.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:research\n\n# Where the shared pantry lives\n\nResolved: a file in a folder the household already syncs.\n",
     "issues/7-how-edits-merge.md": "Type: issue\nStatus: closed\nParent: 4\nLabels: wayfinder:grilling\n\n# How edits merge\n\nResolved: last write wins per item, with a log.\n"
   },
-  "run": "^/change-request\\s+#?4\\b"
+  "next": "^/change-request\\s+#?4\\b"
 }

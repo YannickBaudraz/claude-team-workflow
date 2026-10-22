@@ -4,5 +4,5 @@
     "base",
     "code"
   ],
-  "run": "/project-setup"
+  "next": "/project-setup"
 }

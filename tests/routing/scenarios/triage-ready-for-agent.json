@@ -9,5 +9,5 @@
   "files": {
     "issues/8-crash-on-empty-store.md": "Type: ticket\nStatus: open\nLabels: bug, ready-for-agent\n\n# Crash when the store file is empty\n\n## Brief\n`load()` calls `json.loads` on an empty file. Treat an empty store as an empty pantry.\n\n## Acceptance criteria\n- [ ] `pantry list` on an empty store prints nothing and exits 0.\n"
   },
-  "run": "^/build-ticket\\s+#?8\\b"
+  "next": "^/build-ticket\\s+#?8\\b"
 }

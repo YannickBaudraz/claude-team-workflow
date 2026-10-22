@@ -7,5 +7,5 @@
     "existing"
   ],
   "ask": "`pantry use` sometimes subtracts the quantity twice, and I couldn't find why.",
-  "run": "diagnosing-bugs|^/change-request"
+  "next": "diagnosing-bugs|^/change-request"
 }

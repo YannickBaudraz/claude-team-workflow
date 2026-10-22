@@ -7,5 +7,5 @@
     "existing"
   ],
   "ask": "Production incident: this morning's release corrupts users' pantry files, and users are reporting lost data right now.",
-  "run": "incident-response"
+  "next": "incident-response"
 }

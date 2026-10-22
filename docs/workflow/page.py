@@ -307,7 +307,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 </main>
 <aside class="dock" id="dock" aria-labelledby="dock-step" aria-keyshortcuts="ArrowRight ArrowLeft Escape" tabindex="-1" hidden><div class="dock-in">
 <div class="dock-head"><span class="num"></span><div><p class="dock-step" id="dock-step" aria-live="polite"></p><p class="role dock-role"></p><p class="dock-via"></p><p class="dock-score"></p></div></div>
-<dl class="dock-answer"><div class="dock-run"><dt>Run</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
+<dl class="dock-answer"><div class="dock-run"><dt>Next</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
 <div class="dock-play"><div class="dock-next" role="group" aria-label="When this step is done"></div><p class="dock-keys" aria-hidden="true"></p></div>
 <button type="button" class="dock-close" aria-label="Close the answer" aria-keyshortcuts="Escape" title="Close (Esc)"><i></i></button>
 </div></aside>
