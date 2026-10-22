@@ -43,6 +43,7 @@ Fill the table in `templates/project-map.md` for every kind of document this pro
 - Where the repo already keeps a kind of document, propose that place. The template's suggestion only fills a kind the repo has nowhere for.
 - The map itself goes in the **highest source of truth**: the documentation tool when the project has one above its repos, otherwise the repo.
 - Every repo keeps its own `GLOSSARY.md`, limited to the domain knowledge its code uses. When a domain doc exists, it wins on meaning, and agents only read it. A new glossary starts empty: `domain-modeling` fills it as terms come up.
+- Each document of steps 4 to 7 (problem statement, solution brief, roadmap, design docs, PRDs) gets a home of its own, and this rule outranks the repo's existing places. "None", or "another document covers it", is not a placement: it skips a step whose gate is the user's, decided at setup before the user has seen what the step would produce. The Roadmap row names where the epics live, which is the tracker; an ordered list in a README is not a roadmap.
 - For an existing codebase with no problem statement or roadmap, the Roadmap row reads "none; planned at step 4 when wanted". The router reads that row, so planning stays a choice rather than the next step.
 
 Done when every row has a place and a reason, and the user has approved the table.

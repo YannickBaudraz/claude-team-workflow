@@ -21,7 +21,7 @@ One row per kind of document this project produces. When a new kind appears, dec
 | Domain doc (shared knowledge across systems) | | | | |
 | Glossary for this repo's code | repo: `GLOSSARY.md` | | developers | Every agent session reads it. |
 | Problem statement and solution brief | | | | |
-| Roadmap | | | | |
+| Roadmap | issue tracker: one epic per release slice | | | |
 | Design docs | | | | |
 | ADRs | | | | |
 | PRDs | | | | |
