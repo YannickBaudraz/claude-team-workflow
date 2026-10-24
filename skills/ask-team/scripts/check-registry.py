@@ -78,13 +78,18 @@ def marketplace_plugin_paths(repo, plugin=None):
 
 
 def skill_file(row):
-    """Where the skill's SKILL.md is installed from its Source, "" when missing, None when built in.
+    """Where the skill's SKILL.md is installed from its Source, "" when missing, None when built in,
+    False when its plugin is disabled.
     Also records a problem when the skill is installed from somewhere other than its Source."""
     command, source = row["command"].lstrip("/"), row["source"].strip("`")
     name, plugin = bare(command), command.split(":")[0] if ":" in command else None
     if source == "Claude Code":
         return None
     if source == "anthropics/knowledge-work-plugins":
+        # A synced plugin stays on disk when the user disables it: settings then say false.
+        if ENABLED.get(f"{plugin}@synced") is False:
+            problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
+            return False
         candidates = [path for path in glob.glob(f"{HOME}/.claude/plugins/synced/*/{plugin}/skills/{name}/SKILL.md")
                       if any(json.load(open(meta)).get("marketplace_name") == source.split("/")[1]
                              for meta in glob.glob(f"{path.split('/skills/')[0]}*.meta.json"))]
@@ -124,6 +129,8 @@ for key, row in table.items():
     path = skill_file(row)
     if path == "":
         problems.append(f"{row['command']}: not found for source '{row['source']}'")
+        continue
+    if path is False:
         continue
     if visibility == "built-in":
         continue
