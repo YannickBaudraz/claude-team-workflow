@@ -1,5 +1,5 @@
 {
-  "why": "A PRD that exists but is not approved holds the gate: refinement must not start.",
+  "why": "A PRD that exists but is not approved holds the gate: the user approves it in a /deliver-prd session, and refinement must not start.",
   "layers": [
     "base",
     "setup",
@@ -11,6 +11,6 @@
   "must": [
     "(?i)approv"
   ],
-  "next": "^(?![\\s\\S]*/specification)",
-  "light": "^(?![\\s\\S]*/specification)"
+  "next": "/deliver-prd\\s+#?1(?![\\w-])",
+  "light": "/deliver-prd\\s+#?1(?![\\w-])"
 }
