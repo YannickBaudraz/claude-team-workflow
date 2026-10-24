@@ -63,6 +63,10 @@ GIT = {"GIT_AUTHOR_NAME": "Fixture", "GIT_AUTHOR_EMAIL": "fixture@example.com",
        "GIT_COMMITTER_NAME": "Fixture", "GIT_COMMITTER_EMAIL": "fixture@example.com",
        "GIT_AUTHOR_DATE": "2026-10-01T09:00:00", "GIT_COMMITTER_DATE": "2026-10-01T09:00:00"}
 
+# The runner may itself be started from a Claude Code session: none of its variables (effort, session,
+# socket) may reach the runs, or they would not run at the model and effort the report states.
+CLEAN = {key: value for key, value in os.environ.items() if not re.match(r"(CLAUDE|ANTHROPIC)", key)}
+
 
 def build(scenario, where):
     for layer in scenario["layers"]:
@@ -167,7 +171,7 @@ def run_once(name, scenario, number, results, args):
             command += ["--model", args.model]
         if args.effort:
             command += ["--effort", args.effort]
-        done = subprocess.run(command, cwd=where, capture_output=True, text=True, timeout=900)
+        done = subprocess.run(command, cwd=where, env=CLEAN, capture_output=True, text=True, timeout=900)
         output, seen = {"result": done.stdout[-2000:] + done.stderr[-2000:]}, []
         for line in done.stdout.splitlines():
             try:
