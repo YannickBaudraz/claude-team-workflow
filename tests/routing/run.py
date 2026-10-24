@@ -37,7 +37,9 @@ and takes a minute or two; run it when the workflow changes, not on every commit
     python3 tests/routing/run.py --mode light       # only the light answers
 
 Answers are saved in tests/routing/results/<time>/, with report.md: the commit and model
-tested, and per scenario its fixture, what it expects, each run's verdict and full answer.
+tested, and per scenario its fixture, what it expects, each run's verdict and full answer;
+and summary.md: the same heading, then one line per scenario with each run's verdict and Next
+block, small enough for a pull request comment.
 Post it on the pull request as the proof. Exit code 1 when any run fails.
 """
 import argparse
@@ -206,22 +208,44 @@ def pinned():
     return {key: value.strip() for key, value in re.findall(r"^(model|effort):(.*)$", front, re.M)}
 
 
-def report(scenarios, outcomes, tested, effort):
-    """The proof for a pull request: what was tested, and every run's answer."""
+def heading(scenarios, outcomes, tested, effort):
+    """The title and the line saying what was tested, shared by report.md and summary.md."""
     runs = [run for name in scenarios for run in outcomes[name]]
     models = sorted({model for run in runs for model in run["models"]})
     passed = sum(1 for run in runs if not run["failures"])
-    lines = [f"# Routing scenarios: {passed}/{len(runs)} runs pass", "",
-             f"Commit `{tested['sha'][:7]}`{' with local changes' if tested['dirty'] else ''}, "
-             f"{time.strftime('%Y-%m-%d %H:%M')}, model {', '.join(models) or 'unknown'}, "
-             f"effort {pinned().get('effort') and pinned()['effort'] + ' (pinned by the skill)' or effort or 'from your settings'}, "
-             f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
-             "in a fresh git repo built from the scenario's layers, with read-only tools; "
-             "it passes when the answer has the router's form and its Next block matches.", "",
-             "| Scenario | Expects Next to match | Runs passed |", "|---|---|---|"]
+    return [f"# Routing scenarios: {passed}/{len(runs)} runs pass", "",
+            f"Commit `{tested['sha'][:7]}`{' with local changes' if tested['dirty'] else ''}, "
+            f"{time.strftime('%Y-%m-%d %H:%M')}, model {', '.join(models) or 'unknown'}, "
+            f"effort {pinned().get('effort') and pinned()['effort'] + ' (pinned by the skill)' or effort or 'from your settings'}, "
+            f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
+            "in a fresh git repo built from the scenario's layers, with read-only tools; "
+            "it passes when the answer has the router's form and its Next block matches.", ""]
+
+
+def summary(scenarios, outcomes, tested, effort):
+    """The compact proof, small enough for a pull request comment: each run's verdict and Next block."""
+    most = max(len(runs) for runs in outcomes.values())
+    lines = heading(scenarios, outcomes, tested, effort) + [
+        "| Scenario | Expects Next to match | " + " | ".join(f"Run {n}" for n in range(1, most + 1)) + " |",
+        "|---|---|" + "---|" * most]
+    for name, scenario in scenarios.items():
+        cells = []
+        for run in outcomes[name]:
+            shown = next_block(run["answer"]).replace(chr(10), " / ")
+            shown = shown if len(shown) <= 60 else shown[:57] + "..."
+            cells.append(("pass" if not run["failures"] else "**FAIL**") + (f" `{shown}`" if shown else ""))
+        cells += [""] * (most - len(cells))
+        lines.append(f"| {name} | `{scenario.get('next', '').replace('|', '\\|')}` | " + " | ".join(c.replace("|", "\\|") for c in cells) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def report(scenarios, outcomes, tested, effort):
+    """The proof for a pull request: what was tested, and every run's answer."""
+    lines = heading(scenarios, outcomes, tested, effort) + [
+        "| Scenario | Expects Next to match | Runs passed |", "|---|---|---|"]
     for name, scenario in scenarios.items():
         ok = sum(1 for run in outcomes[name] if not run["failures"])
-        lines.append(f"| [{name}](#{name}) | `{scenario.get('next', '')}` | {ok}/{len(outcomes[name])} |")
+        lines.append(f"| [{name}](#{name}) | `{scenario.get('next', '').replace('|', '\\|')}` | {ok}/{len(outcomes[name])} |")
     for name, scenario in scenarios.items():
         ok = sum(1 for run in outcomes[name] if not run["failures"])
         layers = ", ".join(f"[{layer}]({tested['tree']}/layers/{layer})" for layer in scenario["layers"])
@@ -296,8 +320,10 @@ def main():
                 print(f"     run {run['number']}: project kept in {run['where']}")
     with open(os.path.join(results, "report.md"), "w", encoding="utf-8") as out:
         out.write(report(scenarios, outcomes, tested, args.effort))
+    with open(os.path.join(results, "summary.md"), "w", encoding="utf-8") as out:
+        out.write(summary(scenarios, outcomes, tested, args.effort))
     cost = sum(run["cost"] for runs in outcomes.values() for run in runs)
-    print(f"answers and report.md in {os.path.relpath(results)}; cost ${cost:.2f}")
+    print(f"answers, report.md and summary.md in {os.path.relpath(results)}; cost ${cost:.2f}")
     sys.exit(1 if failed else 0)
 
 
