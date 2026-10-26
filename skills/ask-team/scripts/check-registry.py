@@ -87,8 +87,10 @@ def skill_file(row):
         return None
     if source == "anthropics/knowledge-work-plugins":
         # A synced plugin stays on disk when the user disables it: settings then say false.
+        # A denied duplicate is meant never to fire, so a disabled plugin suits it.
         if ENABLED.get(f"{plugin}@synced") is False:
-            problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
+            if row["visibility"] != "denied":
+                problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
             return False
         candidates = [path for path in glob.glob(f"{HOME}/.claude/plugins/synced/*/{plugin}/skills/{name}/SKILL.md")
                       if any(json.load(open(meta)).get("marketplace_name") == source.split("/")[1]
