@@ -13,7 +13,7 @@ A retro closes each epic, as on a team using a Kanban flow. It reads the **evide
 
 Using the project map and the tracker doc (`docs/agents/issue-tracker.md`), collect:
 
-- the epic, its PRD and design doc, its stories and tickets with their states;
+- the epic, its PRD, its interface design when it has one, and its design doc, its stories and tickets with their states;
 - the merged pull requests, their review comments, and the commit range from the epic's first ticket to its last;
 - the ADRs and glossary changes made during the epic;
 - the previous epic's retro, if any, with its action items.
@@ -24,7 +24,7 @@ Record what is missing. Done when every ticket of the epic is accounted for and 
 
 Look across the whole epic, especially at the boundaries between tickets where no session saw both sides:
 
-- drift between the design doc, the ADRs and what was built;
+- drift between the design doc, the interface design, the product's visual direction, the ADRs and what was built;
 - requirements of the PRD that no ticket delivered, or work no requirement asked for;
 - duplication, growing modules, patterns that diverge between tickets;
 - the process: rework, recurring review findings, tickets that stalled or were reopened;

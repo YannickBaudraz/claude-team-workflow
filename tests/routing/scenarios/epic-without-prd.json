@@ -1,11 +1,10 @@
 {
-  "why": "Epic #1's design doc is approved and it has no PRD: step 7 for #1.",
+  "why": "The story map is approved and its epics are in the tracker: the first epic's PRD is next, step 6.",
   "layers": [
     "base",
     "setup",
     "brief",
-    "roadmap",
-    "design"
+    "roadmap"
   ],
   "next": "/deliver-prd\\s+#?1(?![\\w-])",
   "light": "/deliver-prd\\s+#?1(?![\\w-])"

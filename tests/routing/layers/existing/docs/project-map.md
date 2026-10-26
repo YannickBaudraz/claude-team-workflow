@@ -16,11 +16,13 @@
 |---|---|---|---|---|
 | Domain doc (shared knowledge across systems) | none: the domain is this tool's alone | | | Nothing outside the repo shares it. |
 | Glossary for this repo's code | repo: `GLOSSARY.md` | | developers | Every agent session reads it. |
-| Problem statement and solution brief | repo: `docs/product/` | | product | |
-| Roadmap | none; planned at step 4 when wanted | | product | An existing codebase with no roadmap yet. |
-| Design docs | repo: `docs/design/<epic>.md` | | tech lead | |
-| ADRs | repo: `docs/adr/` | | tech lead | |
-| PRDs | repo: `docs/prd/<epic>.md` | | product | |
+| Problem statement and solution brief | repo: `docs/product/` | | product owner | |
+| Roadmap | none; planned at step 4 when wanted | | product owner | An existing codebase with no roadmap yet. |
+| PRDs | repo: `docs/prd/<epic>.md` | | product owner | |
+| Interface designs | none: no user interface | | | Pantry is a command-line tool. |
+| Visual direction | none: no user interface | | | |
+| Design docs | repo: `docs/design/<epic>.md` | | architect | |
+| ADRs | repo: `docs/adr/` | | architect | |
 | Epics, stories and tickets | issue tracker: `issues/` | | everyone | |
 | Definition of done | repo: `docs/definition-of-done.md` | | developers | |
 | Coding standards | repo: `CODING_STANDARDS.md` | | developers | |

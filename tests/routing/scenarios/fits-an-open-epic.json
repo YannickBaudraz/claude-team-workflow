@@ -1,16 +1,17 @@
 {
-  "why": "/change-request placed a story in an open epic at refinement: refine it, as its Next line says.",
+  "why": "/change-request placed a story in an epic whose PRD is approved: the PRD takes it in and is approved again, as the story's Next line says.",
   "layers": [
     "base",
     "setup",
     "brief",
     "roadmap",
+    "prd-approved",
     "design",
-    "prd-approved"
+    "refined"
   ],
   "files": {
-    "issues/5-add-with-no-unit.md": "Type: story\nStatus: open\nParent: 1\nLabels: enhancement, ready-for-human\n\n# Add an item counted in pieces\n\nAs a cook, I add eggs without a unit, so things counted in pieces fit too. Decided: a missing unit means pieces. Open: how `use` reads a missing unit.\n\nSize: fits epic #1\nNext: /specification #5\n"
+    "issues/5-add-with-no-unit.md": "Type: story\nStatus: open\nParent: 1\nLabels: enhancement, ready-for-human\n\n# Add an item counted in pieces\n\nAs a cook, I add eggs without a unit, so things counted in pieces fit too. Decided: a missing unit means pieces. Open: how `use` reads a missing unit.\n\nSize: fits epic #1\nNext: /deliver-prd #1\n"
   },
-  "next": "^/specification\\s+#?5(?![\\w-])",
-  "light": "/specification\\s+#?5(?![\\w-])"
+  "next": "^/deliver-prd\\s+#?1(?![\\w-])",
+  "light": "/deliver-prd\\s+#?1(?![\\w-])"
 }

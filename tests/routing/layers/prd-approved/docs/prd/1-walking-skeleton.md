@@ -1,5 +1,7 @@
 # PRD: walking skeleton (#1)
 
+Interface: none
+
 ## Goals
 A user can record what comes in and what gets used, and list what is there.
 

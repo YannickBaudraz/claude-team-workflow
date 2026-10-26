@@ -1,11 +1,10 @@
 {
-  "why": "A saved answer that no longer matches the project, claiming a PRD and stories that do not exist: the router reads the state, never that file, and answers step 7.",
+  "why": "A saved answer that no longer matches the project, claiming a PRD and stories that do not exist: the router reads the state, never that file, and answers step 6.",
   "layers": [
     "base",
     "setup",
     "brief",
-    "roadmap",
-    "design"
+    "roadmap"
   ],
   "files": {
     ".claude/ask-team/latest.md": "Date: 2026-10-09 10:00\nCommit: 1a2b3c4 (STALE-ROUTE-7F3A)\n\n| Step | Home | Found | Approved |\n|---|---|---|---|\n| 7 PRD for #1 | docs/prd/1-walking-skeleton.md | there | yes, 2026-10-09 |\n| 8 Refinement | issues/ | stories #3 and #4 refined | no gate |\n\n**Step 9, tickets for #1.** Every story is refined.\n**Session:** tech lead for epic #1.\n**Gate:** you approve the tickets before they are published.\n\n**Next**\n```\n/to-tickets #1\n```\n\n**After that:** step 10, `/build-ticket <ticket id>` per ticket.\n",

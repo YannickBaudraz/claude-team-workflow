@@ -1,13 +1,13 @@
 ---
 name: ui-design
-description: Proposes 3 reasoned UI directions for an epic, sketches them in the real app for an early look, builds and reviews the ones still in play, merges their best parts with the user, and records the result in the design doc.
+description: Proposes 3 reasoned UI directions for an epic, sketches them in the real app for an early look, builds and reviews the ones still in play, merges their best parts with the user, and records the epic's interface design.
 argument-hint: "<epic>"
 disable-model-invocation: true
 ---
 
 # UI design
 
-The designer's part of step 6 for an epic with a user interface. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
+Step 8 of the flow, for an epic with a user interface: the interface designer's part, after the PRD and the technical design. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
 
 Reference files in this folder:
 
@@ -19,9 +19,9 @@ The user decides; the skill shows. Every point the user has not decided (an open
 
 ## 1. Load the jobs and the taste rules
 
-- Read the project map, the epic, the design doc in progress, and the glossary and ADRs it touches.
+- Read the project map, the epic, its PRD, its design doc for the technical limits the screens work within, and the glossary and ADRs it touches. When the epic's interface design, or the visual direction this epic writes, already exists, approved or not, review it with the user instead of starting over, then go to section 7 to fold in their changes and write the approval line.
 - List the screens the epic adds or changes, and write each one's job in one line: the user's situation, what they get done there, how often. Check each job line against the epic's tasks for that screen, so no task is dropped: the review later judges only the jobs written here.
-- Find the product's taste rules in the design doc or where the project map puts design decisions; when there are none, ask who the screens are for, what the product must feel like, and what they want to avoid.
+- Find the product's taste rules in its visual direction, where the project map puts it; when there is none yet, ask who the screens are for, what the product must feel like, and what they want to avoid.
 - Give every rule, found or given, a **test**: how a reviewer would tell from a screenshot that a screen breaks it. Map every clause of the user's taste statement to a rule, so none is dropped.
 - Ask about every rule without a test, and every assumption the user could correct, in one batched question. Ask what each vague word means to them. When examples help, offer readings that span the plausible range and say what each would look like; a single execution offered as a yes/no turns a choice into a confirmation. When an answer names something to avoid, ask what they want in its place.
 - Write each rule in the user's words, with the skill's reading beside it, labelled as such. A word the user hands back or cannot pin down becomes an **open word**: recorded, and shown in step 2, never settled silently.
@@ -99,10 +99,14 @@ Build the merge as a variant, shoot it, and give it a fresh-eyes review of its s
 
 ## 7. Record the direction
 
-Add a **UI direction** section to the design doc, written as the direction now stands: review, merge and user changes folded into the fields and tables they change, so no later text contradicts an earlier one. It holds the shared question and criteria, the taste rules with their tests, the approved direction with every field (each part says which variant it came from), what stays out for the build, the gaps left for the build, and one line per variant and unpicked idea with why it was not taken.
+Write the epic's **interface design** where the project map puts interface designs, as the direction now stands: review, merge and user changes folded into the fields and tables they change, so no later text contradicts an earlier one. It holds the shared question and criteria, the taste rules with their tests, the approved direction with every field (each part says which variant it came from), what stays out for the build, the gaps left for the build, and one line per variant and unpicked idea with why it was not taken.
 
-Say at the top what the user did not decide: open words, the skill's readings, choices made while they were away, and whether the recorded state was reviewed after its last change. Capture the prototype as the `prototype` skill says, keeping every variant reachable, and point to its branch from the section.
+Say at the top what the user did not decide: open words, the skill's readings, choices made while they were away, and whether the recorded state was reviewed after its last change. Capture the prototype as the `prototype` skill says, keeping every variant reachable, and point to its branch from the interface design.
 
-The build at step 10 follows this section. At step 11, `REVIEWER.md` reviews the built screens the same way.
+When the product has no visual direction yet, also write its **visual direction** where the project map puts it: the taste rules with their tests, and the approved direction's surface decisions (typeface roles, colour roles, how actions are treated, theme surfaces), each with its reason. Later epics read it in section 1 and keep to it.
 
-**Done when** the design doc has the section and its prototype pointer, and the main branch holds neither the variants nor the switcher.
+When the user approves, end each document with the line `Approved by <their name> on <date>`.
+
+The build at step 11 follows the interface design. At step 12, `REVIEWER.md` reviews the built screens the same way.
+
+**Done when** the interface design, and the visual direction when the product had none, are written with their approval lines and the prototype pointer, and the main branch holds neither the variants nor the switcher.

@@ -1,0 +1,14 @@
+{
+  "why": "Epic #1's PRD names a screen it adds, its design doc is approved, and the project map gives interface designs a home: the interface design is next, step 8.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "ui"
+  ],
+  "next": "/ui-design\\s+#?1(?![\\w-])",
+  "light": "/ui-design\\s+#?1(?![\\w-])"
+}

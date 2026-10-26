@@ -72,7 +72,7 @@ router = open(FLOW, encoding="utf-8").read()
 
 flow_rows = re.findall(r"^\|\s*(\d+)\s*\|.*\|(.*)\|\s*$", section(router, "Main flow"), re.M)
 steps = [int(number) for number, _ in flow_rows]
-# A gated step's output is approved, as the page reads it too; the merge is step 12's own gate.
+# A gated step's output is approved, as the page reads it too; the merge is step 13's own gate.
 gated = {int(number) for number, output in flow_rows if re.search(r"\bapproved\b", output, re.I)}
 # Homes that hold tracker items or pull requests: approved by being published or merged.
 NOT_DOCUMENTS = {"Issue tracker", "Epics, stories and tickets", "Code host"}
@@ -99,7 +99,8 @@ for key, need, make in step_rows:
     key = int(key) if key.isdigit() else key.strip("`")
     if not isinstance(key, int) and key not in registry:
         problems.append(f"Step contracts: way in {key} is not in the registry")
-    needs[key] = [[alt.strip() for alt in group.split(" or ")]
+    # "interface design (when the epic has a user interface)": needed only in that case, made earlier all the same.
+    needs[key] = [[re.sub(r"\s*\(when [^)]*\)$", "", alt.strip()) for alt in group.split(" or ")]
                   for group in need.split(",") if group.strip() not in ("", "—")]
     for output in filter(None, (o.strip() for o in make.split(","))):
         made_at.setdefault(output, []).append(key)
