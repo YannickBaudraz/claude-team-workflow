@@ -24,9 +24,10 @@ def sentences(text):
     return [sentence for sentence in re.split(r'(?<=[.!?])\s+(?=[A-Z`*])', text) if sentence]
 
 
-def read_router(path):
-    text = open(path, encoding='utf-8').read()
-    text = re.sub(r'\A---\n.*?\n---\n', '', text, flags=re.S)
+def read_router(paths):
+    """The router's files, SKILL.md first, as one text without their frontmatter."""
+    text = '\n'.join(re.sub(r'\A---\n.*?\n---\n', '', open(path, encoding='utf-8').read(), flags=re.S)
+                     for path in paths)
     intro = text.split('## How to route')[0]
     never = [sentence for sentence in sentences(intro) if 'never runs' in sentence]
     need(never, 'SKILL.md no longer says the router never runs the step')

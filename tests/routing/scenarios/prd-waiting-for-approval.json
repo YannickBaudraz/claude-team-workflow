@@ -1,0 +1,16 @@
+{
+  "why": "A PRD that exists but is not approved holds the gate: the user approves it in a /deliver-prd session, and refinement must not start.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "design",
+    "prd-draft"
+  ],
+  "must": [
+    "(?i)approv"
+  ],
+  "next": "/deliver-prd\\s+#?1(?![\\w-])",
+  "light": "/deliver-prd\\s+#?1(?![\\w-])"
+}

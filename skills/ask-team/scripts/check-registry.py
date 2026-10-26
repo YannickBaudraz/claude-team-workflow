@@ -4,8 +4,8 @@
 For every skill row: the skill exists on disk (or is built in), its visibility
 matches its frontmatter and ~/.claude/settings.json, every skill it calls can
 actually be called, and it says what it does. Every skill SKILL.md names is in
-the registry, and the workflow page can still be built from SKILL.md and the
-registry. Exit code 1 when anything is wrong.
+the registry, the step contracts close (check-contracts.py), and the workflow page
+can still be built from SKILL.md and the registry. Exit code 1 when anything is wrong.
 """
 import glob
 import json
@@ -16,10 +16,11 @@ import sys
 
 HOME = os.path.expanduser("~")
 REGISTRY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "REGISTRY.md")
-SKILL = os.path.join(os.path.dirname(REGISTRY), "SKILL.md")
+ROUTER = [os.path.join(os.path.dirname(REGISTRY), name) for name in ("SKILL.md", "ROUTER.md", "FLOW.md")]
 # The repo this skill is linked from: <repo>/skills/ask-team/scripts/check-registry.py
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 BUILD_PAGE = os.path.join(REPO, "docs", "build-workflow.py")
+CONTRACTS = os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-contracts.py")
 SETTINGS = json.load(open(f"{HOME}/.claude/settings.json"))
 PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
@@ -77,13 +78,18 @@ def marketplace_plugin_paths(repo, plugin=None):
 
 
 def skill_file(row):
-    """Where the skill's SKILL.md is installed from its Source, "" when missing, None when built in.
+    """Where the skill's SKILL.md is installed from its Source, "" when missing, None when built in,
+    False when its plugin is disabled.
     Also records a problem when the skill is installed from somewhere other than its Source."""
     command, source = row["command"].lstrip("/"), row["source"].strip("`")
     name, plugin = bare(command), command.split(":")[0] if ":" in command else None
     if source == "Claude Code":
         return None
     if source == "anthropics/knowledge-work-plugins":
+        # A synced plugin stays on disk when the user disables it: settings then say false.
+        if ENABLED.get(f"{plugin}@synced") is False:
+            problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
+            return False
         candidates = [path for path in glob.glob(f"{HOME}/.claude/plugins/synced/*/{plugin}/skills/{name}/SKILL.md")
                       if any(json.load(open(meta)).get("marketplace_name") == source.split("/")[1]
                              for meta in glob.glob(f"{path.split('/skills/')[0]}*.meta.json"))]
@@ -124,6 +130,8 @@ for key, row in table.items():
     if path == "":
         problems.append(f"{row['command']}: not found for source '{row['source']}'")
         continue
+    if path is False:
+        continue
     if visibility == "built-in":
         continue
     overridden = OVERRIDES.get(name, "on") != "on"
@@ -144,13 +152,18 @@ for key, row in table.items():
 
 # Every command, and every bare skill name, that the router names (Maintenance is about this repo).
 named = set()
-for token in re.findall(r"`([^`]+)`", open(SKILL).read().split("## Maintenance")[0]):
+for token in re.findall(r"`([^`]+)`", "\n".join(open(path).read().split("## Maintenance")[0] for path in ROUTER)):
     first = token.split(" ")[0]
     if first.startswith("/") or re.fullmatch(r"[a-z][a-z0-9-]*(:[a-z0-9-]+)?", token):
         named.add(first)
 for command in sorted(named):
     if command.lstrip("/") not in table:
-        problems.append(f"SKILL.md names {command}, which is missing from the registry")
+        problems.append(f"the router names {command}, which is missing from the registry")
+
+contracts = subprocess.run([sys.executable, CONTRACTS], capture_output=True, text=True)
+problems += [line[len("PROBLEM "):] for line in contracts.stdout.splitlines() if line.startswith("PROBLEM ")]
+if contracts.returncode and not contracts.stdout.count("PROBLEM "):
+    problems.append((contracts.stderr or contracts.stdout).strip())
 
 if os.path.exists(BUILD_PAGE):
     page = subprocess.run([sys.executable, BUILD_PAGE, "--check"], capture_output=True, text=True)
