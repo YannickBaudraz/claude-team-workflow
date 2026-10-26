@@ -11,7 +11,7 @@ The steps, what each needs and leaves behind, and who works them. Both readings 
 | 3 | Fog (only when the way is unclear) | `/wayfinder <map>` to continue a map, `/wayfinder` alone to chart one; then `/change-request <map>` once it clears | Decisions on the tracker, and the effort sized: more than one epic continues at step 4. |
 | 4 | Problem and brief | `/define-problem-statement`, then `/develop-solution-brief` | Both approved by the user. |
 | 5 | Roadmap | `/user-story-mapping-workshop` | Story map cut into release slices; each slice is an epic. Approved. |
-| 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code | Design doc reviewed and approved. |
+| 6 | Design, per epic | `/technical-writing`, then `/writing-design-docs` in the same session; ADRs through `domain-modeling`; `prototype` when a question needs running code; for an epic with a user interface, `/ui-design <epic>` before the approval | Design doc reviewed and approved. |
 | 7 | PRD, per epic | `/deliver-prd <epic>` | PRD in the epic's home (project map). Approved. |
 | 8 | Refinement, per story | `/specification <story>`, then `/story-splitting` when it is too big, then `/find-gaps` | Story ready: rules, examples and acceptance criteria agreed. |
 | 9 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
