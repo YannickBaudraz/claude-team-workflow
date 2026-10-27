@@ -71,12 +71,15 @@ pinned="$(jq -r '.extraKnownMarketplaces.mattpocock.source.plugins[0].source.sha
 installed="$( [ -f "$INSTALLED" ] && jq -r '.plugins["mattpocock-skills@mattpocock"][0].gitCommitSha // empty' "$INSTALLED" || true)"
 if [ "$installed" = "$pinned" ]; then
   echo "  mattpocock-skills@mattpocock already at ${pinned:0:7}"
-elif [ -f "$MARKETPLACES" ] && jq -e '.mattpocock.source.source == "settings"' "$MARKETPLACES" >/dev/null; then
+elif [ -f "$MARKETPLACES" ] && jq -e --arg sha "$pinned" \
+    '.mattpocock.source.source == "settings" and .mattpocock.source.plugins[0].source.sha == $sha' "$MARKETPLACES" >/dev/null; then
   [ -n "$installed" ] && claude plugin uninstall mattpocock-skills@mattpocock >/dev/null </dev/null
   claude plugin install mattpocock-skills@mattpocock >/dev/null </dev/null
-  echo "  mattpocock-skills@mattpocock installed at ${pinned:0:7}"
+  now="$(jq -r '.plugins["mattpocock-skills@mattpocock"][0].gitCommitSha // "nothing"' "$INSTALLED")"
+  echo "  mattpocock-skills@mattpocock installed at ${now:0:7}"
 else
-  echo "  the pinned marketplace is not registered yet: start a Claude Code session once, then re-run install.sh"
+  # Also after a pin upgrade: until a session registers the new pin, an install would take the old one.
+  echo "  Claude Code has not registered this pin yet: start a Claude Code session once, then re-run install.sh"
 fi
 claude plugin disable mattpocock-skills@claude-plugins-official >/dev/null 2>&1 </dev/null || true
 
