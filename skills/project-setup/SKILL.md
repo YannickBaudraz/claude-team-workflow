@@ -65,7 +65,35 @@ For each convention, the repo's own file wins when it has one: the map points at
 
 Done when each convention exists where the map says, every added line was approved, and the user has seen the list.
 
-## 6. Hand over
+## 6. Guard the merge
+
+In this project the merge is the user's act. The settings keep the agent from merging a PR, pushing to the default branch or changing a branch rule: a filter against mistakes, not a lock, since the agent works under the user's own login.
+
+- Merge `templates/claude-settings.json` into the repo's `.claude/settings.json`, creating it when absent: keep its other keys, add each deny rule it lacks, and add the hook entry once. Copy `~/.claude/skills/ask-team/hooks/merge-guard.py` to `.claude/hooks/merge-guard.py`. Show the user the diff before writing. A global gitignore may ignore `.claude`: run `git check-ignore -v` on both files, add them with `git add -f` when ignored, and tell the user. Both are committed, so every local session and every single-repository cloud session on this repo carries them; a cloud thread of a Claude project or a cloud session on several repositories does not (FLOW.md, Sessions).
+- Write the commands the user runs themselves, in a terminal or in shell mode (`!`); the guard refuses them to the agent:
+  1. for a new repository whose default branch is not on the remote yet, its first push: `git push -u origin <default branch>`, with setup's files committed on that branch. It comes before any other push, or the code host may take the first branch pushed as the default. The agent may create the remote, without `--push`;
+  2. where the code host offers one, the branch rule on the default branch: changes only through a pull request, with no approval required, no force push, no deletion, and no one allowed to bypass it. On GitHub:
+
+     ```bash
+     gh api -X POST repos/<owner>/<repo>/rulesets --input - <<'EOF'
+     {"name": "Default branch", "target": "branch", "enforcement": "active", "bypass_actors": [],
+      "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+      "rules": [{"type": "deletion"}, {"type": "non_fast_forward"},
+                {"type": "pull_request", "parameters": {"required_approving_review_count": 0,
+                 "dismiss_stale_reviews_on_push": false, "require_code_owner_review": false,
+                 "require_last_push_approval": false, "required_review_thread_resolution": false}}]}
+     EOF
+     ```
+
+     On another host, name its equivalent setting. The rule requires no CI status yet. When the project's CI check later becomes required on it, that check runs on every PR, with no path filter, and holds the accessibility check inside it, so a PR it never reports on is never blocked.
+
+In an existing codebase, whose default branch is already on the remote, setup's files reach it like any change: committed on a setup branch and opened as one PR, which the user merges. The branch rule can be set before or after that merge.
+
+Once the default branch is on the remote, run `git remote set-head origin --auto`, so the guard knows it. When it is named neither main nor master, add to the deny rules the four `git push` rules of main with its name.
+
+Done when `git ls-files` lists both files, the user approved them, and the user has the commands.
+
+## 7. Hand over
 
 Tell the user to type `/setup-matt-pocock-skills` next, with the tracker and the labels from the map; when the tracker already has open issues, add one line to the tracker doc it writes: issues opened before today's date have not been triaged. Add one more line to it: a document is approved when it ends with `Approved by <name> on <date>`, written when the user approves it. Name `/ci-cd-and-automation` only when the repo has no CI and has code to build.
 
