@@ -1,0 +1,45 @@
+{
+  "why": "The review asked for a required change. FLOW.md reads two ways: back to the ticket's build, or the review's findings taken in with /receiving-code-review; either passes.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined",
+    "ticketed"
+  ],
+  "files": {
+    "issues/5-store-a-new-item.md": "Type: ticket\nStatus: in review\nParent: 3\nLabels: enhancement, ready-for-agent\n\n# Store a new item with its quantity\n\n## Context\nStory #3: adding a new item stores it with its quantity and unit.\n\n## Acceptance criteria\n- [ ] `pantry add rice 2kg` on an empty store stores rice at 2kg.\n- [ ] `pantry add rice 1kg` after it leaves rice at 3kg.\n\n## Verify end to end\n`pantry add rice 2kg && pantry add rice 1kg && pantry list` prints `rice 3kg`.\n"
+  },
+  "prs": [
+    {
+      "number": 12,
+      "title": "Store a new item with its quantity",
+      "headRefName": "5-store-a-new-item",
+      "body": "Ticket: #5\n\n## Summary\nStores a new item with its quantity and unit, and adds to an existing one.\n",
+      "statusCheckRollup": [
+        {
+          "name": "tests",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS"
+        }
+      ],
+      "comments": [
+        {
+          "author": {
+            "login": "developer"
+          },
+          "body": "## Review: Store a new item\n\n**Verdict: request changes.**\n\n### Required\n- Adding 1kg to 2kg stores `3.0kg`; the criterion says `3kg`.\n"
+        }
+      ]
+    }
+  ],
+  "next": "^(/build-ticket\\s+#?5(?![\\w-])|gh pr checkout\\s+#?12(?![\\w-])|/receiving-code-review)",
+  "light": "/build-ticket\\s+#?5(?![\\w-])|gh pr checkout\\s+#?12(?![\\w-])|/receiving-code-review",
+  "must": [
+    "(?i)request(ed)? changes"
+  ]
+}

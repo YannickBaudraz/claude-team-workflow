@@ -1,0 +1,20 @@
+{
+  "why": "Production breaks while a ticket is being built: the incident comes before the build. With the engineering plugin missing, the Next block installs it first. The light answer gets no request, so it names the build in flight.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined",
+    "ticketed"
+  ],
+  "ask": "Production is down: since this morning's release, pantry list crashes for every user.",
+  "files": {
+    "issues/5-store-a-new-item.md": "Type: ticket\nStatus: started\nParent: 3\nLabels: enhancement, ready-for-agent\n\n# Store a new item with its quantity\n\n## Context\nStory #3: adding a new item stores it with its quantity and unit.\n\n## Acceptance criteria\n- [ ] `pantry add rice 2kg` on an empty store stores rice at 2kg.\n- [ ] `pantry add rice 1kg` after it leaves rice at 3kg.\n\n## Verify end to end\n`pantry add rice 2kg && pantry add rice 1kg && pantry list` prints `rice 3kg`.\n"
+  },
+  "next": "incident-response|engineering@knowledge-work-plugins",
+  "light": "/build-ticket\\s+#?5(?![\\w-])"
+}

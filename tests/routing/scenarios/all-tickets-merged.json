@@ -1,0 +1,68 @@
+{
+  "why": "Every ticket of the epic is merged and closed, and so are its stories, as the user closes them after the last merge: the epic's retro is next.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined",
+    "ticketed"
+  ],
+  "files": {
+    "issues/5-store-a-new-item.md": "Type: ticket\nStatus: closed\nParent: 3\nLabels: enhancement, ready-for-agent\n\n# Store a new item with its quantity\n\n## Context\nStory #3: adding a new item stores it with its quantity and unit.\n\n## Acceptance criteria\n- [ ] `pantry add rice 2kg` on an empty store stores rice at 2kg.\n- [ ] `pantry add rice 1kg` after it leaves rice at 3kg.\n\n## Verify end to end\n`pantry add rice 2kg && pantry add rice 1kg && pantry list` prints `rice 3kg`.\n",
+    "issues/6-use-some-of-an-item.md": "Type: ticket\nStatus: closed\nParent: 4\nLabels: enhancement, ready-for-agent\n\n# Use some of an item\n\n## Context\nStory #4: using some of an item takes it off the stored quantity.\n\n## Acceptance criteria\n- [ ] `pantry use rice 500g` with rice at 3kg leaves 2.5kg.\n- [ ] Using more than is stored is refused with a message.\n\n## Blocked by\n#5\n",
+    "issues/3-add-an-item.md": "Type: story\nStatus: closed\nParent: 1\nLabels: enhancement\n\n# Add an item\n\nAs a cook, I add an item with a quantity, so the pantry knows I have it.\n\n## Rules\n- Adding an item that exists adds to its quantity; the units must match.\n\n## Examples\n- `pantry add rice 2kg` then `pantry add rice 1kg` leaves rice at 3kg.\n\n## Acceptance criteria\n- [ ] Adding a new item stores it with its quantity and unit.\n- [ ] Adding to an existing item in another unit is refused with a message.\n",
+    "issues/4-use-some-of-an-item.md": "Type: story\nStatus: closed\nParent: 1\nLabels: enhancement\n\n# Use some of an item\n\nAs a cook, I use some of an item, so the quantity goes down.\n\n## Rules\n- Using more than there is leaves zero and says so.\n\n## Examples\n- rice at 2kg, `pantry use rice 500g` leaves 1.5kg.\n\n## Acceptance criteria\n- [ ] Using part of an item lowers its quantity.\n- [ ] Using more than there is leaves zero and prints a warning.\n"
+  },
+  "prs": [
+    {
+      "number": 12,
+      "title": "Store a new item with its quantity",
+      "headRefName": "5-store-a-new-item",
+      "body": "Ticket: #5\n\n## Summary\nStores a new item with its quantity and unit, and adds to an existing one.\n",
+      "statusCheckRollup": [
+        {
+          "name": "tests",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS"
+        }
+      ],
+      "state": "MERGED",
+      "mergedAt": "2026-10-03T10:00:00Z",
+      "comments": [
+        {
+          "author": {
+            "login": "developer"
+          },
+          "body": "## Review: Store a new item\n\n**Verdict: approve.**\n\n### Required\nNone.\n\n### Optional\n- **Consider:** name the unit parser.\n"
+        },
+        {
+          "author": {
+            "login": "developer"
+          },
+          "body": "VERDICT: satisfies\n\nSubject: PR #12 against ticket #5.\n\nAll criteria covered.\n"
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "title": "Use some of an item",
+      "headRefName": "6-use-some-of-an-item",
+      "state": "MERGED",
+      "mergedAt": "2026-10-04T10:00:00Z",
+      "body": "Ticket: #6\n",
+      "statusCheckRollup": [
+        {
+          "name": "tests",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS"
+        }
+      ]
+    }
+  ],
+  "next": "^/epic-retro\\s+#?1(?![\\w-])",
+  "light": "/epic-retro\\s+#?1(?![\\w-])"
+}
