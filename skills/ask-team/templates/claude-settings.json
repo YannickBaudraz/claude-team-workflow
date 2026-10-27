@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(gh pr merge *)",
+      "Bash(gh stack merge *)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)",
+      "Bash(git push * master)",
+      "Bash(git push * master *)",
+      "Bash(git push *:master)",
+      "Bash(git push *:master *)",
+      "Bash(git push --all*)",
+      "Bash(git push --mirror*)",
+      "mcp__*merge*",
+      "mcp__*push*",
+      "mcp__*branch_protection*",
+      "mcp__*ruleset*"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|Monitor|PowerShell|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/merge-guard.py\"; [ -f \"$f\" ] || f=\"$HOME/.claude/hooks/merge-guard.py\"; [ -f \"$f\" ] && command -v python3 >/dev/null 2>&1 || exit 0; exec python3 \"$f\"",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}

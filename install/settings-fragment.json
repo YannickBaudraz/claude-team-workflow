@@ -53,5 +53,20 @@
       },
       "autoUpdate": false
     }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|Monitor|PowerShell|mcp__.*)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$HOME/.claude/hooks/merge-guard.py\"; [ -f \"$f\" ] && command -v python3 >/dev/null 2>&1 || exit 0; exec python3 \"$f\"",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ]
   }
 }

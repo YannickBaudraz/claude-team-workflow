@@ -194,6 +194,37 @@ for market, info in (json.load(open(fragment)).get("extraKnownMarketplaces", {})
             problems.append(f"{plugin_id}: installed at {(installed or 'nothing')[:7]}, "
                             f"install/settings-fragment.json pins {sha[:7]}; run install.sh")
 
+# The merge guard (D8): its hook is in the user settings for Bash, Monitor and MCP tools, refuses
+# when it fails, and runs the copy install.sh made of this repo's version.
+GUARD = os.path.join(REPO, "skills", "ask-team", "hooks", "merge-guard.py")
+INSTALLED_GUARD = f"{HOME}/.claude/hooks/merge-guard.py"
+guard_entries = [(entry.get("matcher") or "", hook) for entry in SETTINGS.get("hooks", {}).get("PreToolUse", [])
+                 for hook in entry.get("hooks", []) if "merge-guard.py" in hook.get("command", "")]
+if not guard_entries:
+    problems.append("the merge guard's PreToolUse hook is missing from ~/.claude/settings.json; run install.sh")
+def matches(matcher, tool):
+    """Whether a hook matcher covers the tool, as Claude Code reads it: empty or * is every tool,
+    a plain list is exact names, anything else an unanchored regular expression."""
+    if matcher in ("", "*"):
+        return True
+    if not re.search(r"[^A-Za-z0-9_|, -]", matcher):
+        return tool in {name.strip() for name in re.split(r"[|,]", matcher)}
+    try:
+        return bool(re.search(matcher, tool))
+    except re.error:
+        return False
+
+
+for matcher, hook in guard_entries:
+    missed = [tool for tool in ("Bash", "Monitor", "mcp__github__merge_pull_request") if not matches(matcher, tool)]
+    if missed:
+        problems.append(f"the merge guard's hook matcher {matcher!r} misses {', '.join(missed)}")
+    if hook.get("onFailure") != "block":
+        problems.append("the merge guard's hook lets a call through when it fails: set \"onFailure\": \"block\"")
+if os.path.exists(GUARD) and (not os.path.exists(INSTALLED_GUARD)
+                              or open(GUARD, "rb").read() != open(INSTALLED_GUARD, "rb").read()):
+    problems.append("~/.claude/hooks/merge-guard.py is missing or differs from this repo's; run install.sh")
+
 # The Claude Code version the workflow was last checked on. A difference is a note, not a problem:
 # Claude Code still updates itself.
 notes = []
