@@ -35,10 +35,23 @@
   "extraKnownMarketplaces": {
     "mattpocock": {
       "source": {
-        "source": "github",
-        "repo": "mattpocock/skills"
+        "source": "settings",
+        "name": "mattpocock",
+        "owner": {
+          "name": "Matt Pocock"
+        },
+        "plugins": [
+          {
+            "name": "mattpocock-skills",
+            "source": {
+              "source": "github",
+              "repo": "mattpocock/skills",
+              "sha": "49dd158d1076134a641b33efb035946536778336"
+            }
+          }
+        ]
       },
-      "autoUpdate": true
+      "autoUpdate": false
     }
   }
 }
