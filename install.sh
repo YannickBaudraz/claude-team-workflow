@@ -2,7 +2,8 @@
 # Install the team workflow for Claude Code on this machine.
 #   1. Link this repo's skills into ~/.claude/skills.
 #   2. Install the community skills listed in install/community-skills.txt, each at its pinned commit.
-#   3. Merge install/settings-fragment.json into ~/.claude/settings.json, after showing the diff.
+#   3. Copy the merge guard to ~/.claude/hooks/, then merge install/settings-fragment.json into
+#      ~/.claude/settings.json, after showing the diff.
 #   4. Install Matt Pocock's plugin at the commit the fragment pins.
 #   5. Check the registry against the result.
 # Safe to re-run. Needs: claude, npx (skills CLI), jq, python3.
@@ -41,12 +42,22 @@ grep -v -E '^\s*(#|$)' "$REPO/install/community-skills.txt" | while read -r sour
 done
 
 echo "== 3. Merging the settings fragment"
+# The guard goes in before its settings entry. The copy never moves with a branch checkout of this
+# repo; when it is missing, the machine-wide entry lets calls through (each project keeps its own copy).
+mkdir -p "$HOME/.claude/hooks"
+install -m 0755 "$REPO/skills/ask-team/hooks/merge-guard.py" "$HOME/.claude/hooks/merge-guard.py"
+echo "  merge guard copied to ~/.claude/hooks/merge-guard.py"
 [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 merged="$(mktemp)"
 jq -s '.[0] as $current | .[1] as $fragment
   | ($current * $fragment)
   | .permissions.deny = (($current.permissions.deny // []) + (($fragment.permissions.deny // []) - ($current.permissions.deny // [])))
-  | .extraKnownMarketplaces = (($current.extraKnownMarketplaces // {}) + ($fragment.extraKnownMarketplaces // {}))' \
+  | .extraKnownMarketplaces = (($current.extraKnownMarketplaces // {}) + ($fragment.extraKnownMarketplaces // {}))
+  | ([($fragment.hooks.PreToolUse // [])[].hooks[].command]) as $ours
+  | .hooks.PreToolUse = ([($current.hooks.PreToolUse // [])[]
+        | .hooks = [(.hooks // [])[] | select((.command // "") | test("merge-guard\\.py") | not)]
+        | select(.hooks | length > 0)]
+      + ($fragment.hooks.PreToolUse // []))' \
   "$SETTINGS" "$REPO/install/settings-fragment.json" > "$merged"
 if diff -u <(jq -S . "$SETTINGS") <(jq -S . "$merged"); then
   echo "  settings already up to date"

@@ -10,7 +10,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 
 | Path | What it is |
 |---|---|
-| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached, and each added step's trigger and measure), `scripts/check-registry.py`, `scripts/touches.py` (the developer's touches per ticket, for the baselines), `templates/` |
+| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached, and each added step's trigger and measure), `scripts/check-registry.py`, `scripts/touches.py` (the developer's touches per ticket, for the baselines), `hooks/merge-guard.py` (keeps the merge, pushes to the default branch and branch rules from the agent in a project set up with the workflow), `templates/` |
 | `skills/project-setup/` | Decides a project's tools and where each kind of document lives, writes the project map, places the conventions |
 | `skills/change-request/` | The way in for a feature, improvement or bug fix in an existing project: diagnose or grill it, size it, write it as one issue |
 | `skills/build-ticket/` | One ticket: branch, test-first build, pull request |
@@ -19,12 +19,12 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `skills/suggest-title/` | A name for the current session you will recognise in /resume, with the /rename line to paste |
 | `install/community-skills.txt` | The community skills the workflow installs, each pinned to a commit |
 | `install/claude-code-version.txt` | The Claude Code version the workflow was last checked on |
-| `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace with his plugin pinned to a commit |
+| `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace with his plugin pinned to a commit, the merge guard's hook |
 | `install.sh` | Installs all of the above on a machine |
 | `docs/measures.md` | What the workflow measures about its own flow and quality, and how; the figures stay private |
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
-| `.github/workflows/pages.yml` | Builds that page and publishes it to GitHub Pages on every push to `main` |
+| `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands and the touches tests, builds the page and publishes it to GitHub Pages on every push to `main` |
 
 The community skills are installed from their authors' repositories, not copied here: their licences stay with them, and upgrades come from them, at the commit this repo pins.
 

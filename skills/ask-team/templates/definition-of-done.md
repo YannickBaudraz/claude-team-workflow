@@ -10,4 +10,4 @@ The standing bar every ticket clears before it counts as done. A ticket's accept
 - [ ] New or changed domain terms are in the glossary; any hard-to-reverse decision is an ADR.
 - [ ] Documents affected by the change are updated where the project map puts them.
 - [ ] The PR description follows the PR template and links the ticket.
-- [ ] The user merged it.
+- [ ] The user merged it, in a terminal or in shell mode (!); the project's settings keep the agent from merging.
