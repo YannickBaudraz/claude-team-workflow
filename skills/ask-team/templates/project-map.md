@@ -22,9 +22,11 @@ One row per kind of document this project produces. When a new kind appears, dec
 | Glossary for this repo's code | repo: `GLOSSARY.md` | | developers | Every agent session reads it. |
 | Problem statement and solution brief | | | | |
 | Roadmap | | | | |
+| PRDs | | | | |
+| Interface designs | | | | |
+| Visual direction | | | | |
 | Design docs | | | | |
 | ADRs | | | | |
-| PRDs | | | | |
 | Epics, stories and tickets | issue tracker | | | |
 | Definition of done | | | | |
 | Coding standards | repo: `CODING_STANDARDS.md` | | developers | The reviewer reads it with the diff. |

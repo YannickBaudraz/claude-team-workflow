@@ -6,7 +6,7 @@ import re
 from .config import PALETTES
 
 PAPERS = json.dumps({key: [light['paper'], dark['paper']] for key, _, light, dark in PALETTES})
-TEXT = ['ink', 'muted', 'product', 'lead', 'dev', 'review', 'you']
+TEXT = ['ink', 'muted', 'product', 'design', 'arch', 'dev', 'review', 'you']
 # What each text colour sits on: the role colours on paper and cards; ink and muted also on
 # the tray, which the skills toolbar shows through once it sticks.
 BACKGROUNDS = {t: ('paper', 'surface', 'tray') if t in ('ink', 'muted') else ('paper', 'surface') for t in TEXT}

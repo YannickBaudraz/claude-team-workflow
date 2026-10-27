@@ -22,11 +22,17 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.r
 BUILD_PAGE = os.path.join(REPO, "docs", "build-workflow.py")
 CONTRACTS = os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-contracts.py")
 SETTINGS = json.load(open(f"{HOME}/.claude/settings.json"))
-PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plugins"]
+def plugin_file(name, default):
+    """A file in ~/.claude/plugins, or `default` before Claude Code has written it (a fresh machine)."""
+    path = f"{HOME}/.claude/plugins/{name}"
+    return json.load(open(path)) if os.path.exists(path) else default
+
+
+PLUGINS = plugin_file("installed_plugins.json", {"plugins": {}})["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
 DENIED = set(SETTINGS.get("permissions", {}).get("deny", []))
 ENABLED = SETTINGS.get("enabledPlugins", {})
-MARKETPLACES = json.load(open(f"{HOME}/.claude/plugins/known_marketplaces.json"))
+MARKETPLACES = plugin_file("known_marketplaces.json", {})
 THIS_REPO = "YannickBaudraz/claude-team-workflow"
 
 
@@ -53,23 +59,28 @@ def bare(command):
 
 
 def community_sources():
-    """Skill name -> the repo install/community-skills.txt installs it from."""
+    """Skill name -> the repo install/community-skills.txt installs it from.
+    Also records a problem for a source not pinned to a full commit (D71)."""
     sources = {}
     path = os.path.join(REPO, "install", "community-skills.txt")
     for line in open(path) if os.path.exists(path) else []:
         if line.strip() and not line.startswith("#"):
-            repo, *skills = line.split()
+            source, *skills = line.split()
+            repo, _, commit = source.partition("#")
+            if not re.fullmatch(r"[0-9a-f]{40}", commit):
+                problems.append(f"install/community-skills.txt: {repo} is not pinned to a full commit")
             sources.update({skill: repo for skill in skills})
     return sources
 
 
-COMMUNITY = community_sources()
-
-
 def marketplace_plugin_paths(repo, plugin=None):
-    """Install paths of the enabled plugins from the marketplace hosted in `repo`."""
+    """Install paths of the enabled plugins from the marketplace hosted in `repo`, or declared in
+    settings with plugin entries that point at `repo` (a marketplace pinned to a commit)."""
     for market, info in MARKETPLACES.items():
-        if info.get("source", {}).get("repo") != repo:
+        source = info.get("source", {})
+        repos = {source.get("repo")} | {entry["source"].get("repo") for entry in source.get("plugins", [])
+                                        if isinstance(entry.get("source"), dict)}
+        if repo not in repos:
             continue
         for plugin_id, entries in PLUGINS.items():
             name, _, plugin_market = plugin_id.partition("@")
@@ -87,8 +98,10 @@ def skill_file(row):
         return None
     if source == "anthropics/knowledge-work-plugins":
         # A synced plugin stays on disk when the user disables it: settings then say false.
+        # A denied duplicate is meant never to fire, so a disabled plugin suits it.
         if ENABLED.get(f"{plugin}@synced") is False:
-            problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
+            if row["visibility"] != "denied":
+                problems.append(f"{row['command']}: the {plugin} plugin is disabled in settings")
             return False
         candidates = [path for path in glob.glob(f"{HOME}/.claude/plugins/synced/*/{plugin}/skills/{name}/SKILL.md")
                       if any(json.load(open(meta)).get("marketplace_name") == source.split("/")[1]
@@ -118,6 +131,7 @@ def command_only(path):
 
 
 problems, table = [], {}
+COMMUNITY = community_sources()
 for row in rows():
     # Keyed by the full name: engineering:code-review and code-review are different skills.
     table[row["command"].lstrip("/")] = row
@@ -170,7 +184,33 @@ if os.path.exists(BUILD_PAGE):
     if page.returncode:
         problems.append((page.stdout or page.stderr).strip())
 
+# Plugins the settings fragment pins to a commit must be installed at that commit (D71).
+fragment = os.path.join(REPO, "install", "settings-fragment.json")
+for market, info in (json.load(open(fragment)).get("extraKnownMarketplaces", {}) if os.path.exists(fragment) else {}).items():
+    for plugin in info["source"].get("plugins", []):
+        sha, plugin_id = plugin["source"].get("sha"), f"{plugin['name']}@{market}"
+        installed = PLUGINS.get(plugin_id, [{}])[0].get("gitCommitSha")
+        if sha and installed != sha:
+            problems.append(f"{plugin_id}: installed at {(installed or 'nothing')[:7]}, "
+                            f"install/settings-fragment.json pins {sha[:7]}; run install.sh")
+
+# The Claude Code version the workflow was last checked on. A difference is a note, not a problem:
+# Claude Code still updates itself.
+notes = []
+checked_version = os.path.join(REPO, "install", "claude-code-version.txt")
+if os.path.exists(checked_version):
+    wanted = open(checked_version).read().strip()
+    try:
+        running = subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip()
+    except OSError:
+        running = ""
+    if running != wanted:
+        notes.append(f"Claude Code is {running or 'not found'}, the workflow was last checked on {wanted} "
+                     "(install/claude-code-version.txt)")
+
 print(f"{len(table)} skills checked")
+for note in notes:
+    print("NOTE", note)
 for problem in problems:
     print("PROBLEM", problem)
 sys.exit(1 if problems else 0)

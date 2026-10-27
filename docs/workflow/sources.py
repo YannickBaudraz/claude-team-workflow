@@ -24,6 +24,23 @@ def sentences(text):
     return [sentence for sentence in re.split(r'(?<=[.!?])\s+(?=[A-Z`*])', text) if sentence]
 
 
+def role_steps(sessions):
+    """Each role Sessions names, with its steps: "architect per epic (8 to 10, with ...)" gives
+    ('architect', ' per epic ', [8, 9, 10], ['with ...']). A part holding a command is not a step."""
+    words = '|'.join(re.escape(word) for word in sorted(ROLE_WORDS, key=len, reverse=True))
+    found = []
+    for word, per, inside in re.findall(rf'\b({words})\b([^()]*)\(([^)]*)\)', ' '.join(sessions.split())):
+        numbers, extra = [], []
+        for part in (part.strip() for part in inside.split(',')):
+            span = re.fullmatch(r'(?:steps? )?(?:and )?(\d+)(?: to (\d+))?', part)
+            if span:
+                numbers += range(int(span.group(1)), int(span.group(2) or span.group(1)) + 1)
+            elif part and '`' not in part:
+                extra.append(part)
+        found.append((word, per, numbers, extra))
+    return found
+
+
 def read_router(paths):
     """The router's files, SKILL.md first, as one text without their frontmatter."""
     text = '\n'.join(re.sub(r'\A---\n.*?\n---\n', '', open(path, encoding='utf-8').read(), flags=re.S)
@@ -80,13 +97,11 @@ def read_router(paths):
 
     sessions = section(text, 'Sessions')
     roles = {}
-    found = re.findall(r'\b(product|tech lead|developer|reviewer)\b[^()]*\((?:steps )?(\d+)(?: to (\d+))?',
-                       ' '.join(sessions.split()))
-    for word, lo, hi in found:
-        for number in range(int(lo), int(hi or lo) + 1):
+    for word, _, numbers, _ in role_steps(sessions):
+        for number in numbers:
             roles[number] = ROLE_WORDS[word]
     need(set(roles.values()) == set(ROLE_WORDS.values()),
-         'Sessions no longer names the product, tech lead, developer and reviewer steps')
+         f'Sessions no longer names the steps of every role: {", ".join(ROLE_WORDS)}')
     for number in steps:
         steps[number]['role'] = roles.get(number, 'you')
 

@@ -212,6 +212,14 @@ def pinned():
     return {key: value.strip() for key, value in re.findall(r"^(model|effort):(.*)$", front, re.M)}
 
 
+def claude_version():
+    """The Claude Code version the runs used, as `claude --version` prints it (D71)."""
+    try:
+        return subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip() or "unknown"
+    except OSError:
+        return "unknown"
+
+
 def heading(scenarios, outcomes, tested, effort):
     """The title and the line saying what was tested, shared by report.md and summary.md."""
     runs = [run for name in scenarios for run in outcomes[name]]
@@ -219,7 +227,7 @@ def heading(scenarios, outcomes, tested, effort):
     passed = sum(1 for run in runs if not run["failures"])
     return [f"# Routing scenarios: {passed}/{len(runs)} runs pass", "",
             f"Commit `{tested['sha'][:7]}`{' with local changes' if tested['dirty'] else ''}, "
-            f"{time.strftime('%Y-%m-%d %H:%M')}, model {', '.join(models) or 'unknown'}, "
+            f"{time.strftime('%Y-%m-%d %H:%M')}, Claude Code {claude_version()}, model {', '.join(models) or 'unknown'}, "
             f"effort {pinned().get('effort') and pinned()['effort'] + ' (pinned by the skill)' or effort or 'from your settings'}, "
             f"cost ${sum(run['cost'] for run in runs):.2f}. Each run is `claude -p \"/ask-team [request]\"` "
             "in a fresh git repo built from the scenario's layers, with read-only tools; "

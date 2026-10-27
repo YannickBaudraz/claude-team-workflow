@@ -1,0 +1,12 @@
+{
+  "why": "Epic #1's PRD is approved and its stories are in the tracker: its technical design is next, step 7.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved"
+  ],
+  "next": "/writing-design-docs\\s+#?1(?![\\w-])",
+  "light": "/writing-design-docs\\s+#?1(?![\\w-])"
+}
