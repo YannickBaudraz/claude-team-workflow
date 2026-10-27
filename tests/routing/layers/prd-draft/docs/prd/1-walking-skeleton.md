@@ -1,5 +1,7 @@
 # PRD: walking skeleton (#1)
 
+Interface: none
+
 Status: draft, waiting for the user's review.
 
 ## Goals

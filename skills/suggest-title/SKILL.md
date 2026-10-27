@@ -27,7 +27,7 @@ Run `python3 <this skill's directory>/scripts/session_titles.py`. It prints this
 
 Look back over the whole session, not the latest exchange. After a compaction, the summary at the top counts as much as what follows it.
 
-It is a **workflow session** when its main work ran the team workflow's steps: the commands of the Main flow table in `~/.claude/skills/ask-team/SKILL.md`, which the session invoked or was sent to by `/ask-team`. Read that table only in that case, for the step names. Everything else is **general**: a session that only asked `/ask-team` what comes next, a way in (`/triage`, a diagnosis, an incident), an any-time or ad-hoc skill, or work outside any project the workflow runs.
+It is a **workflow session** when its main work ran the team workflow's steps: the commands of the Main flow table in `~/.claude/skills/ask-team/FLOW.md`, which the session invoked or was sent to by `/ask-team`. Read that table only in that case, for the step names. Everything else is **general**: a session that only asked `/ask-team` what comes next, a way in (`/triage`, a diagnosis, an incident), an any-time or ad-hoc skill, or work outside any project the workflow runs.
 
 ## 3. Build the name
 
@@ -35,8 +35,8 @@ Both styles: lowercase ASCII words joined by hyphens. Length is free: a long nam
 
 **Workflow style**: `<step>-<subject>-<id>`.
 
-- The step comes from the Main flow table: discovery, setup, fog, problem-brief, roadmap, design, prd, refinement, tickets, build, review, approval, retro.
-- Several steps in one session: the first and the last, `design-to-tickets-...`.
+- The step comes from the Main flow table: discovery, setup, fog, problem-brief, roadmap, prd, technical-design, interface-design, refinement, tickets, build, review, approval, retro.
+- Several steps in one session: the first and the last, `technical-design-to-tickets-...`.
 - The subject is two or three words from the item's own title as the session saw it (the epic, story, ticket or PR), because the user will not remember IDs. Never invent one; without a title, use what the session built or decided.
 - The ID goes last when the session showed it (`epic-3`, `PROJ-42`, `pr-118`), so the name stays exact.
 - When another session already did this step on this item, add what this one did differently (`build-login-form-review-fixes-PROJ-42`).

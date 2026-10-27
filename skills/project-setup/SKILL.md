@@ -41,6 +41,8 @@ Done when every tool is named (or explicitly "none") and the user has confirmed 
 Fill the table in `templates/project-map.md` for every kind of document this project will produce, with a reason per row. Recommend the place, and let the user decide.
 
 - Where the repo already keeps a kind of document, propose that place. The template's suggestion only fills a kind the repo has nowhere for.
+- For a kind the repo has nowhere for, propose the project's own tool for it first: its documentation tool, project management tool or tracker. The repo is the place when the project has no such tool, or for what agents read with the code, such as the glossary and the coding standards.
+- The Interface designs and Visual direction rows are for a product with a user interface; for one without, they read "none: no user interface".
 - The map itself goes in the **highest source of truth**: the documentation tool when the project has one above its repos, otherwise the repo.
 - Every repo keeps its own `GLOSSARY.md`, limited to the domain knowledge its code uses. When a domain doc exists, it wins on meaning, and agents only read it. A new glossary starts empty: `domain-modeling` fills it as terms come up.
 - For an existing codebase with no problem statement or roadmap, the Roadmap row reads "none; planned at step 4 when wanted". The router reads that row, so planning stays a choice rather than the next step.

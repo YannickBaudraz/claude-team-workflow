@@ -23,7 +23,7 @@ The workflow page (https://yannickbaudraz.github.io/claude-team-workflow/) shows
 
 ## Positioning
 
-A router, not a skill pack: `/ask-team` never runs a step itself, it prints the next command. It routes across my own skills, Matt Pocock's plugin and a curated set of community skills, each picked for the step it does best and named with its real source in the registry. The workflow is shaped on how a real team works, with approval gates that stay the user's and sessions split by role (product, tech lead, developer, reviewer).
+A router, not a skill pack: `/ask-team` never runs a step itself, it prints the next command. It routes across my own skills, Matt Pocock's plugin and a curated set of community skills, each picked for the step it does best and named with its real source in the registry. The workflow is shaped on how a real team works, with approval gates that stay the user's and sessions split by role (product owner, interface designer, architect, developer, reviewer).
 
 ## Operating Context
 

@@ -1,0 +1,13 @@
+{
+  "why": "Epic #1's PRD and design doc are approved, Pantry has no user interface so step 8 is skipped, and its stories are outcomes only: refinement is next, step 9, with the first story.",
+  "layers": [
+    "base",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design"
+  ],
+  "next": "/specification\\s+#?3(?![\\w-])",
+  "light": "/specification\\s+#?3(?![\\w-])"
+}

@@ -7,9 +7,9 @@ disable-model-invocation: true
 
 # Change request
 
-The way in for one change to a project that already exists: a feature, an improvement or a bug fix. It is the product role's intake: the change leaves **sized** and written as one issue on the tracker, and the next session starts from that issue's id. The issue keeps its id to the end: it becomes the parent of its ticket, a story, or the epic itself.
+The way in for one change to a project that already exists: a feature, an improvement or a bug fix. It is the product owner's intake: the change leaves **sized** and written as one issue on the tracker, and the next session starts from that issue's id. The issue keeps its id to the end: it becomes the parent of its ticket, a story, or the epic itself.
 
-Step numbers below are the main flow's, in `~/.claude/skills/ask-team/SKILL.md`; read its How to route and Main flow before starting.
+Step numbers below are the main flow's, in `~/.claude/skills/ask-team/FLOW.md`; read its Main flow, and How to route in `ROUTER.md` beside it, before starting.
 
 ## 1. Read the state
 
@@ -41,8 +41,8 @@ Done when the user confirms a shared understanding and you can name the change's
 Propose the size, as Size the request defines it in the router, and where the change goes:
 
 - **Spike**: `prototype` or `research` answers it. Its Next line reads: answer it with `research` or `prototype`, comment the answer on this issue with a link to the notes when there are any, then `/change-request <issue>` to size it again.
-- **Bounded**: one ticket, written by `/to-tickets <issue>` at step 9.
-- **Fits an open epic** not yet at step 9: a story of that epic, its issue a sub-issue of the epic's, refined with `/specification <issue>` at step 8. When the epic's PRD is approved already, it goes back to the user for approval first.
+- **Bounded**: one ticket, written by `/to-tickets <issue>` at step 10.
+- **Fits an open epic** not yet at step 10: a story of that epic, its issue a sub-issue of the epic's. Its Next line is `/deliver-prd <epic>`: the PRD takes the story in, and is approved again when it was approved already. The story is then refined at step 9 with the others.
 - **Its own epic**: the issue becomes the epic, which starts at step 6. Before that, revisit the solution brief at step 4 when the change falls outside it, and when the project has a roadmap, propose where the new slice goes among those not started: the user places it at the approval, and the story map is edited by hand. A project without a roadmap does not need one for a single epic.
 - **More than one epic**: steps 4 and 5, with `/wayfinder` first when the way is unclear. The issue becomes the parent of the epic issues the roadmap creates.
 
@@ -56,4 +56,4 @@ Done when the issue exists with both lines, its two labels, and its parent when 
 
 ## 6. Hand over
 
-Tell the user the issue's id, the next command from its Next line, and the session to run it in, as the router's Sessions section assigns roles: the next role starts a fresh session from the issue's id.
+Tell the user the issue's id, the next command from its Next line, and the session to run it in, as Sessions in FLOW.md assigns roles: the next role starts a fresh session from the issue's id.

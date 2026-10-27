@@ -3,7 +3,7 @@ import html
 import re
 
 from .config import ROLE_NAMES, STEP_SUMMARIES, TERMS
-from .sources import sentences
+from .sources import role_steps, sentences
 
 esc = html.escape
 
@@ -193,12 +193,10 @@ def answers(router):
     steps = router['steps']
     sessions = ' '.join(router['session_rules'])
     roles = {}
-    for word, per, lo, hi, extra in re.findall(
-            r'\b(product|tech lead|developer|reviewer)\b([^()]*)\((?:steps )?(\d+)(?: to (\d+))?([^)]*)\)', sessions):
-        extra = [] if '`' in extra else [part.strip() for part in extra.split(',') if part.strip()]
-        for number in range(int(lo), int(hi or lo) + 1):
+    for word, per, numbers, extra in role_steps(sessions):
+        for number in numbers:
             roles[number] = ', '.join([cap(word)] + ([per.strip()] if per.strip() else []) + extra)
-    together = re.search(r'Keep steps (\d+) to (\d+)[^.]*\.', sessions)
+    together = re.search(r'Keep steps (\d+) (?:to|and) (\d+)[^.]*\.', sessions)
     # "In the other steps the user takes part, but nothing waits for a sign-off."
     no_gate = next((cap(re.sub(r'^In the other steps,?\s*', '', voice(rule)))
                     for rule in router['gate_rules'] if 'sign-off' in rule), '')
