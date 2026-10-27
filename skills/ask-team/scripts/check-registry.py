@@ -53,17 +53,18 @@ def bare(command):
 
 
 def community_sources():
-    """Skill name -> the repo install/community-skills.txt installs it from."""
+    """Skill name -> the repo install/community-skills.txt installs it from.
+    Also records a problem for a source not pinned to a full commit (D71)."""
     sources = {}
     path = os.path.join(REPO, "install", "community-skills.txt")
     for line in open(path) if os.path.exists(path) else []:
         if line.strip() and not line.startswith("#"):
-            repo, *skills = line.split()
+            source, *skills = line.split()
+            repo, _, commit = source.partition("#")
+            if not re.fullmatch(r"[0-9a-f]{40}", commit):
+                problems.append(f"install/community-skills.txt: {repo} is not pinned to a full commit")
             sources.update({skill: repo for skill in skills})
     return sources
-
-
-COMMUNITY = community_sources()
 
 
 def marketplace_plugin_paths(repo, plugin=None):
@@ -120,6 +121,7 @@ def command_only(path):
 
 
 problems, table = [], {}
+COMMUNITY = community_sources()
 for row in rows():
     # Keyed by the full name: engineering:code-review and code-review are different skills.
     table[row["command"].lstrip("/")] = row
@@ -172,7 +174,30 @@ if os.path.exists(BUILD_PAGE):
     if page.returncode:
         problems.append((page.stdout or page.stderr).strip())
 
+# Plugins the settings fragment pins to a commit must be installed at that commit (D71).
+fragment = os.path.join(REPO, "install", "settings-fragment.json")
+for market, info in (json.load(open(fragment)).get("extraKnownMarketplaces", {}) if os.path.exists(fragment) else {}).items():
+    for plugin in info["source"].get("plugins", []):
+        sha, plugin_id = plugin["source"].get("sha"), f"{plugin['name']}@{market}"
+        installed = PLUGINS.get(plugin_id, [{}])[0].get("gitCommitSha")
+        if sha and installed != sha:
+            problems.append(f"{plugin_id}: installed at {(installed or 'nothing')[:7]}, "
+                            f"install/settings-fragment.json pins {sha[:7]}; run install.sh")
+
+# The Claude Code version the workflow was last checked on. A difference is a note, not a problem:
+# Claude Code still updates itself.
+notes = []
+checked_version = os.path.join(REPO, "install", "claude-code-version.txt")
+if os.path.exists(checked_version):
+    wanted = open(checked_version).read().strip()
+    running = subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip()
+    if running != wanted:
+        notes.append(f"Claude Code is {running or 'not found'}, the workflow was last checked on {wanted} "
+                     "(install/claude-code-version.txt)")
+
 print(f"{len(table)} skills checked")
+for note in notes:
+    print("NOTE", note)
 for problem in problems:
     print("PROBLEM", problem)
 sys.exit(1 if problems else 0)
