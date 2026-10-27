@@ -214,7 +214,10 @@ def pinned():
 
 def claude_version():
     """The Claude Code version the runs used, as `claude --version` prints it (D71)."""
-    return subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip() or "unknown"
+    try:
+        return subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip() or "unknown"
+    except OSError:
+        return "unknown"
 
 
 def heading(scenarios, outcomes, tested, effort):

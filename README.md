@@ -36,13 +36,13 @@ git clone https://github.com/YannickBaudraz/claude-team-workflow.git ~/Dev/claud
 ~/Dev/claude-team-workflow/install.sh
 ```
 
-The script links this repo's skills into `~/.claude/skills`, so edits here are live. It shows the settings diff and asks before changing `~/.claude/settings.json`. Start a new Claude Code session afterwards.
+The script links this repo's skills into `~/.claude/skills`, so edits here are live. It shows the settings diff and asks before changing `~/.claude/settings.json`. Start a new Claude Code session afterwards. On a first install, or after the plugin's pin changes, Claude Code registers the pinned plugin only when a session starts: the first run says so, and a second run after that session installs Matt Pocock's plugin. Until then, the registry check reports the plugin off its pin.
 
 ## Maintenance
 
 - After installing, removing or updating a skill the workflow uses, update `skills/ask-team/REGISTRY.md`, its Does line included (and `install/` when the list changes), then run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`.
 - The workflow page follows `SKILL.md` and the registry on its own: every push to `main` rebuilds and publishes it. To preview it, run `python3 docs/build-workflow.py`, then `python3 -m http.server -d docs` and open http://localhost:8000/workflow.html (opened straight from disk, browsers block its fonts).
-- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, in a monthly window: change the pin, rerun `install.sh`, and run the routing scenarios. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
+- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, in a monthly window: change the pin, rerun `install.sh` (for the plugin: start a session, then rerun it once more), and run the routing scenarios. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
 
 ## Credits
 

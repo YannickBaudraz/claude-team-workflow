@@ -22,11 +22,17 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.r
 BUILD_PAGE = os.path.join(REPO, "docs", "build-workflow.py")
 CONTRACTS = os.path.join(os.path.dirname(os.path.realpath(__file__)), "check-contracts.py")
 SETTINGS = json.load(open(f"{HOME}/.claude/settings.json"))
-PLUGINS = json.load(open(f"{HOME}/.claude/plugins/installed_plugins.json"))["plugins"]
+def plugin_file(name, default):
+    """A file in ~/.claude/plugins, or `default` before Claude Code has written it (a fresh machine)."""
+    path = f"{HOME}/.claude/plugins/{name}"
+    return json.load(open(path)) if os.path.exists(path) else default
+
+
+PLUGINS = plugin_file("installed_plugins.json", {"plugins": {}})["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
 DENIED = set(SETTINGS.get("permissions", {}).get("deny", []))
 ENABLED = SETTINGS.get("enabledPlugins", {})
-MARKETPLACES = json.load(open(f"{HOME}/.claude/plugins/known_marketplaces.json"))
+MARKETPLACES = plugin_file("known_marketplaces.json", {})
 THIS_REPO = "YannickBaudraz/claude-team-workflow"
 
 
@@ -68,9 +74,13 @@ def community_sources():
 
 
 def marketplace_plugin_paths(repo, plugin=None):
-    """Install paths of the enabled plugins from the marketplace hosted in `repo`."""
+    """Install paths of the enabled plugins from the marketplace hosted in `repo`, or declared in
+    settings with plugin entries that point at `repo` (a marketplace pinned to a commit)."""
     for market, info in MARKETPLACES.items():
-        if info.get("source", {}).get("repo") != repo:
+        source = info.get("source", {})
+        repos = {source.get("repo")} | {entry["source"].get("repo") for entry in source.get("plugins", [])
+                                        if isinstance(entry.get("source"), dict)}
+        if repo not in repos:
             continue
         for plugin_id, entries in PLUGINS.items():
             name, _, plugin_market = plugin_id.partition("@")
@@ -190,7 +200,10 @@ notes = []
 checked_version = os.path.join(REPO, "install", "claude-code-version.txt")
 if os.path.exists(checked_version):
     wanted = open(checked_version).read().strip()
-    running = subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip()
+    try:
+        running = subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip()
+    except OSError:
+        running = ""
     if running != wanted:
         notes.append(f"Claude Code is {running or 'not found'}, the workflow was last checked on {wanted} "
                      "(install/claude-code-version.txt)")
