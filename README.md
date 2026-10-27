@@ -10,7 +10,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 
 | Path | What it is |
 |---|---|
-| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached), `scripts/check-registry.py`, `templates/` |
+| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached, and each added step's trigger and measure), `scripts/check-registry.py`, `scripts/touches.py` (the developer's touches per ticket, for the baselines), `templates/` |
 | `skills/project-setup/` | Decides a project's tools and where each kind of document lives, writes the project map, places the conventions |
 | `skills/change-request/` | The way in for a feature, improvement or bug fix in an existing project: diagnose or grill it, size it, write it as one issue |
 | `skills/build-ticket/` | One ticket: branch, test-first build, pull request |
@@ -21,6 +21,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `install/claude-code-version.txt` | The Claude Code version the workflow was last checked on |
 | `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace with his plugin pinned to a commit |
 | `install.sh` | Installs all of the above on a machine |
+| `docs/measures.md` | What the workflow measures about its own flow and quality, and how; the figures stay private |
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
 | `.github/workflows/pages.yml` | Builds that page and publishes it to GitHub Pages on every push to `main` |

@@ -75,6 +75,15 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `/handoff` | `mattpocock/skills` | typed | any time, moving work elsewhere |  |  | Writes a handoff document so another agent or person can pick up the work. |
 | `/suggest-title` | `YannickBaudraz/claude-team-workflow` | typed | any time, naming a session |  |  | Proposes a name for the current session that you will recognise in /resume, distinct from the project's other session names, with the /rename line to paste. |
 
+## Step triggers and measures
+
+A step, check or agent pass enters FLOW.md only with a row here, added in the same PR (D2). **Trigger** is the project fact or risk class that turns it on. **Paid by** is either the removal that lands in the same wave (`removal: <what>`) or the measure that will show it earned its cost (`measure: <name>`, a measure of `docs/measures.md`). **Upkeep** is what it adds to maintain: a FLOW.md row, a contract, a page rule, fixtures. After two epics across all projects or eight weeks, whichever comes first, a step whose measure does not show it load-bearing is removed or tiered; a step whose benefit shows in quality signals is judged on those signals (D2, P12).
+
+The first cell is plain text, never a backticked command, and the table has no Does column: the checks read those as skills. The table is empty until the first step is added.
+
+| Step | Trigger | Paid by | Upkeep |
+|---|---|---|---|
+
 ## Denied duplicates
 
 Each one overlaps something the workflow already covers with different rules: an `auto` skill above, a step's own skill and the documents it writes, or Claude Code's own memory. It is denied so only that one is used.
