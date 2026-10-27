@@ -6,7 +6,7 @@ The standing bar every ticket clears before it counts as done. A ticket's accept
 - [ ] The project's full test suite passes, and so do its type check, lint and build, run with the project's own commands.
 - [ ] CI is green on the PR.
 - [ ] A reviewer in a fresh session reviewed the PR, and every required change is resolved or deferred to a new ticket with a reason.
-- [ ] The acceptance review against the ticket returned *accepted*.
+- [ ] The acceptance review against the ticket returned `VERDICT: satisfies`. A `VERDICT: indeterminate` passes only once the gap it names is closed, or the user has recorded on the PR that they accept that risk.
 - [ ] New or changed domain terms are in the glossary; any hard-to-reverse decision is an ADR.
 - [ ] Documents affected by the change are updated where the project map puts them.
 - [ ] The PR description follows the PR template and links the ticket.
