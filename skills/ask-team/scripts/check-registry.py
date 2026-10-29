@@ -60,7 +60,7 @@ def bare(command):
 
 def community_sources():
     """Skill name -> the repo install/community-skills.txt installs it from.
-    Also records a problem for a source not pinned to a full commit (D71)."""
+    Also records a problem for a source not pinned to a full commit."""
     sources = {}
     path = os.path.join(REPO, "install", "community-skills.txt")
     for line in open(path) if os.path.exists(path) else []:
@@ -184,7 +184,7 @@ if os.path.exists(BUILD_PAGE):
     if page.returncode:
         problems.append((page.stdout or page.stderr).strip())
 
-# Plugins the settings fragment pins to a commit must be installed at that commit (D71).
+# Plugins the settings fragment pins to a commit must be installed at that commit.
 fragment = os.path.join(REPO, "install", "settings-fragment.json")
 for market, info in (json.load(open(fragment)).get("extraKnownMarketplaces", {}) if os.path.exists(fragment) else {}).items():
     for plugin in info["source"].get("plugins", []):
@@ -194,7 +194,7 @@ for market, info in (json.load(open(fragment)).get("extraKnownMarketplaces", {})
             problems.append(f"{plugin_id}: installed at {(installed or 'nothing')[:7]}, "
                             f"install/settings-fragment.json pins {sha[:7]}; run install.sh")
 
-# The merge guard (D8): its hook is in the user settings for Bash, Monitor and MCP tools, refuses
+# The merge guard, which keeps the merge the developer's act: its hook is in the user settings for Bash, Monitor and MCP tools, refuses
 # when it fails, and runs the copy install.sh made of this repo's version.
 GUARD = os.path.join(REPO, "skills", "ask-team", "hooks", "merge-guard.py")
 INSTALLED_GUARD = f"{HOME}/.claude/hooks/merge-guard.py"

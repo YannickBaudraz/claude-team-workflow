@@ -1,4 +1,4 @@
-# What skills/ask-team/hooks/merge-guard.py refuses and allows (D8). Columns, tab-separated:
+# What skills/ask-team/hooks/merge-guard.py refuses and allows. Columns, tab-separated:
 # expected (refused or allowed); the repo: "workflow" has a project map, "plain" has none;
 # the branch the repo is on; the tool; the tool's command or name ("\n" is a line break).
 # The repo's origin/HEAD points at main, or at trunk on the "trunk" rows.
@@ -63,7 +63,7 @@ refused	workflow	feature-x	mcp__github__merge_pull_request
 refused	workflow	feature-x	mcp__plugin_x_github__push_files
 refused	workflow	feature-x	mcp__github__update_branch_protection
 refused	workflow	feature-x	mcp__gitlab__create_ruleset
-# Found by the review of 2026-10-27
+# Less common spellings: glued options, API variants, GraphQL from files, aliases, PowerShell
 refused	workflow	feature-x	Bash	gh api repos/o/r/merges -fbase=main -fhead=feature-x
 refused	workflow	feature-x	Bash	gh api repos/o/r/merges -Fbase=main -Fhead=feature-x
 refused	workflow	feature-x	Bash	gh api repos/o/r/pulls/5/merge -fmerge_method=squash
@@ -121,7 +121,7 @@ allowed	workflow	feature-x	Bash	gh pr edit 5 --add-label ready
 allowed	workflow	feature-x	Bash	gh pr review 5 --comment -b "Looks right; the developer merges"
 allowed	workflow	feature-x	Bash	git p origin feature-x
 allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Uri https://api.github.com/repos/o/r/pulls/5
-# Found by the second review of 2026-10-27
+# Indirect pushes: refspecs, git settings, aliases, variables, eval, wrappers
 refused	workflow	feature-x	Bash	git push origin HEAD:heads/main
 refused	workflow	feature-x	Bash	git push origin heads/main
 refused	workflow	feature-x	Bash	git push origin 'refs/heads/*'
@@ -205,7 +205,7 @@ allowed	workflow	feature-x	Monitor	tail -f build.log
 allowed	workflow	feature-x	mcp__github__get_pull_request
 allowed	workflow	feature-x	mcp__plugin_design_linear__save_issue
 allowed	workflow	feature-x	Read
-# Allowed: a repo not set up with the workflow (the owner's choice, 2026-10-27)
+# Allowed: a repo not set up with the workflow, which the guard leaves alone
 allowed	plain	main	Bash	git push
 allowed	plain	main	Bash	git push origin main
 allowed	plain	feature-x	Bash	gh pr merge 5

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Count the developer's touches per ticket from Claude Code transcripts, for the
-baselines docs/measures.md defines (D56, P12). Read-only: it writes nothing.
+measure docs/measures.md defines. Read-only: it writes nothing.
 
 A touch is one act by the developer on one ticket's work, up to its merge:
 - prompt: a prompt or slash command the developer typed in a session, including one
@@ -24,7 +24,7 @@ ticket's claim.
 Usage:
   touches.py TICKETS.json TRANSCRIPT_DIR [TRANSCRIPT_DIR...]
 
-TICKETS.json, which stays with the owner's private notes:
+TICKETS.json, kept out of the repo because it names real tickets:
   {"tickets": [{"id": "ABC-7", "branch": "abc-7-", "pr": 12,
                 "claimed": "2026-01-05T09:00:00Z", "merged": "2026-01-06T18:00:00Z"}],
    "events": [{"ticket": "ABC-7", "kind": "merge", "at": "2026-01-06T18:00:00Z"},
@@ -37,8 +37,7 @@ the same ticket's PR or tracker item is that command's, not an outside act.
 Prints counts only, never text from the transcripts. Reads the entry fields in FIELDS, and
 from message content only the text a user entry carries, an agent's Bash commands, tool
 names and the item id a tracker tool was given; from a queued prompt, its text and how it
-was typed. No usage or cost figure is read (section 7 of the decision record).
-Replaced by the flow report once per-ticket facts are recorded (PR 62).
+was typed. No usage or cost figure is read.
 """
 import datetime
 import glob

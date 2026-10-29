@@ -1,7 +1,7 @@
 # Community skills the workflow uses, installed globally with the `skills` CLI.
 # One source per line: <owner/repo>#<commit> <skill> [<skill>...]
 # Each source is pinned to a full commit. A repo may appear on two lines when its skills sit at different commits.
-# Upgrades go one PR each, in the monthly window (D71).
+# Upgrades go one PR each, batched once a month (see README.md).
 product-on-purpose/pm-skills#1cef1a9eae10017389863d51e289e0ae41e17fcb define-problem-statement develop-solution-brief deliver-prd
 deanpeters/Product-Manager-Skills#1b5a524ebb95e9497fa3f25002d8b8ec528d4444 user-story-mapping-workshop workshop-facilitation user-story-mapping
 riekelt/technical-writer#85e53729dd959a2795d593d6769068e342cf3486 technical-writing writing-design-docs
