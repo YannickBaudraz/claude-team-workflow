@@ -1,0 +1,20 @@
+{
+  "why": "Epic #1 is in build and epic #2 is started: which to work on is the user's choice, so the router offers both, one line each.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined",
+    "ticketed"
+  ],
+  "files": {
+    "issues/5-store-a-new-item.md": "Type: ticket\nStatus: started\nParent: 3\nLabels: enhancement, ready-for-agent\n\n# Store a new item with its quantity\n\n## Context\nStory #3: adding a new item stores it with its quantity and unit.\n\n## Acceptance criteria\n- [ ] `pantry add rice 2kg` on an empty store stores rice at 2kg.\n- [ ] `pantry add rice 1kg` after it leaves rice at 3kg.\n\n## Verify end to end\n`pantry add rice 2kg && pantry add rice 1kg && pantry list` prints `rice 3kg`.\n",
+    "issues/2-running-low.md": "Type: epic\nStatus: started\nLabels: enhancement\n\n# Running low\n\nRelease slice R2 of the story map: a threshold per item, and a list of what runs low.\n"
+  },
+  "next": "(?s)(?=.*/build-ticket\\s+#?5(?![\\w-]))(?=.*/deliver-prd\\s+#?2(?![\\w-]))",
+  "light": "^/ask-team$"
+}

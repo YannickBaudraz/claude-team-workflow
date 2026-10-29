@@ -1,0 +1,51 @@
+{
+  "why": "The acceptance review could not decide a criterion. FLOW.md has no rule for it, and the router's answers vary (back to the build, a hand-over, a fix in the build session); what holds is that it never routes to the merge.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined",
+    "ticketed"
+  ],
+  "files": {
+    "issues/5-store-a-new-item.md": "Type: ticket\nStatus: in review\nParent: 3\nLabels: enhancement, ready-for-agent\n\n# Store a new item with its quantity\n\n## Context\nStory #3: adding a new item stores it with its quantity and unit.\n\n## Acceptance criteria\n- [ ] `pantry add rice 2kg` on an empty store stores rice at 2kg.\n- [ ] `pantry add rice 1kg` after it leaves rice at 3kg.\n\n## Verify end to end\n`pantry add rice 2kg && pantry add rice 1kg && pantry list` prints `rice 3kg`.\n"
+  },
+  "prs": [
+    {
+      "number": 12,
+      "title": "Store a new item with its quantity",
+      "headRefName": "5-store-a-new-item",
+      "body": "Ticket: #5\n\n## Summary\nStores a new item with its quantity and unit, and adds to an existing one.\n",
+      "statusCheckRollup": [
+        {
+          "name": "tests",
+          "status": "COMPLETED",
+          "conclusion": "SUCCESS"
+        }
+      ],
+      "comments": [
+        {
+          "author": {
+            "login": "developer"
+          },
+          "body": "## Review: Store a new item\n\n**Verdict: approve.**\n\n### Required\nNone.\n\n### Optional\n- **Consider:** name the unit parser.\n"
+        },
+        {
+          "author": {
+            "login": "developer"
+          },
+          "body": "VERDICT: indeterminate\n\nSubject: PR #12 against ticket #5.\n\nCriterion 2 cannot be checked: no test or output shows the stored unit after two adds.\n"
+        }
+      ]
+    }
+  ],
+  "next": "^(?![\\s\\S]*gh (pr|stack) merge)",
+  "light": "^(?![\\s\\S]*gh (pr|stack) merge)",
+  "must": [
+    "indeterminate"
+  ]
+}

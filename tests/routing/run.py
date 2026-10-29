@@ -20,6 +20,7 @@ nothing saved.
     must      regexes the whole answer must match
     must_not  regexes it must not match
     light     a regex the Next block of `/ask-team next` must match (default: not run light)
+    prs       the pull requests the stub gh serves (tests/routing/stub/gh), each as gh's --json gives it
     saves     whether the router saves its answer here (default: true)
     git       whether the project is a git repo (default: true)
 
@@ -58,6 +59,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LAYERS = os.path.join(HERE, "layers")
 SCENARIOS = os.path.join(HERE, "scenarios")
 TOOLS = ("Read,Glob,Grep,Bash(git log:*),Bash(git status:*),Bash(git worktree list:*),Bash(git rev-parse:*),"
+         "Bash(git branch:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh pr status:*),"
+         "Bash(gh pr diff:*),"
          "Bash(ls:*),Bash(date:*),Write(./.claude/ask-team/**),Edit(./.claude/ask-team/**)")
 GIT = {"GIT_AUTHOR_NAME": "Fixture", "GIT_AUTHOR_EMAIL": "fixture@example.com",
        "GIT_COMMITTER_NAME": "Fixture", "GIT_COMMITTER_EMAIL": "fixture@example.com",
@@ -66,6 +69,9 @@ GIT = {"GIT_AUTHOR_NAME": "Fixture", "GIT_AUTHOR_EMAIL": "fixture@example.com",
 # The runner may itself be started from a Claude Code session: none of its variables (effort, session,
 # socket) may reach the runs, or they would not run at the model and effort the report states.
 CLEAN = {key: value for key, value in os.environ.items() if not re.match(r"(CLAUDE|ANTHROPIC)", key)}
+# gh in a run is tests/routing/stub/gh: it reads the scenario's pull requests and reaches no code host.
+STUB = os.path.join(HERE, "stub")
+CLEAN["PATH"] = STUB + os.pathsep + CLEAN.get("PATH", "")
 
 
 def build(scenario, where):
@@ -85,6 +91,12 @@ def build(scenario, where):
     for command in (["git", "init", "-q", "-b", "main"], ["git", "-c", "core.excludesFile=/dev/null", "add", "-A"],
                     ["git", "commit", "-q", "-m", "Fixture state"]):
         subprocess.run(command, cwd=where, env=env, check=True)
+    # The scenario's pull requests, for the stub gh; each open PR's branch exists, as it would after a build.
+    with open(os.path.join(where, ".git", "fixture-prs.json"), "w", encoding="utf-8") as out:
+        json.dump(scenario.get("prs", []), out)
+    for pr in scenario.get("prs", []):
+        if pr.get("headRefName") and pr.get("state", "OPEN") == "OPEN":
+            subprocess.run(["git", "branch", pr["headRefName"]], cwd=where, env=env, check=True)
 
 
 def grade(scenario, answer):
@@ -213,7 +225,7 @@ def pinned():
 
 
 def claude_version():
-    """The Claude Code version the runs used, as `claude --version` prints it (D71)."""
+    """The Claude Code version the runs used, as `claude --version` prints it, so a report names the version it ran on."""
     try:
         return subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip() or "unknown"
     except OSError:

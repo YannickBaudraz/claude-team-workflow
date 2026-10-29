@@ -1,0 +1,15 @@
+{
+  "why": "Every story of the epic is refined and no ticket exists yet: break them into tickets.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "brief",
+    "roadmap",
+    "prd-approved",
+    "design",
+    "refined"
+  ],
+  "next": "^/to-tickets\\s+#?(1|3)(?![\\w-])",
+  "light": "/to-tickets\\s+#?(1|3)(?![\\w-])"
+}

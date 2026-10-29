@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""A read-only stand-in for gh in routing runs: it answers `gh pr list`, `gh pr view`,
+`gh pr checks`, `gh pr status` and `gh pr diff` from the scenario's pull requests, so the
+router reads a project's PRs the way it would through the real gh. The runner writes them
+to .git/fixture-prs.json, out of sight of the router's own reads. Anything else gh could do
+fails, so a run can never reach a real code host.
+
+Each PR is an object with the fields gh's --json gives (number, title, state, headRefName,
+baseRefName, body, url, isDraft, author, createdAt, mergedAt, reviewDecision, comments,
+reviews, statusCheckRollup, closingIssuesReferences, files); the stub fills the usual
+defaults for the ones a scenario leaves out.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+DEFAULTS = {"state": "OPEN", "baseRefName": "main", "isDraft": False, "author": {"login": "developer"},
+            "createdAt": "2026-10-02T09:00:00Z", "mergedAt": None, "reviewDecision": "", "comments": [],
+            "reviews": [], "statusCheckRollup": [], "closingIssuesReferences": [], "files": [], "body": "",
+            "labels": [], "mergeable": "MERGEABLE"}
+
+
+def prs():
+    found = subprocess.run(["git", "rev-parse", "--git-dir"], capture_output=True, text=True)
+    path = os.path.join(found.stdout.strip() or ".git", "fixture-prs.json")
+    listed = json.load(open(path)) if os.path.exists(path) else []
+    for pr in listed:
+        for key, value in DEFAULTS.items():
+            pr.setdefault(key, value)
+        pr.setdefault("url", f"https://github.com/owner/pantry/pull/{pr['number']}")
+        pr.setdefault("headRefName", f"pr-{pr['number']}")
+    return listed
+
+
+def option(arguments, *names, default=None):
+    for index, argument in enumerate(arguments):
+        for name in names:
+            if argument == name and index + 1 < len(arguments):
+                return arguments[index + 1]
+            if argument.startswith(name + "="):
+                return argument.split("=", 1)[1]
+    return default
+
+
+def emit(value, arguments):
+    fields = option(arguments, "--json")
+    if fields:
+        keys = fields.split(",")
+        value = [{k: pr.get(k) for k in keys} for pr in value] if isinstance(value, list) else {k: value.get(k) for k in keys}
+    text = json.dumps(value, indent=2)
+    query = option(arguments, "-q", "--jq")
+    if query:
+        if not shutil.which("jq"):
+            sys.exit("gh: --jq needs jq in this environment")
+        text = subprocess.run(["jq", "-r", query], input=text, capture_output=True, text=True).stdout.rstrip("\n")
+    print(text)
+
+
+def find(arguments, listed):
+    wanted = next((a for a in arguments if not a.startswith("-")), None)
+    if wanted is None:
+        branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
+        match = [pr for pr in listed if pr["headRefName"] == branch]
+    else:
+        wanted = wanted.rstrip("/").split("/")[-1].lstrip("#")
+        match = [pr for pr in listed if str(pr["number"]) == wanted or pr["headRefName"] == wanted]
+    if not match:
+        sys.exit(f"no pull requests found{' for ' + wanted if wanted else ''}")
+    return match[0]
+
+
+def human(pr):
+    lines = [f"{pr['title']} #{pr['number']}", f"{pr['state']} • {pr['author']['login']} wants to merge into "
+             f"{pr['baseRefName']} from {pr['headRefName']}", "", pr["body"] or "No description provided"]
+    for comment in pr["comments"]:
+        lines += ["", f"--- {comment.get('author', {}).get('login', 'developer')} commented:", comment.get("body", "")]
+    for review in pr["reviews"]:
+        lines += ["", f"--- {review.get('author', {}).get('login', 'reviewer')} reviewed ({review.get('state', 'COMMENTED')}):",
+                  review.get("body", "")]
+    return "\n".join(lines)
+
+
+def main(arguments):
+    if arguments[:1] != ["pr"] or len(arguments) < 2:
+        sys.exit("gh: only `gh pr list|view|checks|status|diff` are available in routing fixtures")
+    verb, rest, listed = arguments[1], arguments[2:], prs()
+    if verb == "list":
+        state = (option(rest, "--state", "-s", default="open")).upper()
+        chosen = [pr for pr in listed if state == "ALL" or pr["state"] == state]
+        if option(rest, "--json"):
+            emit(chosen, rest)
+        else:
+            print("\n".join(f"{pr['number']}\t{pr['title']}\t{pr['headRefName']}\t{pr['state']}" for pr in chosen)
+                  or "no open pull requests")
+    elif verb == "view":
+        pr = find(rest, listed)
+        emit(pr, rest) if option(rest, "--json") else print(human(pr))
+    elif verb == "checks":
+        pr = find(rest, listed)
+        checks = pr["statusCheckRollup"]
+        print("\n".join(f"{c.get('name', 'check')}\t{(c.get('conclusion') or c.get('status') or 'pending').lower()}"
+                        for c in checks) or "no checks reported on this pull request")
+    elif verb == "status":
+        print("\n".join(f"#{pr['number']}  {pr['title']}  [{pr['headRefName']}]" for pr in listed if pr["state"] == "OPEN")
+              or "no open pull requests")
+    elif verb == "diff":
+        pr = find(rest, listed)
+        print("\n".join(f"diff --git a/{f.get('path')} b/{f.get('path')}" for f in pr["files"]))
+    else:
+        sys.exit(f"gh: `gh pr {verb}` is not available in routing fixtures")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
