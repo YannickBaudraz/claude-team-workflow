@@ -85,7 +85,7 @@ In this project the merge is the user's act. The settings keep the agent from me
      EOF
      ```
 
-     On another host, name its equivalent setting. The rule requires no CI status yet. When the project's CI check later becomes required on it, that check runs on every PR, with no path filter, and holds the accessibility check inside it, so a PR it never reports on is never blocked.
+     On another host, name its equivalent setting. The rule requires no CI status yet. When the project's CI check later becomes required on it, that check runs on every PR, with no path filter, and holds the project's other checks inside it, so a PR it never reports on is never blocked.
 
 In an existing codebase, whose default branch is already on the remote, setup's files reach it like any change: committed on a setup branch and opened as one PR, which the user merges. The branch rule can be set before or after that merge.
 

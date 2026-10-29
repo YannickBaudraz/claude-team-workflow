@@ -77,7 +77,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 
 ## Step triggers and measures
 
-A step, check or agent pass enters FLOW.md only with a row here, added in the same PR (D2). **Trigger** is the project fact or risk class that turns it on. **Paid by** is either the removal that lands in the same wave (`removal: <what>`) or the measure that will show it earned its cost (`measure: <name>`, a measure of `docs/measures.md`). **Upkeep** is what it adds to maintain: a FLOW.md row, a contract, a page rule, fixtures. After two epics across all projects or eight weeks, whichever comes first, a step whose measure does not show it load-bearing is removed or tiered; a step whose benefit shows in quality signals is judged on those signals (D2, P12).
+A step, check or agent pass enters FLOW.md only with a row here, added in the same PR. **Trigger** is the project fact or risk class that turns it on. **Paid by** is either a step or check removed in the same change (`removal: <what>`) or the measure that will show it earned its cost (`measure: <name>`, a measure of `docs/measures.md`). **Upkeep** is what it adds to maintain: a FLOW.md row, a contract, a page rule, fixtures. After two epics across all projects or eight weeks, whichever comes first, a step whose measure does not show it load-bearing is removed or tiered; a step whose benefit shows in quality (first-pass verdicts, findings fixed before merge, escaped defects, accessibility failures) is judged on those measures, not on the time it adds.
 
 The first cell is plain text, never a backticked command, and the table has no Does column: the checks read those as skills. The table is empty until the first step is added.
 

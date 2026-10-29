@@ -213,7 +213,7 @@ def pinned():
 
 
 def claude_version():
-    """The Claude Code version the runs used, as `claude --version` prints it (D71)."""
+    """The Claude Code version the runs used, as `claude --version` prints it, so a report names the version it ran on."""
     try:
         return subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.split(" ")[0].strip() or "unknown"
     except OSError:

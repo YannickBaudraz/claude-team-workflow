@@ -10,7 +10,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 
 | Path | What it is |
 |---|---|
-| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached, and each added step's trigger and measure), `scripts/check-registry.py`, `scripts/touches.py` (the developer's touches per ticket, for the baselines), `hooks/merge-guard.py` (keeps the merge, pushes to the default branch and branch rules from the agent in a project set up with the workflow), `templates/` |
+| `skills/ask-team/` | The router: `SKILL.md`, `REGISTRY.md` (every skill the workflow names and how it is reached, and each added step's trigger and measure), `scripts/check-registry.py`, `scripts/touches.py` (the developer's touches per ticket, a measure of `docs/measures.md`), `hooks/merge-guard.py` (keeps the merge, pushes to the default branch and branch rules from the agent in a project set up with the workflow), `templates/` |
 | `skills/project-setup/` | Decides a project's tools and where each kind of document lives, writes the project map, places the conventions |
 | `skills/change-request/` | The way in for a feature, improvement or bug fix in an existing project: diagnose or grill it, size it, write it as one issue |
 | `skills/build-ticket/` | One ticket: branch, test-first build, pull request |
@@ -21,7 +21,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `install/claude-code-version.txt` | The Claude Code version the workflow was last checked on |
 | `install/settings-fragment.json` | The settings it needs: command-only skills, blocked duplicates, Matt Pocock's marketplace with his plugin pinned to a commit, the merge guard's hook |
 | `install.sh` | Installs all of the above on a machine |
-| `docs/measures.md` | What the workflow measures about its own flow and quality, and how; the figures stay private |
+| `docs/measures.md` | What the workflow measures about its own flow and quality, and how |
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
 | `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands and the touches tests, builds the page and publishes it to GitHub Pages on every push to `main` |
@@ -43,7 +43,7 @@ The script links this repo's skills into `~/.claude/skills`, so edits here are l
 
 - After installing, removing or updating a skill the workflow uses, update `skills/ask-team/REGISTRY.md`, its Does line included (and `install/` when the list changes), then run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`.
 - The workflow page follows `SKILL.md` and the registry on its own: every push to `main` rebuilds and publishes it. To preview it, run `python3 docs/build-workflow.py`, then `python3 -m http.server -d docs` and open http://localhost:8000/workflow.html (opened straight from disk, browsers block its fonts).
-- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, in a monthly window: change the pin, rerun `install.sh` (for the plugin: start a session, then rerun it once more), and run the routing scenarios. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
+- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, batched once a month: change the pin, rerun `install.sh` (for the plugin: start a session, then rerun it once more), and run the routing scenarios. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
 
 ## Credits
 

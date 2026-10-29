@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """PreToolUse hook: in a project set up with the team workflow, the agent never merges a PR,
 never writes to the default branch and never changes a branch rule. Those are the
-developer's acts (D8): the developer runs the command the router prints, in a terminal or
+developer's acts: the developer runs the command the router prints, in a terminal or
 in shell mode (!), which no hook sees.
 
 A project is set up with the workflow when its repo has docs/project-map.md, a
 "Project map" section in its CLAUDE.md or AGENTS.md, or this hook in .claude/hooks/, as
-/project-setup writes them. In any other repo the hook lets everything through (the
-owner's choice, 2026-10-27). A command is checked when either the session's directory or
+/project-setup writes them. In any other repo the hook lets everything through: the
+guard protects workflow projects only. A command is checked when either the session's directory or
 the directory it acts in belongs to such a project.
 
 The deny rules /project-setup writes into the project's .claude/settings.json refuse the
@@ -576,7 +576,7 @@ def main():
     if reason is None:
         return 0
     print(f"Refused by the team workflow's merge guard: {reason}. In this project, merging a PR, writing to "
-          "the default branch and changing a branch rule are the developer's acts (D8). Do not rephrase the "
+          "the default branch and changing a branch rule are the developer's acts. Do not rephrase the "
           "command to get around this. Print the exact command for the user to run in a terminal or in shell "
           "mode (!), then wait.", file=sys.stderr)
     return 2
