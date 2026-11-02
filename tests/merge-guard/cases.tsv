@@ -169,6 +169,23 @@ allowed	workflow	feature-x	Bash	bash scripts/build.sh && git push -u origin feat
 allowed	workflow	feature-x	Bash	nice -n 5 git push origin feature-x
 allowed	workflow	feature-x	Bash	git config user.name "Someone"
 allowed	workflow	feature-x	Bash	git rebase -x 'npm test' HEAD~3
+# Read as the shell reads them: a << in a comment, in quotes or in a here-string opens no heredoc,
+# a heredoc body runs its substitutions when its delimiter is unquoted, and a body fed to a shell
+# is a script whose comments and quotes count
+refused	workflow	feature-x	Bash	# see <<EOF\ngit push origin main\nEOF
+refused	workflow	feature-x	Bash	echo "<<EOF"\ngit push origin main\nEOF
+refused	workflow	feature-x	Bash	echo '<<EOF'\ngit push origin main\nEOF
+refused	workflow	feature-x	Bash	cat <<<EOF\ngit push origin main\nEOF
+refused	workflow	feature-x	Bash	cat <<EOF\n$(git push origin main)\nEOF
+refused	workflow	feature-x	Bash	cat <<EOF\nIt's `gh pr merge 5`\nEOF
+refused	workflow	feature-x	Bash	bash <<'X'\n# it's a script\ngit push origin main\nX
+refused	workflow	feature-x	Bash	bash <<EOF\n$x git status\nEOF
+refused	workflow	feature-x	Bash	echo $'it\'s' ; git push origin main
+refused	workflow	feature-x	Bash	git push origin $'main'
+refused	workflow	feature-x	Bash	x=$(case a in a) git push origin main;; esac)
+refused	workflow	feature-x	Bash	x=`echo \`gh pr merge 5\``
+refused	workflow	feature-x	Bash	x=$(echo ")" ; gh pr merge 5)
+refused	workflow	feature-x	Bash	echo "a # b" ; git push origin main
 # Unreadable commands that name a merge are refused
 refused	workflow	feature-x	Bash	gh pr merge "5
 # Allowed: the build's own work
@@ -205,6 +222,16 @@ allowed	workflow	feature-x	Monitor	tail -f build.log
 allowed	workflow	feature-x	mcp__github__get_pull_request
 allowed	workflow	feature-x	mcp__plugin_design_linear__save_issue
 allowed	workflow	feature-x	Read
+# Allowed: comments, quoted text and heredoc bodies the shell does not run
+allowed	workflow	feature-x	Bash	git commit -q -m A\n# the form's fields
+allowed	workflow	feature-x	Bash	git commit -q -m "Add the page\n\n\`pantry serve\` serves it."
+allowed	workflow	feature-x	Bash	git commit -m "Say it's done" # don't push yet
+allowed	workflow	feature-x	Bash	git status # git push origin main
+allowed	workflow	feature-x	Bash	cat <<EOF\nIt's not gh pr merge, it is $(date)\nEOF
+allowed	workflow	feature-x	Bash	cat <<'EOF'\n$(git push origin main) stays text\nEOF
+allowed	workflow	feature-x	Bash	git commit -F - <<'EOF'\nIt's done; gh pr merge is the developer's\nEOF
+allowed	workflow	feature-x	Bash	echo 'a `gh pr merge 5` b'
+allowed	workflow	feature-x	Bash	case $1 in main) git status;; esac
 # Allowed: a repo not set up with the workflow, which the guard leaves alone
 allowed	plain	main	Bash	git push
 allowed	plain	main	Bash	git push origin main
