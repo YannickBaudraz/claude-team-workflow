@@ -14,6 +14,11 @@ import re
 import subprocess
 import sys
 
+# The page imports flow.py too, and must never run a stale cached copy of it (see build-workflow.py).
+sys.dont_write_bytecode = True
+
+import flow
+
 HOME = os.path.expanduser("~")
 REGISTRY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "REGISTRY.md")
 ROUTER = [os.path.join(os.path.dirname(REGISTRY), name) for name in ("SKILL.md", "ROUTER.md", "FLOW.md")]
@@ -34,24 +39,6 @@ DENIED = set(SETTINGS.get("permissions", {}).get("deny", []))
 ENABLED = SETTINGS.get("enabledPlugins", {})
 MARKETPLACES = plugin_file("known_marketplaces.json", {})
 THIS_REPO = "YannickBaudraz/claude-team-workflow"
-
-
-def rows():
-    """The skill rows of every table, keyed by the table's column headers."""
-    header = None
-    for line in open(REGISTRY):
-        line = line.strip()
-        if not line.startswith("|"):
-            header = None
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if header is None:
-            header = [c.lower() for c in cells]
-        elif cells[0].startswith("`"):
-            row = dict(zip(header, cells))
-            yield {"command": cells[0].strip("`"), "source": row["source"],
-                   "visibility": row["visibility"], "calls": row.get("calls", ""),
-                   "does": row.get("does")}
 
 
 def bare(command):
@@ -132,7 +119,7 @@ def command_only(path):
 
 problems, table = [], {}
 COMMUNITY = community_sources()
-for row in rows():
+for row in flow.skill_rows(open(REGISTRY, encoding="utf-8").read()):
     # Keyed by the full name: engineering:code-review and code-review are different skills.
     table[row["command"].lstrip("/")] = row
 for key, row in table.items():

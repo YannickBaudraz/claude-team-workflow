@@ -18,6 +18,11 @@ import os
 import re
 import sys
 
+# The page imports flow.py too, and must never run a stale cached copy of it (see build-workflow.py).
+sys.dont_write_bytecode = True
+
+import flow
+
 HERE = os.path.dirname(os.path.realpath(__file__))
 SKILLS = os.path.dirname(os.path.dirname(HERE))
 FLOW = os.path.join(SKILLS, "ask-team", "FLOW.md")
@@ -28,29 +33,6 @@ WORKFLOW_FILES = ["ask-team/SKILL.md", "ask-team/ROUTER.md", "ask-team/FLOW.md",
                   "change-request/SKILL.md", "epic-retro/SKILL.md", "project-setup/SKILL.md"]
 # A sentence that hands a skill an output to make: "Save where the map puts the PRD".
 MAKING = re.compile(r"\b(creat|writ|sav|publish|post|mark|record|open)\w*", re.I)
-
-
-def tables(text):
-    """Every markdown table in text, as a list of rows of cells, header first."""
-    found, current = [], None
-    for line in text.splitlines():
-        line = line.strip()
-        if not line.startswith("|"):
-            current = None
-            continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if all(set(cell) <= set("-: ") for cell in cells):
-            continue
-        if current is None:
-            current = []
-            found.append(current)
-        current.append(cells)
-    return found
-
-
-def section(text, title):
-    match = re.search(rf"^## {re.escape(title)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
-    return match.group(1) if match else ""
 
 
 def stem(word):
@@ -70,39 +52,32 @@ def says_it_makes(text, output, sentences_only):
 problems = []
 router = open(FLOW, encoding="utf-8").read()
 
-flow_rows = re.findall(r"^\|\s*(\d+)\s*\|.*\|(.*)\|\s*$", section(router, "Main flow"), re.M)
-steps = [int(number) for number, _ in flow_rows]
+# A row with no output cell is no step, so the contracts report it as missing.
+flow_rows = [(number, cells) for number, cells in flow.main_flow(router) if len(cells) > 1]
+steps = [number for number, _ in flow_rows]
 # A gated step's output is approved, as the page reads it too; the merge is step 13's own gate.
-gated = {int(number) for number, output in flow_rows if re.search(r"\bapproved\b", output, re.I)}
+gated = {number for number, cells in flow_rows if flow.approved(cells[-1])}
 # Homes that hold tracker items or pull requests: approved by being published or merged.
 NOT_DOCUMENTS = {"Issue tracker", "Epics, stories and tickets", "Code host"}
-contract_tables = tables(section(router, "Step contracts"))
-if len(contract_tables) != 2:
+contracts = flow.step_contracts(router)
+if contracts is None:
     sys.exit("PROBLEM FLOW.md: Step contracts should hold two tables, the steps and the outputs")
-step_rows, output_rows = contract_tables[0][1:], contract_tables[1][1:]
+step_rows, output_rows = contracts
 
-registry = {}
-for table in tables(open(REGISTRY, encoding="utf-8").read()):
-    header = [cell.lower() for cell in table[0]]
-    if "does" in header:
-        for cells in table[1:]:
-            row = dict(zip(header, cells))
-            registry[row["command"].strip("`")] = row
+registry = {row["command"].strip("`"): row
+            for table in flow.workflow_tables(open(REGISTRY, encoding="utf-8").read()) for row in table}
 
 kinds = set()
-for table in tables(open(MAP, encoding="utf-8").read()):
+for table in flow.tables(open(MAP, encoding="utf-8").read()):
     kinds.update(cells[0] for cells in table[1:])
 
 # The steps: what each needs and makes, in flow order; a way in is keyed by its command.
 made_at, needs = {}, {}
 for key, need, make in step_rows:
-    key = int(key) if key.isdigit() else key.strip("`")
     if not isinstance(key, int) and key not in registry:
         problems.append(f"Step contracts: way in {key} is not in the registry")
-    # "interface design (when the epic has a user interface)": needed only in that case, made earlier all the same.
-    needs[key] = [[re.sub(r"\s*\(when [^)]*\)$", "", alt.strip()) for alt in group.split(" or ")]
-                  for group in need.split(",") if group.strip() not in ("", "—")]
-    for output in filter(None, (o.strip() for o in make.split(","))):
+    needs[key] = need
+    for output in make:
         made_at.setdefault(output, []).append(key)
 contracted = sorted(k for k in needs if isinstance(k, int))
 if contracted != steps:
@@ -113,7 +88,7 @@ for output, makers, home in output_rows:
     outputs[output] = home
     if output not in made_at:
         problems.append(f"Step contracts: {output} has a maker but no step makes it")
-    for maker in (m.strip().strip("`") for m in makers.split(",")):
+    for maker in makers:
         if maker == "the user":
             continue
         row = registry.get(maker)
@@ -121,8 +96,8 @@ for output, makers, home in output_rows:
             problems.append(f"Step contracts: {output} is made by {maker}, which is not in the registry")
             continue
         # The maker's step, from its Used at, or the way in it is: that step lists the output.
-        at = re.match(r"(\d+)\b", row.get("used at", ""))
-        at = int(at.group(1)) if at else maker if maker in needs else None
+        at = flow.used_at(row)[0]
+        at = maker if at is None and maker in needs else at
         if at is not None and at not in made_at.get(output, []):
             problems.append(f"Step contracts: {maker} makes {output}, but its step {at} does not list it")
         own = os.path.join(SKILLS, maker.lstrip("/"), "SKILL.md")
@@ -140,8 +115,8 @@ for output, home in outputs.items():
     if home in NOT_DOCUMENTS:
         continue
     for step in (at for at in made_at.get(output, []) if at in gated):
-        makers = [m.strip().strip("`") for m in output_rows[[r[0] for r in output_rows].index(output)][1].split(",")]
-        writers = [m for m in makers if re.match(rf"{step}\b", registry.get(m, {}).get("used at", ""))]
+        makers = next(row[1] for row in output_rows if row[0] == output)
+        writers = [m for m in makers if flow.used_at(registry.get(m, {}))[0] == step]
         for maker in writers:
             row = registry[maker]
             own = os.path.join(SKILLS, maker.lstrip("/"), "SKILL.md")
