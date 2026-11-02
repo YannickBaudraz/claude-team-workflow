@@ -1,22 +1,21 @@
-"""Reading the sources: the router (SKILL.md), the registry and the README's Install section."""
+"""Reading the sources: the router (SKILL.md), the registry and the README's Install section.
+Their tables are read by skills/ask-team/scripts/flow.py, which the checks share."""
+import os
 import re
+import sys
 
-from .config import ROLE_WORDS
+from .config import ROLE_WORDS, ROOT
 
+sys.path.insert(0, os.path.join(ROOT, 'skills', 'ask-team', 'scripts'))
 
-class SourceError(Exception):
-    pass
-
-
-def need(ok, message):
-    if not ok:
-        raise SourceError(message)
+import flow
+from flow import SourceError, need
 
 
 def section(text, title):
-    match = re.search(rf'^## {re.escape(title)}\n(.*?)(?=^## |\Z)', text, re.M | re.S)
-    need(match, f'SKILL.md has no "## {title}" section')
-    return match.group(1).strip()
+    body = flow.section(text, title)
+    need(body is not None, f'SKILL.md has no "## {title}" section')
+    return body.strip()
 
 
 def sentences(text):
@@ -68,29 +67,11 @@ def read_router(paths):
             fork_notes.append(sentence)
     need(fork, 'Size the request names no sizes in *italics*')
 
-    flow = section(text, 'Main flow')
-    steps = {}
-    for line in flow.splitlines():
-        row = re.match(r'\|\s*(\d+)\s*\|(.*)\|\s*$', line)
-        if not row:
-            continue
-        number = int(row.group(1))
-        cells = [cell.strip() for cell in row.group(2).split('|')]
-        need(len(cells) == 3, f'Main flow row {number} should have four columns')
-        step, command, output = cells
-        note = ''
-        if '(' in step:
-            step, note = step.split('(', 1)
-            note = note.rstrip(')').strip()
-        name, _, qual = (part.strip() for part in step.partition(','))
-        steps[number] = dict(
-            number=number, name=name, qual=qual, note=note,
-            optional=note.lower().startswith('only'), command=command, output=output,
-            # A gate is a step whose output has to be approved, or that you merge.
-            gate=bool(re.search(r'\bapproved\b|\bmerges\b', output, re.I)))
+    main_flow = section(text, 'Main flow')
+    steps = flow.steps(text)
     need(list(steps) == list(range(1, len(steps) + 1)), 'Main flow steps should be numbered 1, 2, 3...')
 
-    rules_text = '\n'.join(line for line in flow.splitlines() if not line.startswith('|'))
+    rules_text = '\n'.join(line for line in main_flow.splitlines() if not line.startswith('|'))
     epics = re.search(r'about (\d+) epics per roadmap', rules_text)
     most = re.search(r'never more than (\d+)', rules_text)
     need(epics and most, 'Main flow no longer states the epics-per-roadmap preference')
@@ -126,28 +107,15 @@ def read_router(paths):
 
 
 def read_registry(path, steps):
-    tables, header = [], None
-    for line in open(path, encoding='utf-8'):
-        line = line.strip()
-        if not line.startswith('|'):
-            header = None
-            continue
-        cells = [cell.strip() for cell in line.strip('|').split('|')]
-        if header is None:
-            header = [cell.lower() for cell in cells]
-            tables.append([])
-        elif not all(set(cell) <= set('-: ') for cell in cells):
-            tables[-1].append(dict(zip(header, cells)))
-    workflow = [table for table in tables if table and 'does' in table[0]]
+    workflow = flow.workflow_tables(open(path, encoding='utf-8').read())
     need(len(workflow) == 1, 'REGISTRY.md should have one table with a Does column')
 
     groups, kinds, sources = {}, {}, {}
     for row in workflow[0]:
         name, used, does = row['command'].strip('`'), row.get('used at', ''), row.get('does', '')
         need(does, f'REGISTRY.md: {name} has no Does')
-        at_step = re.match(r'(\d+)\b[^,]*(?:,\s*(.*))?$', used)
-        if at_step:
-            key, tag = int(at_step.group(1)), at_step.group(2) or ''
+        key, tag = flow.used_at(row)
+        if key is not None:
             need(key in steps, f'REGISTRY.md: {name} is used at step {key}, which the router does not have')
         else:
             for key, word in (('start', 'entry point'), ('in', 'way in'), ('any', 'any time')):

@@ -18,7 +18,8 @@ This file is the command line; the page is made in docs/workflow/:
 
     config.py    where the sources are, and the page's own frame: title, lede, glossary,
                  role names, palettes, fonts
-    sources.py   reading SKILL.md, REGISTRY.md and the README's Install section
+    sources.py   reading SKILL.md, REGISTRY.md and the README's Install section; their tables
+                 through skills/ask-team/scripts/flow.py, the parser the checks share
     render.py    the drawing helpers: voice, inline markdown, cards, arrows, links
     palettes.py  the palettes' CSS, and the check that their text reads at 4.5:1
     page.py      assembling the HTML
