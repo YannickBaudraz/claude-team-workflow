@@ -17,9 +17,11 @@ The steps, what each needs and leaves behind, and who works them. Both readings 
 | 9 | Refinement, per story | `/specification <story>`, then `/story-splitting` when it is too big, then `/find-gaps` | Story ready: rules, examples and acceptance criteria agreed. |
 | 10 | Tickets | `/to-tickets <epic, story or sized issue>` | Tickets with blocking edges, approved before publishing. |
 | 11 | Build, per ticket | `/build-ticket <ticket>`; when pairing, `/build-ticket <ticket> pair <dials>` | PR open with the template filled. |
-| 12 | Review, fresh session | `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review`. When the user reviews: `/receiving-code-review`, then `/plannotator-review <PR>` | Verdict: approve or request changes. |
-| 13 | Approval | `/acceptance-review <PR> against <ticket>`; CI green. To merge: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>` | The user merges, in a terminal or in shell mode (!): in a project set up with the workflow, its settings make the agent refuse the merge, a push to the default branch and a branch rule change, a filter against mistakes rather than a lock. After the merge, the user closes the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
+| 12 | Review chain, fresh session | Once CI is green: `/acceptance-review <PR> against <ticket>`; then `/code-review-and-quality <PR>`, then `gh pr checkout <PR> --detach` and `/security-review`. When the user reviews too: `/plannotator-review <PR>` | Verdicts on the PR, a failing stage stopping the chain: does-not-satisfy sends the ticket back to its build before the other reviews run; indeterminate lets them run, and holds the merge until the gap it names is closed or the user records on the PR that they accept the risk; then the review's verdict, approve or request changes. |
+| 13 | Merge | Once CI is green, the acceptance verdict is satisfies, or its gap is closed or accepted, and the review approves: `gh stack merge <stack>` when `gh stack view` shows the PR in a stack, else `gh pr merge <PR>` | The user merges, in a terminal or in shell mode (!): in a project set up with the workflow, its settings make the agent refuse the merge, a push to the default branch and a branch rule change, a filter against mistakes rather than a lock. After the merge, the user closes the ticket's parent story or issue when this was its last open ticket; an epic closes at its retro. |
 | 14 | Retro, per epic | `/epic-retro <epic>`, then `/retro` | Sourced findings, a verdict on the epic, action items. The epic closes once the user confirms the verdict. |
+
+**Rework.** A `VERDICT: does-not-satisfy` or a review that requests changes sends the ticket back to step 11: `/build-ticket <ticket>`, in the ticket's build session, on the same branch and PR. The build answers every finding of the reviews that sent it back in one round, then the chain runs again from CI. The latest verdict of each review is the one that holds. A ticket gets at most two rounds: each verdict on the PR that sent it back is one, and when a third would send it back, it goes to the user instead, who re-specs its story with `/specification <story>` or splits the ticket with `/to-tickets <story>`.
 
 In these commands, `<epic>`, `<story>`, `<ticket>`, `<map>` and `<issue>` stand for the item's id, written the way the tracker doc writes ids, never a file name or a title.
 
@@ -42,8 +44,8 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 | 9 | story, interface design (when the epic has a user interface) | refined story |
 | 10 | refined story or sized issue or epic | ticket |
 | 11 | ticket, definition of done, coding standards, PR template | pull request |
-| 12 | pull request, ticket, coding standards | review |
-| 13 | pull request, review, ticket | merged pull request |
+| 12 | pull request, ticket, coding standards | acceptance verdict, review |
+| 13 | pull request, acceptance verdict, review | merged pull request |
 | 14 | epic, PRD, merged pull request | retro |
 | `/change-request` | change (outside) or triaged issue, project map | sized issue, story, epic |
 | `/triage` | report (outside), tracker doc | triaged issue, ticket |
@@ -72,10 +74,11 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 | refined story | `/specification` | Epics, stories and tickets |
 | ticket | `/to-tickets`, `/triage` | Epics, stories and tickets |
 | pull request | `/build-ticket` | Code host |
+| acceptance verdict | `/acceptance-review` | Code host |
 | review | `/code-review-and-quality` | Code host |
 | merged pull request | the user | Code host |
 | retro | `/epic-retro` | Retros |
 
 ## Sessions
 
-One role per session, as on a team: product owner (steps 1, 3 to 6, and `/change-request`), architect (2), architect per epic (7), interface designer per epic (8, only when it runs), architect per epic (9 to 10), developer per ticket (11), reviewer per PR (12, always a fresh session). At refinement, the product owner answers the specification's questions in the architect's session. The tracker item is the hand-off between roles: the next session starts from its id, not from a summary. At a boundary inside one role, continue while the next phase needs this one's reasoning; otherwise clear. Keep steps 9 and 10 of one epic in one session when they fit. When `/change-request` finds no project map, setup runs in its session. Build sessions never run in a cloud thread of a Claude project or in a cloud session on several repositories: those read none of a repository's permission rules or hooks, so nothing would keep the merge from the agent.
+One role per session, as on a team: product owner (steps 1, 3 to 6, and `/change-request`), architect (2), architect per epic (7), interface designer per epic (8, only when it runs), architect per epic (9 to 10), developer per ticket (11, and the rework its reviews send back), reviewer per PR (12, always a fresh session, which runs the whole chain). Rework runs in the ticket's build session when it is still there to resume; otherwise a new session starts from the ticket and its PR. At refinement, the product owner answers the specification's questions in the architect's session. The tracker item is the hand-off between roles: the next session starts from its id, not from a summary. At a boundary inside one role, continue while the next phase needs this one's reasoning; otherwise clear. Keep steps 9 and 10 of one epic in one session when they fit. When `/change-request` finds no project map, setup runs in its session. Build sessions never run in a cloud thread of a Claude project or in a cloud session on several repositories: those read none of a repository's permission rules or hooks, so nothing would keep the merge from the agent.

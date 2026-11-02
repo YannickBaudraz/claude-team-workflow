@@ -1,5 +1,5 @@
 {
-  "why": "The acceptance review could not decide a criterion. FLOW.md has no rule for it, and the router's answers vary (back to the build, a hand-over, a fix in the build session); what holds is that it never routes to the merge.",
+  "why": "The acceptance review could not decide a criterion, and the review approved after it. The merge waits: the gap is closed in the ticket's build, or the user records on the PR that they accept the risk, and only then merges. The light answer may hand the choice over instead.",
   "layers": [
     "base",
     "code",
@@ -32,20 +32,21 @@
           "author": {
             "login": "developer"
           },
-          "body": "## Review: Store a new item\n\n**Verdict: approve.**\n\n### Required\nNone.\n\n### Optional\n- **Consider:** name the unit parser.\n"
+          "body": "VERDICT: indeterminate\n\nSubject: PR #12 against ticket #5.\n\nCriterion 2 cannot be checked: no test or output shows the stored unit after two adds.\n"
         },
         {
           "author": {
             "login": "developer"
           },
-          "body": "VERDICT: indeterminate\n\nSubject: PR #12 against ticket #5.\n\nCriterion 2 cannot be checked: no test or output shows the stored unit after two adds.\n"
+          "body": "## Review: Store a new item\n\n**Verdict: approve.**\n\n### Required\nNone.\n\n### Optional\n- **Consider:** name the unit parser.\n"
         }
       ]
     }
   ],
-  "next": "^(?![\\s\\S]*gh (pr|stack) merge)",
-  "light": "^(?![\\s\\S]*gh (pr|stack) merge)",
+  "next": "^(?=[\\s\\S]*/build-ticket\\s+#?5(?![\\w-]))(?:(?!gh (?:pr|stack) merge)[\\s\\S])*?(?:gh pr comment\\s+#?12(?![\\w-])[\\s\\S]*)?$",
+  "light": "^/ask-team$|^(?=[\\s\\S]*/build-ticket\\s+#?5(?![\\w-]))(?:(?!gh (?:pr|stack) merge)[\\s\\S])*?(?:gh pr comment\\s+#?12(?![\\w-])[\\s\\S]*)?$",
   "must": [
-    "indeterminate"
+    "indeterminate",
+    "(?i)risk"
   ]
 }

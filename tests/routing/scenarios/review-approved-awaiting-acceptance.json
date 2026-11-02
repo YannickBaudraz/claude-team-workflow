@@ -1,5 +1,5 @@
 {
-  "why": "The review approved the PR and no acceptance review has run: prove it against its ticket.",
+  "why": "A PR reviewed before the acceptance review came first in the chain: the review approved it and no acceptance review has run. It is read as it stands: the acceptance review still runs before the merge.",
   "layers": [
     "base",
     "code",

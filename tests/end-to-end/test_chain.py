@@ -290,8 +290,9 @@ class Judge(unittest.TestCase):
     STEP = dict(run.read_session([]), answer="Answered.")
     GOOD = {"replies": 4, "finished": True, "number": 12, "branch": "5-add-from-the-page", "body": "Ticket: #5", "commits": ["One"], "attributed": [],
             "ci": {"pytest": True, "mypy": True}, "page": {"contract": {"form": True}, "design": {"button Add": False}, "escapes": False},
-            "status pushed": "in review", "status in the folder": "started", "checkout": True, "verdict": "satisfies", "posted": 1,
-            "main moved": False, "steps": {"build": STEP, "code review": STEP, "security review": STEP, "acceptance review": STEP}}
+            "status pushed": "in review", "status in the folder": "started", "checkout": True, "verdict": "satisfies", "verdict posted": True,
+            "posted": 1, "main moved": False,
+            "steps": {"build": STEP, "acceptance review": STEP, "code review": STEP, "security review": STEP}}
 
     def failing(self, **changes):
         return run.judge({**copy.deepcopy(self.GOOD), **changes})
@@ -312,12 +313,25 @@ class Judge(unittest.TestCase):
                   "the pull request does not link its ticket": {"body": "Nothing"},
                   "the ticket did not move to in review": {"status pushed": "open", "status in the folder": "open"},
                   "the code review posted nothing on the pull request": {"posted": 0},
-                  "the acceptance review printed no verdict": {"verdict": None}}
+                  "the acceptance review printed no verdict": {"verdict": None},
+                  "the acceptance review did not post its verdict on the pull request": {"verdict posted": False}}
         for failure, change in faults.items():
             self.assertIn(failure, self.failing(**change))
 
     def test_a_requested_rework_on_a_sound_build_is_the_chain_s_answer(self):
-        self.assertEqual(self.failing(verdict="does-not-satisfy"), [])
+        stopped = {"build": self.STEP, "acceptance review": self.STEP}
+        self.assertEqual(self.failing(verdict="does-not-satisfy", steps=stopped), [])
+
+    def test_a_does_not_satisfy_stops_the_chain(self):
+        self.assertIn("the chain went on after a does-not-satisfy", self.failing(verdict="does-not-satisfy"))
+
+    def test_any_other_verdict_lets_the_chain_go_on(self):
+        steps = {"build": self.STEP, "acceptance review": self.STEP}
+        for verdict in ("satisfies", "indeterminate", None):
+            self.assertIn("the code and security reviews did not run", self.failing(verdict=verdict, steps=steps))
+
+    def test_without_the_acceptance_review_no_review_ran(self):
+        self.assertIn("the reviews did not run", self.failing(steps={"build": self.STEP}))
 
     def test_a_pass_on_a_broken_page_fails_the_run(self):
         self.assertIn("the acceptance review passed a ticket that fails its own check",

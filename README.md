@@ -23,7 +23,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `install.sh` | Installs all of the above on a machine |
 | `docs/measures.md` | What the workflow measures about its own flow and quality, and how |
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
-| `tests/end-to-end/` | One fixture ticket that touches a screen, built and reviewed in a fresh session per step, read against the harness's own check of the page: what today's build and review chain does, so a change to it shows |
+| `tests/end-to-end/` | One fixture ticket that touches a screen, built in one session and reviewed in a fresh one, read against the harness's own check of the page: what today's build and review chain does, so a change to it shows |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
 | `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands, the touches tests, the parser's tests and the end-to-end harness's tests, builds the page and publishes it to GitHub Pages on every push to `main` |
 

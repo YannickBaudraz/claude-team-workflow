@@ -1,5 +1,5 @@
 {
-  "why": "The acceptance review found a criterion unmet: the ticket goes back to its build.",
+  "why": "The acceptance review found a criterion unmet: the chain stops before the code review, and the ticket goes back to its build.",
   "layers": [
     "base",
     "code",
@@ -28,12 +28,6 @@
         }
       ],
       "comments": [
-        {
-          "author": {
-            "login": "developer"
-          },
-          "body": "## Review: Store a new item\n\n**Verdict: approve.**\n\n### Required\nNone.\n\n### Optional\n- **Consider:** name the unit parser.\n"
-        },
         {
           "author": {
             "login": "developer"
