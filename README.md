@@ -23,8 +23,9 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `install.sh` | Installs all of the above on a machine |
 | `docs/measures.md` | What the workflow measures about its own flow and quality, and how |
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
+| `tests/end-to-end/` | One fixture ticket that touches a screen, built and reviewed in a fresh session per step, read against the harness's own check of the page: what today's build and review chain does, so a change to it shows |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
-| `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands, the touches tests and the parser's tests, builds the page and publishes it to GitHub Pages on every push to `main` |
+| `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands, the touches tests, the parser's tests and the end-to-end harness's tests, builds the page and publishes it to GitHub Pages on every push to `main` |
 
 The community skills are installed from their authors' repositories, not copied here: their licences stay with them, and upgrades come from them, at the commit this repo pins.
 
@@ -43,7 +44,7 @@ The script links this repo's skills into `~/.claude/skills`, so edits here are l
 
 - After installing, removing or updating a skill the workflow uses, update `skills/ask-team/REGISTRY.md`, its Does line included (and `install/` when the list changes), then run `python3 ~/.claude/skills/ask-team/scripts/check-registry.py`.
 - The workflow page follows `SKILL.md` and the registry on its own: every push to `main` rebuilds and publishes it. To preview it, run `python3 docs/build-workflow.py`, then `python3 -m http.server -d docs` and open http://localhost:8000/workflow.html (opened straight from disk, browsers block its fonts).
-- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, batched once a month: change the pin, rerun `install.sh` (for the plugin: start a session, then rerun it once more), and run the routing scenarios. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
+- Versions are pinned: each community skill to a commit in `install/community-skills.txt`, Matt Pocock's plugin to a commit in `install/settings-fragment.json` (auto-update off), and `/ask-team`'s model by its full id. An upgrade is one PR per pin, batched once a month: change the pin, rerun `install.sh` (for the plugin: start a session, then rerun it once more), and run the routing scenarios. A change to the model, or to a skill of the build and review chain, also runs the end-to-end ticket before it reaches `main`: `python3 tests/end-to-end/run.py`, rerun once if it fails, because one model run can fail by chance. Claude Code still updates itself; `install/claude-code-version.txt` records the version the workflow was last checked on, and the registry check notes a difference. Routing reports record the commit, the Claude Code version and the model.
 
 ## Credits
 

@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""A read-only stand-in for gh in routing runs: it answers `gh pr list`, `gh pr view`,
-`gh pr checks`, `gh pr status` and `gh pr diff` from the scenario's pull requests, so the
-router reads a project's PRs the way it would through the real gh. The runner writes them
-to .git/fixture-prs.json, out of sight of the router's own reads. Anything else gh could do
-fails, so a run can never reach a real code host.
+"""A stand-in for gh in fixture runs: it answers `gh pr list`, `gh pr view`, `gh pr checks`,
+`gh pr status` and `gh pr diff` from the fixture's pull requests, so a session reads a project's
+PRs the way it would through the real gh. The runner writes them to .git/fixture-prs.json, out
+of sight of the session's own reads. Anything else gh could do fails, so a run can never reach
+a real code host.
+
+The end-to-end ticket also creates, edits, comments on, reviews and checks out a pull request:
+`gh pr create|edit|comment|review|checkout` change that file, or the project's own git, and
+reach no further. Routing runs stay read-only: their allowed tools hold only the reads. As on
+GitHub, a review cannot approve or request changes on the author's own pull request, and the
+fixture's only login is the author's. A PR pushed to the fixture's `origin` shows its real files,
+commits and diff.
 
 Each PR is an object with the fields gh's --json gives (number, title, state, headRefName,
 baseRefName, body, url, isDraft, author, createdAt, mergedAt, reviewDecision, comments,
@@ -22,16 +29,53 @@ DEFAULTS = {"state": "OPEN", "baseRefName": "main", "isDraft": False, "author": 
             "labels": [], "mergeable": "MERGEABLE"}
 
 
+# gh's options that take a value, so that value is not read as the pull request.
+VALUED = {"--json", "-q", "--jq", "--state", "-s", "--body", "-b", "--body-file", "-F", "--title", "-t",
+          "--base", "-B", "--head", "-H", "--repo", "-R", "--limit", "-L"}
+
+
+def git(*arguments):
+    return subprocess.run(["git", *arguments], capture_output=True, text=True)
+
+
+def state_file():
+    return os.path.join(git("rev-parse", "--git-common-dir").stdout.strip() or ".git", "fixture-prs.json")
+
+
+def pushed(pr):
+    """What git knows of a PR pushed to origin: its head, commits and files."""
+    head, base = f"origin/{pr['headRefName']}", f"origin/{pr['baseRefName']}"
+    sha = git("rev-parse", "--verify", "--quiet", head).stdout.strip()
+    if sha:
+        log = git("log", "--format=%H %s", f"{base}..{head}").stdout.splitlines()
+        pr["headRefOid"] = sha
+        pr["commits"] = [dict(zip(("oid", "messageHeadline"), line.split(" ", 1))) for line in log]
+        pr["files"] = [{"path": path} for path in git("diff", "--name-only", f"{base}...{head}").stdout.split()]
+
+
 def prs():
-    found = subprocess.run(["git", "rev-parse", "--git-dir"], capture_output=True, text=True)
-    path = os.path.join(found.stdout.strip() or ".git", "fixture-prs.json")
+    path = state_file()
     listed = json.load(open(path)) if os.path.exists(path) else []
     for pr in listed:
         for key, value in DEFAULTS.items():
             pr.setdefault(key, value)
         pr.setdefault("url", f"https://github.com/owner/pantry/pull/{pr['number']}")
         pr.setdefault("headRefName", f"pr-{pr['number']}")
+        pushed(pr)
     return listed
+
+
+def save(listed):
+    with open(state_file(), "w", encoding="utf-8") as out:
+        json.dump(listed, out)
+
+
+def body(arguments):
+    """The text of --body or --body-file, or None when neither is given."""
+    path = option(arguments, "--body-file", "-F")
+    if path:
+        return sys.stdin.read() if path == "-" else open(path, encoding="utf-8").read()
+    return option(arguments, "--body", "-b")
 
 
 def option(arguments, *names, default=None):
@@ -59,9 +103,17 @@ def emit(value, arguments):
 
 
 def find(arguments, listed):
-    wanted = next((a for a in arguments if not a.startswith("-")), None)
+    wanted, skip = None, False
+    for argument in arguments:
+        if skip:
+            skip = False
+        elif argument in VALUED:
+            skip = True
+        elif not argument.startswith("-"):
+            wanted = argument
+            break
     if wanted is None:
-        branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
+        branch = git("branch", "--show-current").stdout.strip()
         match = [pr for pr in listed if pr["headRefName"] == branch]
     else:
         wanted = wanted.rstrip("/").split("/")[-1].lstrip("#")
@@ -84,7 +136,8 @@ def human(pr):
 
 def main(arguments):
     if arguments[:1] != ["pr"] or len(arguments) < 2:
-        sys.exit("gh: only `gh pr list|view|checks|status|diff` are available in routing fixtures")
+        sys.exit("gh: only `gh pr list|view|checks|status|diff|create|edit|comment|review|checkout` "
+                 "are available in fixtures")
     verb, rest, listed = arguments[1], arguments[2:], prs()
     if verb == "list":
         state = (option(rest, "--state", "-s", default="open")).upper()
@@ -107,9 +160,50 @@ def main(arguments):
               or "no open pull requests")
     elif verb == "diff":
         pr = find(rest, listed)
-        print("\n".join(f"diff --git a/{f.get('path')} b/{f.get('path')}" for f in pr["files"]))
+        if pr.get("headRefOid"):
+            names = ["--name-only"] if "--name-only" in rest else []
+            print(git("diff", *names, f"origin/{pr['baseRefName']}...{pr['headRefOid']}").stdout, end="")
+        else:
+            print("\n".join(f"diff --git a/{f.get('path')} b/{f.get('path')}" for f in pr["files"]))
+    elif verb == "create":
+        branch = git("branch", "--show-current").stdout.strip()
+        if not git("rev-parse", "--verify", "--quiet", f"origin/{branch}").stdout:
+            sys.exit(f"gh: must first push the current branch to a remote: git push -u origin {branch}")
+        if any(pr["headRefName"] == branch and pr["state"] == "OPEN" for pr in listed):
+            sys.exit(f"gh: a pull request for branch {branch} already exists")
+        number = max((pr["number"] for pr in listed), default=11) + 1
+        listed.append({"number": number, "title": option(rest, "--title", "-t") or git("log", "-1", "--format=%s").stdout.strip(),
+                       "body": body(rest) or "", "headRefName": branch, "baseRefName": option(rest, "--base", "-B", default="main")})
+        save(listed)
+        print(f"https://github.com/owner/pantry/pull/{number}")
+    elif verb == "edit":
+        pr = find(rest, listed)
+        pr["title"] = option(rest, "--title", "-t") or pr["title"]
+        text = body(rest)
+        pr["body"] = pr["body"] if text is None else text
+        save(listed)
+        print(pr["url"])
+    elif verb == "comment":
+        pr = find(rest, listed)
+        pr["comments"].append({"author": {"login": "developer"}, "body": body(rest) or ""})
+        save(listed)
+        print(f"{pr['url']}#issuecomment-{len(pr['comments'])}")
+    elif verb == "review":
+        pr = find(rest, listed)
+        if "--approve" in rest or "-a" in rest or "--request-changes" in rest or "-r" in rest:
+            word = "approve" if "--approve" in rest or "-a" in rest else "request changes on"
+            sys.exit(f"failed to create review: GraphQL: Can not {word} your own pull request (addPullRequestReview)")
+        pr["reviews"].append({"author": {"login": "developer"}, "state": "COMMENTED", "body": body(rest) or ""})
+        save(listed)
+    elif verb == "checkout":
+        pr = find(rest, listed)
+        fetched = git("fetch", "-q", "origin", pr["headRefName"])
+        moved = fetched if fetched.returncode else git("checkout", "-q", *(
+            ["--detach", "FETCH_HEAD"] if "--detach" in rest else [pr["headRefName"]]))
+        if moved.returncode:
+            sys.exit(moved.stderr.strip())
     else:
-        sys.exit(f"gh: `gh pr {verb}` is not available in routing fixtures")
+        sys.exit(f"gh: `gh pr {verb}` is not available in fixtures")
 
 
 if __name__ == "__main__":
