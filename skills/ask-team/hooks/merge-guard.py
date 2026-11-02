@@ -18,6 +18,13 @@ default branch or branch-rule changes made through `gh api`, curl, PowerShell or
 repo commands. For an MCP or plugin tool it refuses any tool whose name says merge, push,
 branch protection or ruleset.
 
+It reads a command the way bash does: quotes, escapes, comments, heredocs (a body fed to a shell
+is read as a script, any other body only for the substitutions an unquoted delimiter runs),
+$'...' strings, case, arithmetic and every $(...), `...`, <(...) and >(...), each checked as a
+command of its own. A # or a << inside quotes is text to it, as to the shell. What it cannot
+follow, or what depends on values it cannot know, such as a heredoc fed to a shell that expands
+variables, it refuses. tests/merge-guard/test_shell_reading.py holds it to that against bash.
+
 It is a filter on the commands the agent runs, not a lock. It cannot see inside a script file
 a command runs. The branch rule on the code host still refuses a direct push to the default
 branch, but with no approval required it does not stop a PR's merge made under the
@@ -65,10 +72,13 @@ API_CLIENTS = {"curl", "wget", "http", "https", "xh", "invoke-restmethod", "irm"
 GRAPHQL_WRITES = re.compile(
     r"\b(mergePullRequest|enablePullRequestAutoMerge|enqueuePullRequest|mergeBranch|createCommitOnBranch|updateRefs?"
     r"|deleteRef|updateRepository|(create|update|delete)BranchProtectionRule|(create|update|delete)RepositoryRuleset)\b")
-SUBSTITUTION = re.compile(r"\$\(([^()]*)\)|`([^`]*)`|<\(([^()]*)\)")
 # What a substitution's output becomes in the command around it: unknown text.
 UNKNOWN = "GUARD_UNKNOWN_OUTPUT"
-HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+# A heredoc's delimiter after <<: a plain word, or one quoted whole. Anything else is read as code.
+DELIMITER = re.compile(r"""(-?)[ \t]*(?:'([A-Za-z0-9_.-]+)'|"([A-Za-z0-9_.-]+)"|\\?([A-Za-z0-9_.-]+))(?=[\s;&|()<>]|$)""")
+SHELL_READS = re.compile(r"(^|[\s;&|(])(bash|sh|zsh|dash|ksh|eval|source|\.)(\s|$)")
+# Where a word ends, so a # after one of these begins a comment.
+WORD_BREAKS = set(" \t\n;&|()<>")
 GH_BUILTINS = {"agent-task", "alias", "api", "attestation", "auth", "browse", "cache", "codespace", "completion", "config",
                "copilot", "extension", "gist", "gpg-key", "issue", "label", "org", "pr", "preview", "project",
                "release", "repo", "ruleset", "run", "search", "secret", "ssh-key", "status", "variable", "workflow",
@@ -116,22 +126,267 @@ def default_branches(directory):
     return names
 
 
-def strip_heredocs(command):
-    """Drop heredoc bodies: text fed to a command is not a command, unless a shell reads it."""
-    lines, kept, ending, run = command.split("\n"), [], None, False
-    for line in lines:
-        if ending is not None:
-            if line.strip() == ending:
-                ending = None
-            elif run:
-                kept.append(line)
+# The escapes of a $'...' string, as bash reads them; \NNN, \xHH, \uHHHH and \cX are handled apart.
+ANSI_ESCAPES = {"a": "\a", "b": "\b", "e": "\x1b", "E": "\x1b", "f": "\f", "n": "\n", "r": "\r", "t": "\t",
+                "v": "\v", "\\": "\\", "'": "'", '"': '"', "?": "?"}
+ANSI_CODES = re.compile(r"([0-7]{1,3})|x([0-9A-Fa-f]{1,2})|u([0-9A-Fa-f]{1,4})|U([0-9A-Fa-f]{1,8})")
+# Contexts in which the shell reads commands, so a # at a word's start begins a comment and << a heredoc.
+COMMAND_CONTEXTS = (None, "$(", "(", "case")
+CASE, ESAC = (re.compile(rf"{word}(?=[\s;&|()<>]|$)") for word in ("case", "esac"))
+
+
+def ansi_value(body):
+    """The text a $'...' string stands for."""
+    out, i = [], 0
+    while i < len(body):
+        if body[i] != "\\" or i + 1 == len(body):
+            out.append(body[i])
+            i += 1
             continue
-        kept.append(line)
-        found = HEREDOC.search(line)
-        if found:
-            ending = found.group(2)
-            run = bool(re.search(r"(^|[\s;&|(])(bash|sh|zsh|dash|ksh|eval|source|\.)(\s|$)", line[:found.start()]))
-    return "\n".join(kept)
+        code = ANSI_CODES.match(body, i + 1)
+        if body[i + 1] in ANSI_ESCAPES:
+            out.append(ANSI_ESCAPES[body[i + 1]])
+            i += 2
+        elif code:
+            octal, *hexes = code.groups()
+            value = int(octal, 8) if octal else int(next(h for h in hexes if h), 16)
+            out.append(chr(value) if value < 0x110000 else "?")
+            i = code.end()
+        elif body[i + 1] == "c" and i + 2 < len(body):
+            out.append(chr(ord(body[i + 2]) & 0x1F))
+            i += 3
+        else:
+            out.append(body[i:i + 2])
+            i += 2
+    return "".join(out)
+
+
+def backtick_inner(text):
+    """What a `...` substitution runs: inside backticks, \\` \\$ and \\\\ stand for the character."""
+    return re.sub(r"\\([`$\\])", r"\1", text)
+
+
+def expands_anything(body):
+    """Whether an unquoted heredoc body holds a $ expansion or a backtick, whose value the guard cannot know."""
+    i = 0
+    while i < len(body):
+        if body[i] == "\\":
+            i += 2
+            continue
+        if body[i] == "`" or re.match(r"\$[A-Za-z_{(0-9?#@*!$-]", body[i:i + 2]):
+            return True
+        i += 1
+    return False
+
+
+def expanded_body(body):
+    """A heredoc body whose delimiter is unquoted, as the shell hands it on: \\$ \\` and \\\\ stand for
+    the character, and a backslash before a line break joins the lines."""
+    return re.sub(r"\\\n", "", re.sub(r"\\([`$\\])", r"\1", body))
+
+
+def shell_code(command, body=False):
+    """The command as the shell reads it, ready for the lexer, and the text of every command
+    substitution in it: $(...), `...`, <(...) and >(...), each replaced in the code by what its
+    output stands for (UNKNOWN), and each to be checked as a command of its own.
+
+    In the code, comments are dropped; a heredoc body that a shell reads is kept and read as a
+    script of its own; any other body is dropped, but the substitutions the shell runs in it when
+    its delimiter is unquoted are kept for checking; a $'...' string becomes its value.
+
+    Quotes, escapes, backticks, $(...), (...), $((...)), ((...)), ${...} and case ... esac are
+    followed, so a #, a << or a quote means there what it means to the shell. Text this reading
+    cannot follow (an unclosed quote or bracket, a heredoc inside backticks, an unusual delimiter)
+    raises ValueError, which refuses the command in a workflow project: guessing could hide one.
+
+    With body=True, the text is a heredoc body whose delimiter is unquoted: the shell reads it as
+    it reads a double-quoted string in which a double quote is plain text."""
+    out, stack, pending, found = [], [("body", None, None)] if body else [], [], []
+    i, n, line_start, word_start = 0, len(command), 0, True
+
+    def open_substitution(kind, width):
+        nonlocal i, word_start
+        stack.append((kind, len(out), i + width))
+        i, word_start = i + width, kind != "`"
+
+    def close_substitution(width):
+        nonlocal i, word_start
+        kind, at, source = stack.pop()
+        text = command[source:i]
+        found.append(backtick_inner(text) if kind == "`" else text)
+        del out[at:]
+        out.append(UNKNOWN)
+        i, word_start = i + width, False
+
+    while i < n:
+        c, top = command[i], (stack[-1][0] if stack else None)
+        if top == "'":
+            stack.pop() if c == "'" else None
+            out.append(c)
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            pair = command[i:i + 2]
+            out.append(pair)
+            word_start = word_start if pair == "\\\n" else False
+            i += 2
+            continue
+        if top == "`":
+            if command.startswith("<<", i):
+                raise ValueError("a heredoc inside backticks")
+            if c == "`":
+                close_substitution(1)
+            else:
+                out.append(c)
+                i += 1
+            continue
+        if top in ('"', "body"):
+            if c == '"' and top == '"':
+                stack.pop()
+            elif c == "`":
+                open_substitution("`", 1)
+                continue
+            elif command.startswith("$((", i):
+                stack.append(("((", None, None))
+                out.append("$((")
+                i += 3
+                continue
+            elif command.startswith("$(", i):
+                open_substitution("$(", 2)
+                continue
+            elif command.startswith("${", i):
+                stack.append(("${", None, None))
+                out.append("${")
+                i += 2
+                continue
+            out.append(c)
+            i += 1
+            continue
+        # Arithmetic, $((...)) or ((...)), and the brackets inside it: no commands, no comments.
+        if top in ("((", "a("):
+            if top == "((" and command.startswith("))", i) or top == "a(" and c == ")":
+                stack.pop()
+                out.append(command[i:i + 2] if top == "((" else c)
+                i += 2 if top == "((" else 1
+                continue
+            if c in "'\"":
+                stack.append((c, None, None))
+            elif c == "`":
+                open_substitution("`", 1)
+                continue
+            elif command.startswith("$(", i) and not command.startswith("$((", i):
+                open_substitution("$(", 2)
+                continue
+            elif command.startswith("${", i):
+                stack.append(("${", None, None))
+                out.append("${")
+                i += 2
+                continue
+            elif c == "(":
+                stack.append(("a(", None, None))
+            out.append(c)
+            i += 1
+            continue
+        commands = top in COMMAND_CONTEXTS
+        if c == "#" and commands and word_start:
+            end = command.find("\n", i)
+            i = n if end == -1 else end
+            continue
+        if command.startswith("$'", i):
+            j = i + 2
+            while j < n and command[j] != "'":
+                j += 2 if command[j] == "\\" else 1
+            if j >= n:
+                raise ValueError("an unclosed $'...' string")
+            out.append(shlex.quote(ansi_value(command[i + 2:j])))
+            i, word_start = j + 1, False
+            continue
+        if commands and command.startswith("<<", i) and not command.startswith("<<<", i) \
+                and not (i and command[i - 1] == "<"):
+            heredoc = DELIMITER.match(command, i + 2)
+            if not heredoc:
+                raise ValueError("a heredoc delimiter the guard cannot read")
+            quoted = heredoc.group(2) or heredoc.group(3) or command[heredoc.start(4) - 1] == "\\"
+            pending.append((next(g for g in heredoc.groups()[1:] if g), heredoc.group(1) == "-",
+                            bool(SHELL_READS.search(command[line_start:i])), not quoted))
+            out.append(command[i:heredoc.end()])
+            i, word_start = heredoc.end(), False
+            continue
+        if c == "\n":
+            out.append(c)
+            i += 1
+            for delimiter, tabs, shell, expands in pending:
+                lines = []
+                while i < n:
+                    end = command.find("\n", i)
+                    line = command[i:n if end == -1 else end]
+                    i = n if end == -1 else end + 1
+                    if (line.lstrip("\t") if tabs else line) == delimiter:
+                        break
+                    lines.append(line + "\n")
+                text = "".join(lines)
+                # An unquoted delimiter: the shell runs the body's substitutions before anything reads
+                # it, and hands it on with each replaced by its output and its escapes taken. What a shell
+                # then reads depends on values the guard cannot know, as with eval "$x".
+                if expands:
+                    if shell and expands_anything(text):
+                        raise ValueError("a heredoc read by a shell, holding values the guard cannot know")
+                    text, inner = shell_code(text, body=True)
+                    text = expanded_body(text)
+                    found.extend(inner)
+                if shell:
+                    code, inner = shell_code(text)
+                    out.append(code)
+                    found.extend(inner)
+            pending, line_start, word_start = [], i, True
+            continue
+        if commands and word_start and CASE.match(command, i):
+            stack.append(("case", None, None))
+            out.append("case")
+            i, word_start = i + 4, False
+            continue
+        if top == "case" and word_start and ESAC.match(command, i):
+            stack.pop()
+            out.append("esac")
+            i, word_start = i + 4, False
+            continue
+        if command.startswith("$((", i) or (commands and word_start and command.startswith("((", i)):
+            opener = "$((" if c == "$" else "(("
+            stack.append(("((", None, None))
+            out.append(opener)
+            i, word_start = i + len(opener), False
+            continue
+        if command.startswith("$(", i) or command.startswith("<(", i) or command.startswith(">(", i):
+            open_substitution("$(", 2)
+            continue
+        if c == "`":
+            open_substitution("`", 1)
+            continue
+        if c == ")" and top == "$(":
+            close_substitution(1)
+            continue
+        # Inside "${...}", a single quote is plain text to the shell.
+        if c in "'\"" and not (c == "'" and top == "${" and any(frame[0] == '"' for frame in stack)):
+            stack.append((c, None, None))
+        elif command.startswith("${", i):
+            stack.append(("${", None, None))
+            out.append("${")
+            i, word_start = i + 2, False
+            continue
+        elif c == "(":
+            stack.append(("(", None, None))
+        elif c == ")" and top == "(":
+            stack.pop()
+        elif c == "}" and top == "${":
+            stack.pop()
+        out.append(c)
+        word_start = c in WORD_BREAKS
+        i += 1
+    if body and stack and stack[-1][0] == "body":
+        stack.pop()
+    if stack:
+        raise ValueError(f"an unclosed {stack[-1][0]}")
+    return "".join(out), found
 
 
 def simple_commands(command):
@@ -467,10 +722,10 @@ def check_command(command, directory, depth=0, origin=None):
     origin = origin or directory
     if depth > 5:
         raise Refused("commands nested too deep to check")
-    command = strip_heredocs(command)
-    for found in SUBSTITUTION.finditer(command):
-        check_command(next(part for part in found.groups() if part is not None), directory, depth + 1, origin)
-    for tokens, piped in simple_commands(SUBSTITUTION.sub(UNKNOWN, command)):
+    code, substitutions = shell_code(command)
+    for text in substitutions:
+        check_command(text, directory, depth + 1, origin)
+    for tokens, piped in simple_commands(code):
         settings = [t for t in tokens if re.match(r"^GIT_CONFIG(_COUNT|_KEY_\d+|_VALUE_\d+|_PARAMETERS)?=", t)]
         tokens = unwrap(tokens)
         if not tokens:
