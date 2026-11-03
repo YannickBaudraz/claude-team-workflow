@@ -1,0 +1,1 @@
+../../skills/ask-team/hooks/merge-guard.py
