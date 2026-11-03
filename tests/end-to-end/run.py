@@ -84,6 +84,7 @@ MOST_REPLIES = 20
 CI = {"pytest": ["python3", "-m", "pytest", "-q"], "ruff check": ["ruff", "check", "src", "tests"],
       "ruff format": ["ruff", "format", "--check", "src", "tests"], "mypy": ["mypy", "src"]}
 ATTRIBUTION = re.compile(r"co-authored-by|generated with|\bclaude\b|\bassistant\b", re.I)
+SKILL_FILE = re.compile(r"skills/([\w-]+)/SKILL\.md\b(?!\.)")
 VERDICT = re.compile(r"VERDICT:\s*(satisfies|does-not-satisfy|indeterminate)")
 REVIEW = re.compile(r"\b(request(?:ing)? changes|changes (?:needed|required|requested)|approved?)\b", re.I)
 # What a session may read, and how it would show in its Read paths or its commands.
@@ -123,6 +124,8 @@ def read_session(lines):
                         found["skills"].append(given["file_path"].split("/")[-2])
                 elif block.get("name") == "Bash":
                     found["commands"].append(given.get("command", ""))
+                    # A skill read with cat or head is read all the same.
+                    found["skills"] += SKILL_FILE.findall(given.get("command", ""))
         elif event.get("type") == "result":
             found.update(answer=event.get("result") or "", id=event.get("session_id"), turns=event.get("num_turns") or 0,
                          cost=event.get("total_cost_usd") or 0, denied=event.get("permission_denials") or [],

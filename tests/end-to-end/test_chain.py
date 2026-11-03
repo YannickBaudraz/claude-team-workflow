@@ -258,6 +258,13 @@ class ReadSession(unittest.TestCase):
     def test_a_skill_loaded_or_read_from_disk_counts(self):
         self.assertEqual(self.found["skills"], ["tdd", "lesson-learned"])
 
+    def test_a_skill_read_by_a_command_counts(self):
+        command = "cat ~/.claude/skills/incremental-implementation/SKILL.md ~/.claude/skills/test-driven-development/SKILL.md"
+        event = {"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "name": "Bash", "input": {"command": command}},
+            {"type": "tool_use", "name": "Bash", "input": {"command": "grep -n Done skills/tdd/SKILL.md.bak"}}]}}
+        self.assertEqual(run.read_session([json.dumps(event)])["skills"], ["incremental-implementation", "test-driven-development"])
+
     def test_a_document_counts_as_read_by_a_read_or_a_command(self):
         self.assertEqual(run.documents_read(self.found), ["interface design", "coding standards"])
 
