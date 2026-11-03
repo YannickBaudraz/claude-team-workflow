@@ -1,5 +1,5 @@
 {
-  "why": "Every story of the epic is refined and no ticket exists yet: break them into tickets.",
+  "why": "Every story of the epic is refined and no ticket exists yet: break them into tickets. The user confirms the breakdown in that session, so the Gate line never has the tickets waiting on an approval.",
   "layers": [
     "base",
     "code",
@@ -11,5 +11,8 @@
     "refined"
   ],
   "next": "^/to-tickets\\s+#?(1|3)(?![\\w-])",
+  "must_not": [
+    "(?im)^\\*\\*Gate:\\*\\*(?:[^\\n]*?[;:.,])?(?![^\\n;:.,]*\\b(?:no|not|never|without|nothing|none|instead|rather|already)\\b)[^\\n;:.,]*?\\b(?:approv\\w*\\s+(?:the\\s+|each\\s+|every\\s+)?(?:tickets?|breakdown)|approval\\s+of\\s+(?:the\\s+)?(?:tickets?|breakdown)|tickets?\\s+(?:are\\s+|be\\s+|is\\s+)?approv\\w*|tickets?[^\\n;:.,]*\\b(?:wait|waits|waiting)\\b[^\\n;:.,]*\\bapprov\\w*|sign\\w*\\s+off\\s+on\\s+(?:the\\s+)?(?:tickets?|breakdown)|approv\\w*[^\\n;:.,]*\\bbefore\\b[^\\n;:.,]*\\bpublish\\w*|publish\\w*[^\\n;:.,]*\\bonce\\s+approved)\\b"
+  ],
   "light": "/to-tickets\\s+#?(1|3)(?![\\w-])"
 }

@@ -1,5 +1,5 @@
 {
-  "why": "/change-request sized a bounded change and wrote its Next line: tickets for it, not the roadmap.",
+  "why": "/change-request sized a bounded change and wrote its Next line: tickets for it, not the roadmap. The user confirms the breakdown in that session, so the Gate line never has the tickets waiting on an approval.",
   "layers": [
     "base",
     "code",
@@ -10,5 +10,8 @@
     "issues/3-list-in-alphabetical-order.md": "Type: issue\nStatus: open\nLabels: enhancement, ready-for-human\n\n# List items in alphabetical order\n\n`pantry list` prints items in the order they were added. Decided: sort by name, case-insensitive. Open: nothing.\n\nSize: bounded\nNext: /to-tickets #3\n"
   },
   "next": "/to-tickets\\s+#?3(?![\\w-])",
+  "must_not": [
+    "(?im)^\\*\\*Gate:\\*\\*(?:[^\\n]*?[;:.,])?(?![^\\n;:.,]*\\b(?:no|not|never|without|nothing|none|instead|rather|already)\\b)[^\\n;:.,]*?\\b(?:approv\\w*\\s+(?:the\\s+|each\\s+|every\\s+)?(?:tickets?|breakdown)|approval\\s+of\\s+(?:the\\s+)?(?:tickets?|breakdown)|tickets?\\s+(?:are\\s+|be\\s+|is\\s+)?approv\\w*|tickets?[^\\n;:.,]*\\b(?:wait|waits|waiting)\\b[^\\n;:.,]*\\bapprov\\w*|sign\\w*\\s+off\\s+on\\s+(?:the\\s+)?(?:tickets?|breakdown)|approv\\w*[^\\n;:.,]*\\bbefore\\b[^\\n;:.,]*\\bpublish\\w*|publish\\w*[^\\n;:.,]*\\bonce\\s+approved)\\b"
+  ],
   "light": "/to-tickets\\s+#?3(?![\\w-])"
 }
