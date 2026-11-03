@@ -14,6 +14,7 @@ One ticket, one branch, one pull request: the developer's role on a team. Review
 - Read the project map (the repo's `CLAUDE.md` or `AGENTS.md` points to it) and the tracker doc, `docs/agents/issue-tracker.md`.
 - Fetch the ticket: its body, acceptance criteria, comments, parent story or epic, and blockers. State its title to the user. When a blocker is still open, stop and say which.
 - Read `GLOSSARY.md`, the ADRs touching this area, and the coding standards and definition of done where the project map puts them.
+- **A ticket on the private path.** When the ticket, or the issue it belongs to, has a `Private record: <link>` line, it fixes a weakness not yet disclosed (`/change-request`, The private path). Check the repository's visibility with `gh repo view --json visibility`. On a public repository, stop: a branch of a public repository is public, so this ticket is built only in a clone of the draft advisory's temporary private fork whose only remote is that fork. Ask the user to start that fork from the advisory when it has none (on GitHub: Start a temporary private fork), clone it into a new folder, check that `git remote -v` lists the fork alone, and work there; read the acceptance criteria from the private record. On a private repository, the ticket builds as any other.
 
 Done when you can list every acceptance criterion and the files and seams it touches.
 
@@ -50,13 +51,15 @@ Done when every acceptance criterion has a test that failed before its slice and
 
 ## 4. Verify
 
-Run the full test suite, type check, lint and build with the project's commands. Check every item of the definition of done that applies before review. Done when everything is green and each criterion has its evidence.
+Run the full test suite, type check, lint and build with the project's commands. Check every item of the definition of done that applies before review. On the private path, no CI reaches the fork: these checks, run here, stand in for it. Done when everything is green and each criterion has its evidence.
 
 ## 5. Open the pull request
 
-Read `~/.claude/skills/finishing-a-development-branch/SKILL.md` and follow it, recommending *push and create a pull request*. Write the body from the repo's pull request template, link the ticket, and move the ticket to the review state the tracker doc names.
+Except on the private path, below: read `~/.claude/skills/finishing-a-development-branch/SKILL.md` and follow it, recommending *push and create a pull request*. Write the body from the repo's pull request template, link the ticket, and move the ticket to the review state the tracker doc names.
 
-Then tell the user the next step: once CI is green, the review chain in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`. The code review and the security review follow in that same session, unless the acceptance verdict sends the ticket back.
+Then, except on the private path, tell the user the next step: once CI is green, the review chain in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`. The code review and the security review follow in that same session, unless the acceptance verdict sends the ticket back.
+
+**On the private path**, on a public repository, push the branch to the fork and nowhere else: from this session when its code-host token reaches the fork, otherwise the user pushes it. Open no pull request, and comment nothing about the fix on the public issue. Then tell the user the next step: the review chain in a **fresh session** opened in the fork's clone, against this branch, starting with `/acceptance-review <branch> against <ticket>`, which reads the criteria from the private record; the code review and the security review follow in that same session. Its verdicts and findings stay in that session and on the private record, never on the public issue. On GitHub, a temporary private fork's pull requests are opened and merged only from the advisory: Compare & pull request, then Merge pull request(s). Tell the user that this merge is theirs, in the web interface, and that GitHub enforces no branch rule there and runs no CI, so the checks this session ran and the user's read of the full diff at that merge stand in for CI and the branch rule at that merge. The fix lands with the release, and publishing the advisory is the user's act too.
 
 ## 6. Rework
 

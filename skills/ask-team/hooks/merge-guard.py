@@ -15,8 +15,9 @@ plain spellings; this hook refuses the others: commands inside chains, subshells
 and pipes into a shell, wrapped in env or sudo, behind gh aliases or options, `git -C
 <path> push`, a push whose target resolves to the default branch, and merges, writes to the
 default branch or branch-rule changes made through `gh api`, curl, PowerShell or gh's own
-repo commands. For an MCP or plugin tool it refuses any tool whose name says merge, push,
-branch protection or ruleset.
+repo commands. It also refuses publishing a repository security advisory through the API: that
+discloses the weakness, so it stays the developer's act, like the merge. For an MCP or plugin
+tool it refuses any tool whose name says merge, push, branch protection or ruleset.
 
 It reads a command the way bash does: quotes, escapes, comments, heredocs (a body fed to a shell
 is read as a script, any other body only for the substitutions an unquoted delimiter runs),
@@ -32,8 +33,8 @@ developer's login, which the agent uses; only a separate login without merge rig
 
 install.sh copies this file to ~/.claude/hooks/, a path that never moves with a branch
 checkout, and /project-setup copies it into the project's .claude/hooks/. It exits at once
-for a command that names no merge, push, branch rule, default branch or GraphQL call, and
-looks for a project map only for a command it would refuse. A command it cannot read is
+for a command that names no merge, push, branch rule, default branch, advisory or GraphQL
+call, and looks for a project map only for a command it would refuse. A command it cannot read is
 refused when it names one of those. It refuses with exit code 2 and says why on stderr.
 
 The table of refused and allowed commands is tests/merge-guard/cases.tsv, run in CI.
@@ -45,7 +46,7 @@ import shlex
 import subprocess
 import sys
 
-QUICK = re.compile(r"\bgit\b|\bgh\b|merge|push|protection|ruleset|graphql|refs|contents|default.?branch|alias", re.I)
+QUICK = re.compile(r"\bgit\b|\bgh\b|merge|push|protection|ruleset|graphql|refs|contents|default.?branch|alias|advisor", re.I)
 PUSH_SETTINGS = r"(?i)(alias\.|remote\..*\.push=|branch\..*\.merge=|push\.default=)"
 GIT_BUILTINS = {"add", "am", "apply", "archive", "bisect", "blame", "branch", "bundle", "cat-file", "checkout",
                 "cherry", "cherry-pick", "clean", "clone", "commit", "config", "describe", "diff", "fetch",
@@ -618,7 +619,7 @@ def read_sent(files, directory):
 
 
 def check_api(arguments, directory, redirected=False):
-    """A merge, a write to the default branch or a branch-rule change through the code host's API."""
+    """A merge, a write to the default branch, a branch-rule change or an advisory's publication through the code host's API."""
     method, endpoint, values, files = api_request(arguments)
     path = re.sub(r"/+", "/", re.sub(r"/\./", "/", endpoint.split("?", 1)[0]))
     defaults = default_branches(directory)
@@ -651,6 +652,11 @@ def check_api(arguments, directory, redirected=False):
     if re.search(r"/repos/[^/]+/[^/]+$", "/" + path.lstrip("/")) and method == "PATCH" \
             and any(v.startswith("default_branch=") for v in values):
         raise Refused("a change of the default branch through the API")
+    if re.search(r"security-advisories/[^/\s]+$", path) and writing:
+        sent = read_sent(files, directory)
+        body = " ".join(values) + " " + (sent or "")
+        if sent is None or redirected or UNKNOWN in body or re.search(r"""\bstate\b\W*published\b""", body):
+            raise Refused("publishing a security advisory, which discloses the weakness; the developer publishes it")
 
 
 def gh_words(arguments):
@@ -831,7 +837,7 @@ def main():
     if reason is None:
         return 0
     print(f"Refused by the team workflow's merge guard: {reason}. In this project, merging a PR, writing to "
-          "the default branch and changing a branch rule are the developer's acts. Do not rephrase the "
+          "the default branch, changing a branch rule and publishing a security advisory are the developer's acts. Do not rephrase the "
           "command to get around this. Print the exact command for the user to run in a terminal or in shell "
           "mode (!), then wait.", file=sys.stderr)
     return 2

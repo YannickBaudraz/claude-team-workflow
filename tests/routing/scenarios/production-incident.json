@@ -1,5 +1,5 @@
 {
-  "why": "A production incident goes to the incident response, not the change flow.",
+  "why": "A production incident takes the workflow's own route: the user mitigates first, then /change-request brings the fix from a failing regression test. Nothing is installed or enabled first.",
   "layers": [
     "base",
     "code",
@@ -7,5 +7,11 @@
     "existing"
   ],
   "ask": "Production incident: this morning's release corrupts users' pantry files, and users are reporting lost data right now.",
-  "next": "incident-response"
+  "next": "(?i)roll(ing|s|ed)?[ -]?back|revert|yank|deprecat|previous (version|release)|restore|flag",
+  "must": [
+    "/change-request"
+  ],
+  "must_not": [
+    "(?i)engineering@|incident-response|/plugin\\b"
+  ]
 }

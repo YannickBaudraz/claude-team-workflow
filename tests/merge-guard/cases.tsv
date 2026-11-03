@@ -57,6 +57,17 @@ refused	workflow	feature-x	Bash	gh api -X DELETE repos/owner/repo/rulesets/42
 refused	workflow	feature-x	Bash	gh api repos/owner/repo/rulesets/42 --method PUT -F enforcement=disabled
 refused	workflow	feature-x	Bash	gh api graphql -f query='mutation { deleteBranchProtectionRule(input: {branchProtectionRuleId: "x"}) { clientMutationId } }'
 refused	workflow	feature-x	Bash	curl -X DELETE https://api.github.com/repos/owner/repo/branches/main/protection
+# Publishing a security advisory, which discloses the weakness: the developer's act
+refused	workflow	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz -f state=published
+refused	workflow	feature-x	Bash	gh api repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz --method PATCH -F state=published
+refused	workflow	feature-x	Bash	curl -X PATCH -H "Authorization: token $T" https://api.github.com/repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz -d '{"state": "published"}'
+refused	workflow	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz --input advisory.json
+refused	workflow	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz --input published.json
+allowed	workflow	feature-x	Bash	gh api repos/owner/repo/security-advisories
+allowed	workflow	feature-x	Bash	gh api -X POST repos/owner/repo/security-advisories -f summary='Item names' -f severity=high
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz -f description='Kept on the private record'
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz --input draft.json
+allowed	plain	feature-x	Bash	gh api -X PATCH repos/owner/repo/security-advisories/GHSA-abcd-1234-wxyz -f state=published
 # Other tools
 refused	workflow	feature-x	Monitor	gh pr merge 5
 refused	workflow	feature-x	mcp__github__merge_pull_request
