@@ -1,5 +1,5 @@
 {
-  "why": "A PR waits for review when the user brings a new change: the new change is sized first, and the waiting PR is named. The light answer gets no request, so it names the waiting review.",
+  "why": "A PR waits for review when the user brings a new change: the new change is sized first, and the waiting PR is named. The light answer gets no request, so it names the waiting review chain, which starts with the acceptance review.",
   "layers": [
     "base",
     "code",
@@ -34,5 +34,5 @@
   "must": [
     "#?12\\b"
   ],
-  "light": "/code-review-and-quality\\s+#?12(?![\\w-])"
+  "light": "/acceptance-review\\s+#?12\\s+against\\s+#?5(?![\\w-])"
 }

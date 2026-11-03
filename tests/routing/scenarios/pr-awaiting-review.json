@@ -1,5 +1,5 @@
 {
-  "why": "The ticket's PR is open, CI is green and nobody has reviewed it: review it in a fresh session.",
+  "why": "The ticket's PR is open, CI is green and nobody has reviewed it: the review chain starts with the acceptance review, in a fresh session.",
   "layers": [
     "base",
     "code",
@@ -29,6 +29,6 @@
       ]
     }
   ],
-  "next": "^/code-review-and-quality\\s+#?12(?![\\w-])",
-  "light": "/code-review-and-quality\\s+#?12(?![\\w-])"
+  "next": "^/acceptance-review\\s+#?12\\s+against\\s+#?5(?![\\w-])",
+  "light": "/acceptance-review\\s+#?12\\s+against\\s+#?5(?![\\w-])"
 }

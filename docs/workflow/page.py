@@ -266,7 +266,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 <div class="ticket-row">
 <section class="ticket" aria-labelledby="band-ticket"><h3 class="band-title" id="band-ticket">Per ticket</h3>
 {flow_html(router, router['ticket'], level=4)}
-<p class="loop-note"><i class="loop"></i>Changes requested at {router['review']} go back to {router['ticket'][0]}</p>
+<p class="loop-note"><i class="loop"></i>A ticket sent back at {router['review']} goes back to {router['ticket'][0]}, at most twice</p>
 </section>
 {arr()}
 {card_html(steps[router['close']])}

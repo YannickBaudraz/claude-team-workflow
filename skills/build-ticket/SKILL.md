@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # Build ticket
 
-One ticket, one branch, one pull request: the developer's role on a team. Reviewing it belongs to another session.
+One ticket, one branch, one pull request: the developer's role on a team. Reviewing it belongs to another session. When the reviews send the ticket back, the rework is this skill's too: when the ticket's pull request is already open, go to step 6 once step 1 is done.
 
 ## 1. Load the ticket and its context
 
@@ -56,4 +56,15 @@ Run the full test suite, type check, lint and build with the project's commands.
 
 Read `~/.claude/skills/finishing-a-development-branch/SKILL.md` and follow it, recommending *push and create a pull request*. Write the body from the repo's pull request template, link the ticket, and move the ticket to the review state the tracker doc names.
 
-Then tell the user the next step: review in a **fresh session** with `/code-review-and-quality <PR>`.
+Then tell the user the next step: once CI is green, the review chain in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`. The code review and the security review follow in that same session, unless the acceptance verdict sends the ticket back.
+
+## 6. Rework
+
+The ticket's pull request is open and its reviews sent it back: a comment starting `VERDICT: does-not-satisfy`, or a review that requests changes. The latest verdict of each review is the one that holds; when none of them sends the ticket back, tell the user what the pull request waits for instead and stop.
+
+- **Count the rounds.** Each verdict on the pull request that sent the ticket back is one. A ticket gets at most two: with a third, stop, tell the user it has used both, and that they re-spec its story with `/specification <story>` or split the ticket with `/to-tickets <story>`.
+- **Take in the findings** of the reviews that sent it back, all of them, on the pull request's branch (in its worktree when it has one). Check each one before changing code; a finding you decline gets its reason.
+- **Answer them in this one round**, as in step 3: a finding about behaviour gets its failing test first, and each commit waits for the user's approval.
+- **Verify** as in step 4 and push. Comment on the pull request what each finding got: the commit that answers it, or why it was declined. The ticket stays in review.
+
+Then tell the user the next step: the whole chain again once CI is green, in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`.

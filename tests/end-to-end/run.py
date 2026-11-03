@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build and review one fixture ticket end to end, the way FLOW.md's steps 11 to 13 do.
+"""Build and review one fixture ticket end to end, the way FLOW.md's steps 11 and 12 do.
 
 The routing scenarios prove which command the router prints. This proves the commands it prints
-work together: a ticket goes through `/build-ticket`, `/code-review-and-quality`, `/security-review`
-and `/acceptance-review`, each in its own fresh session, on the pantry project with a ticket that
-touches a screen (the `screen` layer of tests/routing/layers). What it records is today's chain,
+work together: a ticket goes through `/build-ticket` in its own session, then `/acceptance-review`,
+`/code-review-and-quality` and `/security-review` in one fresh review session, on the pantry project
+with a ticket that touches a screen (the `screen` layer of tests/routing/layers). What it records is today's chain,
 so a change to the chain shows up as a change here.
 
 It runs before any change to the model, or to a skill of the build and review chain, reaches
@@ -26,12 +26,13 @@ undercount them. The skills' own Arguments come from REGISTRY.md, as the router 
 
 What passes: the chain reaches a pull request, CI on it is green, this script's own reading of
 the page (page_check.py) finds every acceptance criterion met, no commit carries an attribution,
-main has not moved, the review is on the pull request, the security review answers, and the
-acceptance review prints a verdict that agrees with page_check.py. The rest is recorded, not
+main has not moved, the acceptance review prints a verdict that agrees with page_check.py and posts
+it on the pull request, and, unless that verdict stops the chain, the review is on the pull request
+and the security review answers. The rest is recorded, not
 judged: touches, the skills each session loaded, the documents it read, what the review asked
 for, and what the page does beyond the ticket. Requested changes or a does-not-satisfy on a sound
-build are the chain's answer, kept as found: the run goes on to the next step and never back to
-the build, so it reads each review on the same pull request.
+build are the chain's answer, kept as found. A does-not-satisfy stops the chain there, as FLOW.md's
+step 12 does, and the run never goes back to the build: rework is not part of it.
 
 A run needs pytest, ruff and mypy on the machine, the fixture's own commands. Each session is a
 full session on your account, so a run costs money and takes a while:
@@ -266,22 +267,33 @@ def build_step(where, args, results, facts):
     return pr
 
 
+def posts(where):
+    state = open_prs(where)[0]
+    return [post.get("body", "") for post in state.get("comments", []) + state.get("reviews", [])]
+
+
 def review_steps(where, args, results, facts, pr):
+    """FLOW.md's step 12, in one fresh session: the acceptance review first, then the code review and the
+    security review, unless the acceptance verdict stops the chain."""
     number = pr["number"]
+    accept = session("acceptance-review", printed("/acceptance-review", PR=number, ticket=TICKET), where, args, results)
+    facts["steps"]["acceptance review"] = accept
+    verdict = VERDICT.search(accept["answer"])
+    facts["verdict"] = verdict.group(1) if verdict else None
+    before = posts(where)
+    facts["verdict posted"] = any(VERDICT.match(post.strip()) for post in before)
+    if facts["verdict"] == "does-not-satisfy" or accept["id"] is None:
+        return
     facts["steps"]["code review"] = session(
-        "code-review", printed("/code-review-and-quality", PR=number), where, args, results)
+        "code-review", printed("/code-review-and-quality", PR=number), where, args, results, resume=accept["id"])
     # The developer's own command in FLOW.md's step 12: the security review reads the current branch.
     checkout = subprocess.run(["gh", "pr", "checkout", str(number), "--detach"], cwd=where, env=args.env, capture_output=True, text=True)
     facts["checkout"] = checkout.returncode == 0 or checkout.stderr.strip()
-    facts["steps"]["security review"] = session("security-review", "/security-review", where, args, results)
-    facts["steps"]["acceptance review"] = session(
-        "acceptance-review", printed("/acceptance-review", PR=number, ticket=TICKET), where, args, results)
-    verdict = VERDICT.search(facts["steps"]["acceptance review"]["answer"])
-    facts["verdict"] = verdict.group(1) if verdict else None
-    state = open_prs(where)[0]
-    posted = state.get("comments", []) + state.get("reviews", [])
-    facts["posted"] = len(posted)
-    facts["review says"] = review_word("\n".join(post.get("body", "") for post in posted))
+    facts["steps"]["security review"] = session(
+        "security-review", "/security-review", where, args, results, resume=accept["id"])
+    after = posts(where)[len(before):]
+    facts["posted"] = len(after)
+    facts["review says"] = review_word("\n".join(after))
 
 
 def judge(facts):
@@ -302,19 +314,27 @@ def judge(facts):
         failures.append("the pull request does not link its ticket")
     if "in review" not in (facts.get("status pushed"), facts.get("status in the folder")):
         failures.append("the ticket did not move to in review")
-    if "code review" not in facts["steps"]:
+    if "acceptance review" not in facts["steps"]:
         return failures + ["the reviews did not run"]
+    sound = not any(not ok for ok in facts["page"]["contract"].values()) and all(facts["ci"].values())
+    if facts.get("verdict") is None:
+        failures.append("the acceptance review printed no verdict")
+    elif facts["verdict"] == "satisfies" and not sound:
+        failures.append("the acceptance review passed a ticket that fails its own check")
+    if facts.get("verdict") and not facts.get("verdict posted"):
+        failures.append("the acceptance review did not post its verdict on the pull request")
+    if facts.get("verdict") == "does-not-satisfy":
+        if "code review" in facts["steps"]:
+            failures.append("the chain went on after a does-not-satisfy")
+        return failures
+    if "code review" not in facts["steps"]:
+        return failures + ["the code and security reviews did not run"]
     if not facts.get("posted"):
         failures.append("the code review posted nothing on the pull request")
     if facts.get("checkout") is not True:
         failures.append(f"gh pr checkout failed: {facts.get('checkout')}")
     if not facts["steps"]["security review"]["answer"].strip():
         failures.append("the security review gave no answer")
-    sound = not any(not ok for ok in facts["page"]["contract"].values()) and all(facts["ci"].values())
-    if facts.get("verdict") is None:
-        failures.append("the acceptance review printed no verdict")
-    elif facts["verdict"] == "satisfies" and not sound:
-        failures.append("the acceptance review passed a ticket that fails its own check")
     return failures
 
 

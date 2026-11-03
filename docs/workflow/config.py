@@ -40,8 +40,8 @@ STEP_SUMMARIES = {
     9: 'Each story is questioned one point at a time, split when it is too big, then checked for gaps.',
     10: 'The work is cut into thin tickets, each one built and merged on its own.',
     11: 'One ticket is built test-first on its own branch, by Claude alone or pairing with you.',
-    12: 'A fresh session reviews the PR for quality and security; you can review it yourself too.',
-    13: 'The PR is checked against its ticket, criterion by criterion, and every automated check has to pass.',
+    12: 'Once CI passes, a fresh session checks the PR against its ticket, then reviews it for quality and security; you can review it yourself too.',
+    13: 'You merge the PR once its ticket is met and the review approves.',
     14: "The finished epic is judged from what it left behind, and Claude's setup is tuned from its sessions.",
 }
 

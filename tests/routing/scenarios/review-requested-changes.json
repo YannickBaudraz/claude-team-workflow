@@ -1,5 +1,5 @@
 {
-  "why": "The review asked for a required change. FLOW.md reads two ways: back to the ticket's build, or the review's findings taken in with /receiving-code-review; either passes.",
+  "why": "The acceptance review satisfied the ticket, then the review asked for a required change: the ticket goes back to its build.",
   "layers": [
     "base",
     "code",
@@ -32,13 +32,19 @@
           "author": {
             "login": "developer"
           },
+          "body": "VERDICT: satisfies\n\nSubject: PR #12 against ticket #5.\n\nAll 2 criteria covered by tests.\n"
+        },
+        {
+          "author": {
+            "login": "developer"
+          },
           "body": "## Review: Store a new item\n\n**Verdict: request changes.**\n\n### Required\n- Adding 1kg to 2kg stores `3.0kg`; the criterion says `3kg`.\n"
         }
       ]
     }
   ],
-  "next": "^(/build-ticket\\s+#?5(?![\\w-])|gh pr checkout\\s+#?12(?![\\w-])|/receiving-code-review)",
-  "light": "/build-ticket\\s+#?5(?![\\w-])|gh pr checkout\\s+#?12(?![\\w-])|/receiving-code-review",
+  "next": "^/build-ticket\\s+#?5(?![\\w-])",
+  "light": "/build-ticket\\s+#?5(?![\\w-])",
   "must": [
     "(?i)request(ed)? changes"
   ]
