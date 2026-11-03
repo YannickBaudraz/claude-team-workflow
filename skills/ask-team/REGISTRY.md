@@ -63,7 +63,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `receiving-code-review` | `obra/superpowers` | auto | 11 Build, rework |  |  | How to act on review feedback: check each point before changing code, never agree blindly. |
 | `/plannotator-review` | `backnotprop/plannotator` | typed | 12 Review chain, the user reviews |  | `<PR or worktree>` | Opens the diff in your browser to annotate; Claude then works through your notes. |
 | `/acceptance-review` | `citypaul/.dotfiles` | hidden | 12 Review chain, first |  | `<PR> against <ticket>`. The ticket is the authoritative contract; with no ticket, the base branch's version of the doc the PR changes. Once the verdict is printed, post it on the PR as a comment that starts with its `VERDICT:` line, so the next session reads it there. | A read-only, criterion-by-criterion proof that a PR meets its ticket or spec, ending in a verdict. |
-| `/ci-cd-and-automation` | `addyosmani/agent-skills` | hidden | 2 Setup, once per project |  | For the code host in the project map. Show each commit and wait for approval. | Sets up CI and its quality gates. |
+| `/ci-cd-and-automation` | `addyosmani/agent-skills` | hidden | 2 Setup, once per project |  | For the code host in the project map. Copy `~/.claude/skills/ask-team/scripts/test-guards.py` into the repo and run it on every pull request, and again when its description is edited, with `--base` the base the PR merges into as the job checks it out (on GitHub's merge commit, `HEAD^1`) and `--body-env` naming a variable that holds the description, never the description written into the command. Then add the test guards row of `~/.claude/skills/ask-team/templates/coding-standards.md` to the coding standards' Enforced by tools, with the command the job runs. | Sets up CI and its quality gates. |
 | `/retro` | `mattpocock/skills` | typed | 14 Retro | writing-for-agents | The sessions of the epic just closed. | Reviews coding sessions and suggests changes to Claude's setup: navigation pointers, automated checks, coding standards. |
 | `writing-for-agents` | `mattpocock/skills` | auto | 14 Retro, under /retro; editing skills or CLAUDE.md |  |  | The writing style for skills, AGENTS.md and CLAUDE.md. |
 | `lesson-learned` | `softaworks/agent-toolkit` | auto | 14 Retro, any time |  |  | Pulls engineering lessons out of recent git history. |
@@ -78,10 +78,11 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 
 A step, check or agent pass enters FLOW.md only with a row here, added in the same PR. **Trigger** is the project fact or risk class that turns it on. **Paid by** is either a step or check removed in the same change (`removal: <what>`) or the measure that will show it earned its cost (`measure: <name>`, a measure of `docs/measures.md`). **Upkeep** is what it adds to maintain: a FLOW.md row, a contract, a page rule, fixtures. After two epics across all projects or eight weeks, whichever comes first, a step whose measure does not show it load-bearing is removed or tiered; a step whose benefit shows in quality (first-pass verdicts, findings fixed before merge, escaped defects, accessibility failures) is judged on those measures, not on the time it adds.
 
-The first cell is plain text, never a backticked command, and the table has no Does column: the checks read those as skills. The table is empty until the first step is added.
+The first cell is plain text, never a backticked command, and the table has no Does column: the checks read those as skills.
 
 | Step | Trigger | Paid by | Upkeep |
 |---|---|---|---|
+| Test guards: every test a PR deletes or newly skips, each with a one-line reason on the PR, read at the merge | every pull request, in a project whose CI runs them | removal: the approval before each commit, outside pair mode | scripts/test-guards.py with its cases; the PR template's Tests section; the CI step |
 
 ## Denied duplicates
 
