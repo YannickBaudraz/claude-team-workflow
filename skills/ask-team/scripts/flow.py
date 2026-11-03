@@ -94,7 +94,7 @@ def step_contracts(text):
     for key, needs, makes in found[0][1:]:
         contracts.append((
             int(key) if key.isdigit() else key.strip("`"),
-            # "interface design (when the epic has a user interface)": needed only in that case, made earlier all the same.
+            # "interface design (when the epic has a graphical interface)": needed only in that case, made earlier all the same.
             [[re.sub(r"\s*\(when [^)]*\)$", "", alt.strip()) for alt in group.split(" or ")]
              for group in needs.split(",") if group.strip() not in ("", "—")],
             [output for output in (name.strip() for name in makes.split(",")) if output]))
