@@ -60,8 +60,8 @@ Move anything discovery already wrote (glossary terms, ADRs) when the map puts i
 For each convention, the repo's own file wins when it has one: the map points at it, and you add only what the workflow needs from the template, showing each added line to the user for approval. When the repo has none, copy the template where the map says, adapted to the project's stack and tools:
 
 - the definition of done, from `definition-of-done.md`;
-- the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow;
-- the PR template, from `pull-request-template.md`, at the code host's path: `.github/pull_request_template.md`, `.gitlab/merge_request_templates/Default.md` or `.gitea/pull_request_template.md`. The workflow needs its ticket link and its definition-of-done checklist.
+- the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. Keep its test guards row only when the project's CI already runs `test-guards.py` on every pull request, with that command; otherwise drop it: `/ci-cd-and-automation` adds it once CI runs them, and `/build-ticket` reads its absence as CI not guarding the tests yet. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow;
+- the PR template, from `pull-request-template.md`, at the code host's path: `.github/pull_request_template.md`, `.gitlab/merge_request_templates/Default.md` or `.gitea/pull_request_template.md`. The workflow needs its ticket link, its reading list before merging with the Tests section the test guards fill, and its definition-of-done checklist.
 
 Done when each convention exists where the map says, every added line was approved, and the user has seen the list.
 

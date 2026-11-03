@@ -1,0 +1,31 @@
+# Lists every test a pull request deletes or newly skips, and fails until the PR's description
+# gives each one a one-line reason. It runs again when the description is edited, so adding a
+# reason clears it without a new push.
+name: Test guards
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-guards-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: List deleted and newly skipped tests, each with its reason on the PR
+        # The checkout is the PR merged into its base, so its first parent, HEAD^1, is exactly that
+        # base; the event's base sha can lag behind it and take in tests other PRs changed.
+        # The description reaches the script as an environment variable, never inside the command,
+        # so nothing written in it is run.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 skills/ask-team/scripts/test-guards.py --base HEAD^1 --body-env PR_BODY
