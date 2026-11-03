@@ -34,13 +34,19 @@ Done when each angle above has its findings with sources, or an explicit "nothin
 
 ## 3. Verdict
 
-Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm. Once they do, close the epic on the tracker, and its parent issue too when this epic was the last one open under it.
+Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm. When the project map's kind is client, the client's decision on the epic counts too: record it in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it in the retro beside the user's confirmation. Once both are in, close the epic on the tracker, and its parent issue too when this epic was the last one open under it.
 
-## 4. Lessons
+## 4. Confirm the project facts
+
+Go through the project map's Project facts table with the user, the kind included: does each fact still hold? A tool may have gained users or a deploy target, or a personal project may have become a client's. Write each value the user confirms or changes, with today's date. A fact that changed sends the work it turns on through `/change-request`: name that work among the action items, with `/change-request <what the changed fact turns on>` as its next command. When the map has no Project facts table yet, propose its rows from the template and the epic's evidence, and add them once the user confirms.
+
+Done when every fact carries today's date.
+
+## 5. Lessons
 
 Call the Skill tool with `lesson-learned` on the epic's commit range, so the engineering lessons come from the code itself.
 
-## 5. Action items and the document
+## 6. Action items and the document
 
 Propose at most about 7 action items, each with an owner and where it lands: a rule in the coding standards the project map names, a check a tool can run, a template change, or a ticket. Apply none of them; the user decides.
 
