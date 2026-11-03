@@ -57,7 +57,7 @@ flow_rows = [(number, cells) for number, cells in flow.main_flow(router) if len(
 steps = [number for number, _ in flow_rows]
 # A gated step's output is approved, as the page reads it too; the merge is step 13's own gate.
 gated = {number for number, cells in flow_rows if flow.approved(cells[-1])}
-# Homes that hold tracker items or pull requests: approved by being published or merged.
+# Homes that hold tracker items or pull requests carry no approval line: a merge approves a pull request.
 NOT_DOCUMENTS = {"Issue tracker", "Epics, stories and tickets", "Code host"}
 contracts = flow.step_contracts(router)
 if contracts is None:

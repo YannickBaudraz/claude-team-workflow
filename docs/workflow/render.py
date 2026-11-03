@@ -59,7 +59,7 @@ def shown_output(output):
     """The output without what the gate mark says, and the gate mark's words.
 
     "Approved.", "reviewed and approved" and "The user merges." move to the mark, which
-    reads "You approve", "You approve before publishing" or "You approve, then merge"."""
+    reads "You approve", "You approve before <something>" or "You approve, then merge"."""
     keep, when, merge = [], '', False
     for sentence in sentences(output):
         if re.fullmatch(r'(both )?approved( by the user)?\.?', sentence, re.I):
