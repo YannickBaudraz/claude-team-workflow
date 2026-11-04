@@ -15,8 +15,9 @@ plain spellings; this hook refuses the others: commands inside chains, subshells
 and pipes into a shell, wrapped in env or sudo, behind gh aliases or options, `git -C
 <path> push`, a push whose target resolves to the default branch, and merges, writes to the
 default branch or branch-rule changes made through `gh api`, curl, PowerShell or gh's own
-repo commands. For an MCP or plugin tool it refuses any tool whose name says merge, push,
-branch protection or ruleset.
+repo commands. It also refuses publishing a repository security advisory through the API: that
+discloses the weakness, so it stays the developer's act, like the merge. For an MCP or plugin
+tool it refuses any tool whose name says merge, push, branch protection or ruleset.
 
 It reads a command the way bash does: quotes, escapes, comments, heredocs (a body fed to a shell
 is read as a script, any other body only for the substitutions an unquoted delimiter runs),
@@ -32,8 +33,8 @@ developer's login, which the agent uses; only a separate login without merge rig
 
 install.sh copies this file to ~/.claude/hooks/, a path that never moves with a branch
 checkout, and /project-setup copies it into the project's .claude/hooks/. It exits at once
-for a command that names no merge, push, branch rule, default branch or GraphQL call, and
-looks for a project map only for a command it would refuse. A command it cannot read is
+for a command that names no merge, push, branch rule, default branch, advisory or GraphQL
+call, and looks for a project map only for a command it would refuse. A command it cannot read is
 refused when it names one of those. It refuses with exit code 2 and says why on stderr.
 
 The table of refused and allowed commands is tests/merge-guard/cases.tsv, run in CI.
@@ -45,7 +46,7 @@ import shlex
 import subprocess
 import sys
 
-QUICK = re.compile(r"\bgit\b|\bgh\b|merge|push|protection|ruleset|graphql|refs|contents|default.?branch|alias", re.I)
+QUICK = re.compile(r"\bgit\b|\bgh\b|merge|push|protection|ruleset|graphql|refs|contents|default.?branch|alias|advisor", re.I)
 PUSH_SETTINGS = r"(?i)(alias\.|remote\..*\.push=|branch\..*\.merge=|push\.default=)"
 GIT_BUILTINS = {"add", "am", "apply", "archive", "bisect", "blame", "branch", "bundle", "cat-file", "checkout",
                 "cherry", "cherry-pick", "clean", "clone", "commit", "config", "describe", "diff", "fetch",
@@ -552,7 +553,8 @@ def check_git(tokens, directory):
 
 
 def api_request(arguments):
-    """The method, the endpoint, the field values and the files a gh api, curl or PowerShell call sends."""
+    """The method, the endpoint, the field values and the files a gh api, curl or PowerShell call sends.
+    A file sent as a field's value is a (name, path) pair, so its text is read as that field's."""
     method, endpoint, values, files, fields = None, None, [], [], False
     index = 0
     while index < len(arguments):
@@ -565,16 +567,44 @@ def api_request(arguments):
         glued = re.match(r"^(?:-X|--method=|--request=)(.+)$", argument)
         if glued:
             method = glued.group(1).upper()
-        elif argument in ("--input", "-InFile", "-infile"):
+        elif argument in ("--input", "-InFile", "-infile", "-T", "--upload-file"):
             fields = True
+            if argument in ("-T", "--upload-file") and method is None:
+                method = "PUT"  # curl's default for an upload
             files.append(following)
             index += 2
             continue
         elif argument.startswith("--input="):
             fields = True
             files.append(argument.split("=", 1)[1])
+        elif argument in ("--expand-data", "--variable", "-K", "--config"):
+            # curl builds what it sends from variables or reads its options from a file: unreadable.
+            fields = True
+            files.append("-")
+            index += 2
+            continue
+        elif argument == "--data-urlencode":
+            # curl's forms: content, =content, name=content, @file, name@file.
+            fields = True
+            named_file = re.match(r"^([^=@]*)@(.*)$", following)
+            if named_file:
+                files.append((named_file.group(1), named_file.group(2)))
+            else:
+                values.append(following)
+            index += 2
+            continue
+        elif argument == "--form":
+            # curl's name=<file sends the file's text as the value; only --form reads < so.
+            fields = True
+            from_file = re.match(r"^([^=]*)=<(.*)$", following)
+            if from_file:
+                files.append((from_file.group(1), from_file.group(2)))
+            else:
+                values.append(following)
+            index += 2
+            continue
         elif argument in ("-f", "-F", "--field", "--raw-field", "-d", "--data", "--data-raw", "--data-binary",
-                          "--json", "-body", "-Body"):
+                          "--data-ascii", "--form-string", "--json", "-body", "-Body"):
             fields = True
             values.append(following)
             index += 2
@@ -595,9 +625,9 @@ def api_request(arguments):
                 endpoint = argument
         index += 1
     for value in values:
-        source = value.split("=", 1)[-1]
+        name, _, source = value.partition("=") if "=" in value else ("", "", value)
         if source.startswith("@"):
-            files.append(source[1:])
+            files.append((name, source[1:]) if name else source[1:])
     if values and any(v in ("-",) for v in values):
         files.append("-")
     return (method or ("POST" if fields else "GET")), (endpoint or ""), values, files
@@ -607,18 +637,19 @@ def read_sent(files, directory):
     """The text of the files a request sends, or None when one cannot be read."""
     texts = []
     for name in files:
+        field, name = name if isinstance(name, tuple) else ("", name)
         if name in ("-", ""):
             return None
         try:
             with open(os.path.join(directory or ".", os.path.expanduser(name)), encoding="utf-8") as sent:
-                texts.append(sent.read())
+                texts.append(f"{field}={sent.read()}" if field else sent.read())
         except OSError:
             return None
     return "\n".join(texts)
 
 
 def check_api(arguments, directory, redirected=False):
-    """A merge, a write to the default branch or a branch-rule change through the code host's API."""
+    """A merge, a write to the default branch, a branch-rule change or an advisory's publication through the code host's API."""
     method, endpoint, values, files = api_request(arguments)
     path = re.sub(r"/+", "/", re.sub(r"/\./", "/", endpoint.split("?", 1)[0]))
     defaults = default_branches(directory)
@@ -651,6 +682,11 @@ def check_api(arguments, directory, redirected=False):
     if re.search(r"/repos/[^/]+/[^/]+$", "/" + path.lstrip("/")) and method == "PATCH" \
             and any(v.startswith("default_branch=") for v in values):
         raise Refused("a change of the default branch through the API")
+    if re.search(r"security-advisories/[^/\s]+$", path) and writing:
+        sent = read_sent(files, directory)
+        body = " ".join(values) + " " + (sent or "")
+        if sent is None or redirected or UNKNOWN in body or re.search(r"""\bstate\b\W*published\b""", body):
+            raise Refused("publishing a security advisory, which discloses the weakness; the developer publishes it")
 
 
 def gh_words(arguments):
@@ -831,7 +867,7 @@ def main():
     if reason is None:
         return 0
     print(f"Refused by the team workflow's merge guard: {reason}. In this project, merging a PR, writing to "
-          "the default branch and changing a branch rule are the developer's acts. Do not rephrase the "
+          "the default branch, changing a branch rule and publishing a security advisory are the developer's acts. Do not rephrase the "
           "command to get around this. Print the exact command for the user to run in a terminal or in shell "
           "mode (!), then wait.", file=sys.stderr)
     return 2

@@ -35,8 +35,23 @@ Before naming any skill, look it up in [REGISTRY.md](REGISTRY.md): its exact com
 - A feature, an improvement or a bug fix the user brings to an existing project: `/change-request <change>`.
 - A bug report or request that arrived from outside: `/triage`. A bounded one it marks ready for an agent is already a ticket, built at step 11; anything bigger is marked ready for a human, and `/change-request <issue>` then sizes it from its brief, without a second grilling.
 - Something broken that resists a first look: `diagnosing-bugs` loads on its own; for a hard one, `/diagnosing-bugs` explicitly.
-- Production incident: `/engineering:incident-response`.
+- Production incident: it comes before everything else in flight. The user mitigates first, as the project's runbook says when it has one, then `/change-request <incident>` brings the fix, starting from a failing regression test. Nothing is installed or enabled first.
+- A suspected security incident or vulnerability, however it arrived: the same route on the private path, from its first step, not through `/triage`, which writes on the tracker and has no Arguments for the private path yet. Its reproduction, its fix and its record stay private until the fix is released.
+- A postmortem's actions: `/change-request <postmortem>`, one session for all of them.
 - A huge, foggy effort: `/change-request <effort>`, like any change. When the way is unclear, its Next line sends the effort to `/wayfinder`; once the map clears, `/change-request <map>` sizes and places it, instead of going straight to step 4.
+
+## Incidents
+
+A production incident takes the workflow's own route, in this order:
+
+1. It is expedite work: it comes before every other item in flight, a ticket being built included.
+2. The user mitigates: rolls back, turns the flag off or restores, as the runbook's first-response section says when the project has one. With no deploy target, a broken published release is yanked or deprecated. An agent may diagnose, read-only; every act on production is the user's.
+3. `/change-request <incident>` fixes it as expedite, with diagnosing-bugs' reproduction, starting from a failing regression test.
+4. When the incident calls for a postmortem, the postmortem follows, and its actions come back through `/change-request <postmortem>`, all in one session.
+
+The answer's Next block holds the mitigation alone, in one short line: what to roll back, turn off, restore, yank or deprecate. What to tell users, and the rest, goes above it or in After that, which starts with `/change-request <incident>`. Never tell the user to install or enable a plugin for an incident. The workflow has no incident skill yet: when one is chosen, it comes in at mitigation, step 2, with its own row in REGISTRY.md, and its plugin's other skills are denied or registered in the same change. Until then, name no skill at mitigation.
+
+A suspected security incident or vulnerability, live or only reported, takes the private path from its first step: everything that describes the weakness (the report, the reproduction, the investigation notes, the failing regression test and the fix) stays in a private place until the fix is released, and on a public repository nothing of it is pushed there or opened there as a PR before the release. A live one is mitigated first, as above. The answer prints `/change-request <the suspected weakness> (private path)`, in its Next block or, for a live one, first in After that, so that session keeps it off any public tracker. It does not go to `/triage`, which writes on the tracker and has no Arguments for the private path yet. `/change-request` and `/build-ticket` say how the path runs.
 
 ## Any time
 

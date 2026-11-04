@@ -37,7 +37,12 @@ def make_repo(root, name, default, workflow):
     run("git", "config", "alias.g", "!git", cwd=path)
     for name, text in (("m.graphql", 'mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'),
                        ("q.json", '{"query": "mutation { mergePullRequest(input: {pullRequestId: \\"x\\"}) { clientMutationId } }"}'),
-                       ("read.graphql", "query { viewer { login } }")):
+                       ("read.graphql", "query { viewer { login } }"),
+                       ("published.json", '{"state": "published"}'),
+                       ("word.txt", "published"),
+                       ("body.json", '{"state": "published"}'),
+                       ("curl.cfg", 'data = "{\\"state\\": \\"published\\"}"'),
+                       ("draft.json", '{"state": "draft", "summary": "Item names"}')):
         with open(os.path.join(path, name), "w", encoding="utf-8") as out:
             out.write(text)
     if workflow:

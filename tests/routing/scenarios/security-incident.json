@@ -1,0 +1,18 @@
+{
+  "why": "A live security incident takes the incident route on the private path: the Next block is the user's mitigation, and /change-request marked for the private path comes after it. The router prints no /triage and no plugin to install.",
+  "layers": [
+    "base",
+    "code",
+    "setup",
+    "existing"
+  ],
+  "ask": "Security incident: the release everyone has is being exploited. A shared list with an item named `../../.bashrc` makes `pantry add` overwrite files in users' home folders, and two users wrote to me privately that it happened to them this morning.",
+  "next": "(?i)roll(ing|s|ed)?[ -]?back|revert|yank|deprecat|previous (version|release)|restore|flag",
+  "must": [
+    "/change-request\\b[^\\n]*private path"
+  ],
+  "must_not": [
+    "(?i)engineering@|incident-response|/plugin\\b",
+    "(?m)^\\s*/triage\\b"
+  ]
+}
