@@ -39,6 +39,9 @@ def make_repo(root, name, default, workflow):
                        ("q.json", '{"query": "mutation { mergePullRequest(input: {pullRequestId: \\"x\\"}) { clientMutationId } }"}'),
                        ("read.graphql", "query { viewer { login } }"),
                        ("published.json", '{"state": "published"}'),
+                       ("word.txt", "published"),
+                       ("body.json", '{"state": "published"}'),
+                       ("curl.cfg", 'data = "{\\"state\\": \\"published\\"}"'),
                        ("draft.json", '{"state": "draft", "summary": "Item names"}')):
         with open(os.path.join(path, name), "w", encoding="utf-8") as out:
             out.write(text)

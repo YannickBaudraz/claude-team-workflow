@@ -553,7 +553,8 @@ def check_git(tokens, directory):
 
 
 def api_request(arguments):
-    """The method, the endpoint, the field values and the files a gh api, curl or PowerShell call sends."""
+    """The method, the endpoint, the field values and the files a gh api, curl or PowerShell call sends.
+    A file sent as a field's value is a (name, path) pair, so its text is read as that field's."""
     method, endpoint, values, files, fields = None, None, [], [], False
     index = 0
     while index < len(arguments):
@@ -566,16 +567,44 @@ def api_request(arguments):
         glued = re.match(r"^(?:-X|--method=|--request=)(.+)$", argument)
         if glued:
             method = glued.group(1).upper()
-        elif argument in ("--input", "-InFile", "-infile"):
+        elif argument in ("--input", "-InFile", "-infile", "-T", "--upload-file"):
             fields = True
+            if argument in ("-T", "--upload-file") and method is None:
+                method = "PUT"  # curl's default for an upload
             files.append(following)
             index += 2
             continue
         elif argument.startswith("--input="):
             fields = True
             files.append(argument.split("=", 1)[1])
+        elif argument in ("--expand-data", "--variable", "-K", "--config"):
+            # curl builds what it sends from variables or reads its options from a file: unreadable.
+            fields = True
+            files.append("-")
+            index += 2
+            continue
+        elif argument == "--data-urlencode":
+            # curl's forms: content, =content, name=content, @file, name@file.
+            fields = True
+            named_file = re.match(r"^([^=@]*)@(.*)$", following)
+            if named_file:
+                files.append((named_file.group(1), named_file.group(2)))
+            else:
+                values.append(following)
+            index += 2
+            continue
+        elif argument == "--form":
+            # curl's name=<file sends the file's text as the value; only --form reads < so.
+            fields = True
+            from_file = re.match(r"^([^=]*)=<(.*)$", following)
+            if from_file:
+                files.append((from_file.group(1), from_file.group(2)))
+            else:
+                values.append(following)
+            index += 2
+            continue
         elif argument in ("-f", "-F", "--field", "--raw-field", "-d", "--data", "--data-raw", "--data-binary",
-                          "--json", "-body", "-Body"):
+                          "--data-ascii", "--form-string", "--json", "-body", "-Body"):
             fields = True
             values.append(following)
             index += 2
@@ -596,9 +625,9 @@ def api_request(arguments):
                 endpoint = argument
         index += 1
     for value in values:
-        source = value.split("=", 1)[-1]
+        name, _, source = value.partition("=") if "=" in value else ("", "", value)
         if source.startswith("@"):
-            files.append(source[1:])
+            files.append((name, source[1:]) if name else source[1:])
     if values and any(v in ("-",) for v in values):
         files.append("-")
     return (method or ("POST" if fields else "GET")), (endpoint or ""), values, files
@@ -608,11 +637,12 @@ def read_sent(files, directory):
     """The text of the files a request sends, or None when one cannot be read."""
     texts = []
     for name in files:
+        field, name = name if isinstance(name, tuple) else ("", name)
         if name in ("-", ""):
             return None
         try:
             with open(os.path.join(directory or ".", os.path.expanduser(name)), encoding="utf-8") as sent:
-                texts.append(sent.read())
+                texts.append(f"{field}={sent.read()}" if field else sent.read())
         except OSError:
             return None
     return "\n".join(texts)
