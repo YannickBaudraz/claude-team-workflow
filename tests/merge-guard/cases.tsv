@@ -149,6 +149,112 @@ allowed	workflow	feature-x	Bash	gh pr edit 5 --add-label ready
 allowed	workflow	feature-x	Bash	gh pr review 5 --comment -b "Looks right; the developer merges"
 allowed	workflow	feature-x	Bash	git p origin feature-x
 allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Uri https://api.github.com/repos/o/r/pulls/5
+# A command after a reserved word (then, do, else, elif, !) is checked like any other
+refused	workflow	feature-x	Bash	if true; then gh pr merge 5; fi
+refused	workflow	feature-x	Bash	if gh pr checks 5; then gh pr merge 5 --squash; else echo failing; fi
+refused	workflow	feature-x	Bash	if false; then :; elif true; then git push origin main; fi
+refused	workflow	feature-x	Bash	for x in 1; do gh pr merge 5; done
+refused	workflow	feature-x	Bash	until gh pr merge 5; do sleep 10; done
+refused	workflow	feature-x	Bash	! gh pr merge 5
+refused	workflow	feature-x	Bash	coproc gh pr merge 5
+refused	workflow	feature-x	Bash	for n in 5 6; do gh api -X PUT repos/o/r/pulls/$n/merge; done
+refused	workflow	feature-x	Bash	for u in a b; do curl -X PUT "$u"; done
+refused	workflow	feature-x	Bash	while read u; do gh api -X PUT "$u"; done < urls.txt
+allowed	workflow	feature-x	Bash	for f in *.md; do echo "$f"; done
+allowed	workflow	feature-x	Bash	if gh pr checks 5; then echo "ready to merge"; fi
+allowed	workflow	feature-x	Bash	for n in 5 6; do gh api -X POST repos/o/r/issues/$n/comments -f body=x; done
+# An API write whose endpoint holds a variable or a substitution: refused when the endpoint could be a protected path
+refused	workflow	feature-x	Bash	curl -X PUT "$URL"
+refused	workflow	feature-x	Bash	curl -s -X PUT "$URL"
+refused	workflow	feature-x	Bash	curl -sXPUT "$URL"
+refused	workflow	feature-x	Bash	curl -T body.json "$URL"
+refused	workflow	feature-x	Bash	curl -fsSL -X POST -H "Authorization: Bearer $GITHUB_TOKEN" "$URL" -d '{"base": "main", "head": "feature-x"}'
+refused	workflow	feature-x	Bash	URL=https://api.github.com/repos/o/r/pulls/5/merge; curl -X PUT "$URL"
+refused	workflow	feature-x	Bash	curl -X PUT "$(cat endpoint.txt)"
+refused	workflow	feature-x	Bash	curl -X PUT "https://api.github.com/$ENDPOINT"
+refused	workflow	feature-x	Bash	curl -X PUT "$GITHUB_API_URL/$ENDPOINT"
+refused	workflow	feature-x	Bash	curl -X PUT "https://ghe.example.com/api/v3/$ENDPOINT"
+refused	workflow	feature-x	Bash	gh api -X PUT "$EP"
+refused	workflow	feature-x	Bash	gh api "$EP" -f body=x
+refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/$TAIL
+refused	workflow	feature-x	Bash	gh api -X PUT "repos/o/r/${TAIL}"
+refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/pulls/5/$ACTION
+refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/$KIND/$N/merge
+refused	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/git/refs/heads/$B -f sha=abc -F force=true
+refused	workflow	feature-x	Bash	gh api -X PATCH "repos/o/r/git/refs/$REF" -f sha=abc
+refused	workflow	feature-x	Bash	gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH"
+refused	workflow	feature-x	Bash	gh api -X DELETE repos/o/r/branches/main/$RULE
+refused	workflow	feature-x	Bash	gh api -X PATCH repos/$GITHUB_REPOSITORY -f default_branch=feature-x
+refused	workflow	main	Bash	gh api -X PATCH repos/{owner}/{repo}/git/refs/heads/{branch} -f sha=abc
+refused	workflow	feature-x	Bash	curl -X "$METHOD" https://api.github.com/repos/o/r/merges -d '{"base": "main", "head": "feature-x"}'
+refused	workflow	feature-x	Bash	curl -X "$METHOD" "$URL" -d "$BODY"
+refused	workflow	feature-x	Bash	wget --method=PUT -O- "$URL"
+refused	workflow	feature-x	Bash	http PUT "$URL"
+refused	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Put -Uri $u
+refused	workflow	feature-x	PowerShell	Invoke-RestMethod -ContentType 'application/json' -Method Post -Uri "$base/$path" -Body $b
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/issues/$N/comments -f body=x
+allowed	workflow	feature-x	Bash	gh api repos/{owner}/{repo}/issues/$N/comments -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST repos/{owner}/{repo}/issues/$N/labels -f 'labels[]=ready'
+allowed	workflow	feature-x	Bash	gh api -X PUT repos/$OWNER/$REPO/issues/$N/labels -f 'labels[]=ready'
+allowed	workflow	feature-x	Bash	gh api -X DELETE repos/o/r/issues/$N/labels/$LABEL
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/issues/$N -f state=closed
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/issues/comments/$ID -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/pulls/$N/comments -f body=x -f commit_id=abc -f path=a.md -F line=1
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/pulls/$N/reviews -f event=COMMENT -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/pulls/$N/requested_reviewers -f 'reviewers[]=me'
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/pulls/$N -f title=x
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/releases -f tag_name="v$VERSION" -f name="v$VERSION"
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/releases/$RELEASE_ID -f draft=false
+allowed	workflow	feature-x	Bash	gh api -X DELETE repos/o/r/releases/$ID
+allowed	workflow	feature-x	Bash	gh api -X POST repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${SHA}" -f state=success -f context=ci
+allowed	workflow	feature-x	Bash	gh api -X PATCH "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" -f body=x
+allowed	workflow	feature-x	Bash	gh api -X DELETE repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/$GITHUB_REPOSITORY -f description=x
+allowed	workflow	feature-x	Bash	gh api -X POST repos/$OWNER/$REPO/git/refs -f ref="refs/heads/$BRANCH" -f sha=$SHA
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/git/refs/heads/feature-$N -f sha=abc
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/{owner}/{repo}/git/refs/heads/{branch} -f sha=abc
+allowed	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/docs/$FILE -f message=x -f content=eA== -f branch=feature-x
+allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/security-advisories/$GHSA -f summary=x
+allowed	workflow	feature-x	Bash	gh api -X PUT "repos/o/r/actions/secrets/$NAME" -f encrypted_value=x -f key_id=y
+allowed	workflow	feature-x	Bash	gh api -X POST orgs/$ORG/teams -f name=x
+allowed	workflow	feature-x	Bash	gh api "$EP"
+allowed	workflow	feature-x	Bash	gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open"
+allowed	workflow	feature-x	Bash	curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/5/comments" -d '{"body": "x"}'
+allowed	workflow	feature-x	Bash	curl -fsSL -X POST "https://api.github.com/repos/o/r/issues/$N/comments" -d "{\"body\": \"$MSG\"}"
+allowed	workflow	feature-x	Bash	curl -G --data-urlencode "q=repo:o/r is:open" "$GITHUB_API_URL/search/issues"
+allowed	workflow	feature-x	Bash	curl -X POST "$GITHUB_API_URL/user/repos" -d '{"name": "x"}'
+allowed	workflow	feature-x	Bash	curl -fsSL "$URL" -o out.json
+allowed	workflow	feature-x	Bash	curl -s "$URL" | jq .
+allowed	workflow	feature-x	Bash	curl -X POST "https://hooks.slack.com/services/$T/$B/$K" -d '{"text": "x"}'
+allowed	workflow	feature-x	Bash	curl -X PUT "$BASE_URL/api/items/5" -H 'Content-Type: application/json' -d '{"name": "x"}'
+allowed	workflow	feature-x	Bash	curl -X DELETE "$BASE_URL/api/items/$ID"
+allowed	workflow	feature-x	Bash	curl -X PATCH "http://localhost:$PORT/api/items/$ID" -d '{"name": "x"}'
+allowed	workflow	feature-x	Bash	curl -X PUT "http://localhost:3000/$RESOURCE/$ID" -d '{}'
+allowed	workflow	feature-x	Bash	curl -X POST "http://127.0.0.1:$PORT/$ENDPOINT" -d '{}'
+allowed	workflow	feature-x	Bash	curl -fsSL https://example.com/install.sh | sh
+allowed	workflow	feature-x	Bash	curl https://example.com/install.sh -sSf | sh -s -- -y
+allowed	workflow	feature-x	Bash	wget -qO- https://example.com/install.sh | sh
+allowed	workflow	feature-x	Bash	source <(curl -s https://example.com/env.sh)
+allowed	workflow	feature-x	Bash	http POST "$API/repos/o/r/issues/5/comments" body=x
+allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/o/r/issues/$n/comments" -Body '{"body": "x"}'
+allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Uri $u
+# A ref or a branch given as a file is read; a file the guard cannot read is refused
+refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@ref-main.txt -f sha=abc
+refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@missing.txt -f sha=abc
+refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@empty.txt -f sha=abc
+refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@- -f sha=abc < ref-main.txt
+refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@/dev/stdin -f sha=abc < ref-main.txt
+refused	workflow	feature-x	Bash	curl -X POST https://api.github.com/repos/o/r/git/refs --data-urlencode ref@ref-main.txt -d sha=abc
+refused	workflow	feature-x	Bash	curl -X POST https://api.github.com/repos/o/r/git/refs --form 'ref=<ref-main.txt' -F sha=abc
+refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/README.md -f message=x -f content=eA== -F branch=@branch-main.txt
+refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/README.md -f message=x -f content=eA== -F branch=@missing.txt
+refused	trunk	trunk	Bash	gh api -X PUT repos/o/r/contents/README.md -f message=x -f content=eA== -F branch=@branch-trunk.txt
+refused	workflow	feature-x	Bash	curl -X PATCH https://api.github.com/repos/o/r --data-urlencode default_branch@branch-feature.txt
+allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@ref-feature.txt -f sha=abc
+allowed	workflow	feature-x	Bash	curl -X POST https://api.github.com/repos/o/r/git/refs --data-urlencode ref@ref-feature.txt -d sha=abc
+allowed	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/README.md -f message=x -f content=eA== -F branch=@branch-feature.txt
+allowed	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/a.md -f message=x -F content=@branch-main.txt -f branch=feature-x
 # Indirect pushes: refspecs, git settings, aliases, variables, eval, wrappers
 refused	workflow	feature-x	Bash	git push origin HEAD:heads/main
 refused	workflow	feature-x	Bash	git push origin heads/main
@@ -266,6 +372,9 @@ allowed	plain	main	Bash	git push origin main
 allowed	plain	feature-x	Bash	gh pr merge 5
 allowed	plain	feature-x	Bash	gh api -X DELETE repos/owner/repo/branches/main/protection
 allowed	plain	feature-x	mcp__github__merge_pull_request	
+allowed	plain	feature-x	Bash	if true; then gh pr merge 5; fi
+allowed	plain	feature-x	Bash	curl -X PUT "$URL"
+allowed	plain	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@ref-main.txt -f sha=abc
 # A command aimed at a workflow repo from elsewhere is still refused
 refused	plain	feature-x	Bash	git -C WORKFLOW push origin main
 refused	plain	feature-x	Bash	cd WORKFLOW && git push origin main

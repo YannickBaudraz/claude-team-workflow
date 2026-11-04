@@ -42,7 +42,13 @@ def make_repo(root, name, default, workflow):
                        ("word.txt", "published"),
                        ("body.json", '{"state": "published"}'),
                        ("curl.cfg", 'data = "{\\"state\\": \\"published\\"}"'),
-                       ("draft.json", '{"state": "draft", "summary": "Item names"}')):
+                       ("draft.json", '{"state": "draft", "summary": "Item names"}'),
+                       ("ref-main.txt", "refs/heads/main\n"),
+                       ("ref-feature.txt", "refs/heads/feature-x\n"),
+                       ("branch-main.txt", "main\n"),
+                       ("branch-feature.txt", "feature-x\n"),
+                       ("branch-trunk.txt", "trunk\n"),
+                       ("empty.txt", "")):
         with open(os.path.join(path, name), "w", encoding="utf-8") as out:
             out.write(text)
     if workflow:
