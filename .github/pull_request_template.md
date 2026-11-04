@@ -16,9 +16,9 @@
 
 ## Tests
 
-<The tests this PR adds, edits or deletes, one line each with its file.>
+<The tests this PR adds or edits, one line each with its file. A test it deletes or skips goes only on its test guards line below.>
 
-**Test guards:** <each line the test guards print, with its one-line reason in place of the placeholder; "none" when they list nothing>
+**Test guards:** <each line the test guards print, as printed, with its one-line reason in place of the placeholder; "none" when they list nothing>
 
 ## Screenshots
 
@@ -30,7 +30,7 @@
 
 **Blast radius:** <who or what this can affect if it is wrong>
 
-**Full diff:** <"read it" for a one-way door, a wide blast radius, or a change built while CI does not run the test guards; otherwise "not needed">
+**Full diff:** <"read it" for a one-way door, a wide blast radius, or a trivial or bounded change in an existing codebase whose CI does not run its check command yet; otherwise "not needed">
 
 ## Summary
 

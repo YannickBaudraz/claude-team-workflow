@@ -45,11 +45,17 @@ Read both files fully and follow them:
 - `~/.claude/skills/incremental-implementation/SKILL.md`
 - `~/.claude/skills/test-driven-development/SKILL.md`
 
-Each acceptance criterion is a slice: red, green, refactor, using the project's own test commands. Commit each slice once its tests pass, without stopping for the user's approval: the pull request is where the user reads the work, and CI's test guards list every test the branch deletes or newly skips. Messages are written as the user would write them, with no attribution to any tool or assistant.
+Each acceptance criterion is a slice: red, green, refactor, using the project's own test commands. Commit each slice once its tests pass, without stopping for the user's approval: the pull request is where the user reads the work, and the test guards list every test the branch deletes or newly skips, each with its reason (step 5). Messages are written as the user would write them, with no attribution to any tool or assistant.
 
 When the arguments include `pair <dials>`, also read `~/.claude/skills/pair/SKILL.md` fully and work every slice under those dials. Pairing changes how this step is worked with the user, not the steps around it: the ticket is still claimed, verified and opened as a pull request as below. When pairing, before each commit, show the user the change and the message, then commit once they approve. No dial lifts that approval, `autonomy=weapons-free` included.
 
-The coding standards' *Enforced by tools* table says whether the project's CI runs the test guards: it does when the table has the test guards row, *in CI on every PR*, with its command filled in rather than `<command>`. Until it does, the guards still run in this session before the pull request opens (step 5), but nothing on the code host checks their reasons. So also add a characterization test around any existing code the ticket changes that no test covers yet, and ask for a full-diff read at the merge.
+**A small change in an existing codebase whose CI does not run its check command yet** still goes through this skill, without waiting for the missing CI. It takes this path when all three hold:
+
+- the project is an existing codebase: its git history shows code from before it was set up with the workflow;
+- the change is trivial or bounded: the ticket sits under no story or epic, so it has no parent, or its parent reads `Size: Bounded`. That covers an issue `/change-request` sized as bounded, built as it is or through the ticket written from it, and a request `/triage` marked `ready-for-agent`. The workflow sizes nothing as trivial yet, so a trivial change comes the same ways;
+- the project's CI does not yet run its check command on every pull request. That command is the full test suite, type check, lint and build, and the test guards with their reasons checked; the dependency and secret scan and the accessibility check join it in later changes to the workflow. Read it from the project map's CI row and the pipeline files: the path applies when the row reads none, or the pipeline leaves out any of these that the project has, as its own commands show (the coding standards' *Enforced by tools*, its package scripts or Makefile). A project with no type checker or no build step needs none in CI.
+
+On this path, run that command in this session: step 4 runs the suite, type check, lint and build, and step 5 the test guards. Also add a characterization test around any existing code the ticket changes that no test covers yet, one that pins what the code does today, and ask for a full-diff read at the merge (step 5). That read stands in for CI's guards and for the approval of each commit.
 
 Done when every acceptance criterion has a test that failed before its slice and passes now.
 
@@ -63,10 +69,10 @@ Except on the private path, below: read `~/.claude/skills/finishing-a-developmen
 
 The template puts what the user reads before merging first, in reading order. In its Tests section, which you add to the body when an older template has none:
 
-- list the tests the branch adds, edits or deletes;
-- run the test guards on the branch, `python3 ~/.claude/skills/ask-team/scripts/test-guards.py --base origin/<default branch>`, and copy each line they print with a one-line reason in place of the placeholder: why the test goes or is skipped. When CI runs the guards, it fails until every line has its reason.
+- list the tests the branch adds or edits;
+- run the test guards on the branch, `python3 ~/.claude/skills/ask-team/scripts/test-guards.py --base origin/<default branch>`, and copy each line they print as it is printed, with a one-line reason in place of the placeholder: why the test goes or is skipped. A test the branch deletes or skips goes there only, on its line, never as a bare entry of the list. When CI runs the guards, it fails until every line has its reason, and it reads none written in an HTML comment or a code block.
 
-Ask for the full diff under *Merge danger* when the door is one-way, the blast radius is wide, or CI does not run the test guards yet.
+Ask for the full diff under *Merge danger* when the door is one-way, the blast radius is wide, or the change took step 3's path for a small change in an existing codebase whose CI does not run its check command yet.
 
 Then, except on the private path, tell the user the next step: once CI is green, the review chain in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`. The code review and the security review follow in that same session, unless the acceptance verdict sends the ticket back.
 

@@ -2,6 +2,8 @@
 repo with the case's files on main and on a branch, and checks how it reads a PR's description.
 
 Run: python3 -m unittest discover tests/test-guards
+TEST_GUARDS_SCRIPT=<path> runs the same tests against another copy of the script, such as the
+one on main, to see which of them a change makes pass.
 """
 import os
 import re
@@ -11,9 +13,10 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SCRIPT = os.path.join(HERE, "..", "..", "skills", "ask-team", "scripts", "test-guards.py")
+SCRIPT = os.environ.get("TEST_GUARDS_SCRIPT") or os.path.join(HERE, "..", "..", "skills", "ask-team", "scripts",
+                                                              "test-guards.py")
 CASES = os.path.join(HERE, "cases.md")
-LISTED = re.compile(r"^- `(.+)` (deleted|newly skipped)(?: \((?:old|new) line \d+\))?: ")
+LISTED = re.compile(r"^- `(.+)` (deleted|newly skipped|changed)(?: \((?:old|new) line \d+\))?: ")
 
 
 def side(body, label):
@@ -34,7 +37,7 @@ def read_cases():
         arguments = re.search(r"^Arguments: (.+)$", rest, re.M)
         files = {path: (side(body, "Before"), side(body, "After"))
                  for path, body in re.findall(r"^File: ([^\n]+)\n(.*?)(?=^File: |^Listed: |\Z)", rest, re.M | re.S)}
-        listed = set(re.findall(r"^Listed: (.+) (deleted|newly skipped)$", rest, re.M))
+        listed = set(re.findall(r"^Listed: (.+) (deleted|newly skipped|changed)$", rest, re.M))
         cases[name.strip()] = dict(arguments=arguments.group(1).split() if arguments else [], files=files, listed=listed,
                                    nothing=bool(re.search(r"^Listed: nothing$", rest, re.M)))
     return cases
@@ -157,8 +160,56 @@ class Reasons(unittest.TestCase):
             self.assertEqual(done.returncode, 1, done.stdout)
             self.assertIn("- `src/cart.test.js::adds` deleted (old line 1): <one-line reason>", done.stdout)
             with open(path, "a", encoding="utf-8") as file:
-                file.write("- src/cart.test.js::adds: one item is added by the cart's own tests now\n")
+                file.write("- src/cart.test.js::adds deleted: one item is added by the cart's own tests now\n")
             self.assertEqual(guards(root, "--body-file", path).returncode, 0)
+
+    def test_a_line_without_the_kind_is_not_a_reason(self):
+        # As the Tests section's own list of tests would name them.
+        done = self.with_body("## Tests\n\n- `tests/test_cart.py::test_remove`: the feature is gone\n"
+                              "- `tests/test_cart.py::test_add` edited for the new prices\n")
+        self.assertEqual(done.returncode, 1, done.stdout)
+
+    def test_a_kind_word_or_punctuation_is_not_a_reason(self):
+        for line in ("- `tests/test_cart.py::test_remove` deleted.", "- `tests/test_cart.py::test_remove` deleted: .",
+                     "- `tests/test_cart.py::test_remove` deleted: deleted", "| `tests/test_cart.py::test_remove` | deleted |",
+                     "- `tests/test_cart.py::test_remove` deleted - removed", "- `tests/test_cart.py::test_remove`, edited",
+                     # The placeholder left in place, with light markup or punctuation around it.
+                     "- `tests/test_cart.py::test_remove` deleted (old line 5): <one-line reason>.",
+                     "- `tests/test_cart.py::test_remove` deleted (old line 5): `<one-line reason>`",
+                     "- `tests/test_cart.py::test_remove` deleted (old line 5): *<one-line reason>*",
+                     "- `tests/test_cart.py::test_remove` deleted (old line 5): _<one-line reason>_;",
+                     "- `tests/test_cart.py::test_remove` deleted (old line 5): &lt;one-line reason&gt;"):
+            with self.subTest(line):
+                done = self.with_body(line + "\n- `tests/test_cart.py::test_add` newly skipped: waits on prices\n")
+                self.assertEqual(done.returncode, 1, done.stdout)
+                self.assertIn("test_remove` deleted (old line 5): <one-line reason>", done.stdout)
+
+    def test_a_reason_the_page_does_not_show_is_not_a_reason(self):
+        for body in ("<!-- - `tests/test_cart.py::test_remove` deleted: the feature is gone -->\n",
+                     "<!--\n- `tests/test_cart.py::test_remove` deleted: the feature is gone\n-->\n",
+                     "```\n- `tests/test_cart.py::test_remove` deleted: the feature is gone\n```\n",
+                     # A link reference definition: its title never shows on the page.
+                     '[x]: https://example.com "- `tests/test_cart.py::test_remove` deleted: the feature is gone"\n'):
+            with self.subTest(body):
+                done = self.with_body(body + "- `tests/test_cart.py::test_add` newly skipped: waits on prices\n")
+                self.assertEqual(done.returncode, 1, done.stdout)
+
+    def test_a_reason_that_starts_like_the_placeholder_is_a_reason(self):
+        done = self.with_body("- `tests/test_cart.py::test_remove` deleted: <Button> was removed with its page\n"
+                              "- `tests/test_cart.py::test_add` newly skipped: waits on prices\n")
+        self.assertEqual(done.returncode, 0, done.stdout)
+
+    def test_a_table_row_in_the_printed_shape_is_read(self):
+        done = self.with_body("| `tests/test_cart.py::test_remove` deleted | the feature is gone |\n"
+                              "- `tests/test_cart.py::test_add` newly skipped: waits on prices\n")
+        self.assertEqual(done.returncode, 0, done.stdout)
+
+    def test_the_head_can_be_named_while_the_base_is_checked_out(self):
+        # As CI does when it runs the base branch's copy of the guards.
+        git("checkout", "-q", "main", cwd=self.root)
+        done = guards(self.root, "--head", "pr")
+        self.assertIn("- `tests/test_cart.py::test_remove` deleted (old line 5): <one-line reason>", done.stdout)
+        self.assertIn("- `tests/test_cart.py::test_add` newly skipped (new line 5): <one-line reason>", done.stdout)
 
     def test_a_path_inside_a_longer_path_does_not_stand_for_it(self):
         done = self.with_body("- `src/tests/test_cart.py::test_remove` deleted: gone\n"
@@ -176,6 +227,12 @@ class Reasons(unittest.TestCase):
         env = dict(os.environ, PR_BODY="$(touch ran) `touch ran`\n- `tests/test_cart.py::test_remove` deleted: gone")
         guards(self.root, "--body-env", "PR_BODY", env=env)
         self.assertFalse(os.path.exists(os.path.join(self.root, "ran")))
+
+    def test_a_failure_the_guards_did_not_foresee_exits_2_not_1(self):
+        # 1 means a reason is missing, which the agent could fix; this is not that.
+        done = guards(self.root, "--body-file", os.path.join(self.root, "no-such-body.md"))
+        self.assertEqual(done.returncode, 2, done.stdout + done.stderr)
+        self.assertIn("could not run", done.stderr)
 
     def test_a_base_git_cannot_read_exits_2(self):
         done = subprocess.run([sys.executable, SCRIPT, "--base", "no-such-branch"], cwd=self.root, capture_output=True,
@@ -195,6 +252,55 @@ class NothingListed(unittest.TestCase):
             done = guards(root, "--body-file", empty)
             self.assertEqual(done.returncode, 0)
             self.assertIn("no test deleted or newly skipped", done.stdout)
+
+
+class WholeFileKeys(unittest.TestCase):
+    def test_a_line_of_the_tests_list_is_not_the_reason_for_a_file_deleted_whole(self):
+        with tempfile.TemporaryDirectory() as root:
+            make_repo(root, {"tests/test_old.py": ("def test_old():\n    pass\n", None)})
+            path = os.path.join(root, ".git", "body.md")
+            for body, code in (("- `tests/test_old.py` adds nothing, tidied the imports\n", 1),
+                               ("- tests/test_old.py: tidied the imports\n", 1),
+                               ("- `tests/test_old.py` deleted: the old cart went with its tests\n", 0)):
+                with self.subTest(body):
+                    with open(path, "w", encoding="utf-8") as file:
+                        file.write(body)
+                    self.assertEqual(guards(root, "--body-file", path).returncode, code)
+
+
+class Encodings(unittest.TestCase):
+    def test_a_file_that_is_not_utf8_is_read_and_changes_nothing_else(self):
+        with tempfile.TemporaryDirectory() as root:
+            make_repo(root, {"tests/test_cart.py": ("def test_add():\n    pass\n\n\ndef test_remove():\n    pass\n",
+                                                    "def test_add():\n    pass\n")})
+            git("checkout", "-q", "main", cwd=root)
+            git("checkout", "-q", "-b", "latin", cwd=root)
+            for path in ("data/prices.txt", "tests/test_caf\u00e9.py"):
+                full = os.path.join(root, path)
+                os.makedirs(os.path.dirname(full), exist_ok=True)
+                with open(full, "wb") as file:
+                    file.write("# caf\u00e9, cr\u00e8me\ndef test_price():\n    pass\n".encode("latin-1"))
+            git("add", "-A", cwd=root)
+            git("commit", "-q", "-m", "latin", cwd=root)
+            git("merge", "-q", "pr", "-m", "both", cwd=root)
+            done = guards(root)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertIn("- `tests/test_cart.py::test_remove` deleted (old line 5): <one-line reason>", done.stdout)
+
+
+class Guards(unittest.TestCase):
+    def test_a_change_to_a_guarded_file_needs_its_reason(self):
+        with tempfile.TemporaryDirectory() as root:
+            make_repo(root, {"ci/guards.yml": ("run: guards\n", "run: exit 0\n")})
+            path = os.path.join(root, ".git", "body.md")
+            with open(path, "w", encoding="utf-8") as file:
+                file.write("Nothing about it.\n")
+            done = guards(root, "--guard", "ci/guards.yml", "--body-file", path)
+            self.assertEqual(done.returncode, 1, done.stdout)
+            self.assertIn("- `ci/guards.yml` changed: <one-line reason>", done.stdout)
+            with open(path, "w", encoding="utf-8") as file:
+                file.write("- `ci/guards.yml` changed: the job moved to a newer runner\n")
+            self.assertEqual(guards(root, "--guard", "ci/guards.yml", "--body-file", path).returncode, 0)
 
 
 if __name__ == "__main__":

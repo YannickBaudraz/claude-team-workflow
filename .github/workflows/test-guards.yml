@@ -1,17 +1,21 @@
-# Lists every test a pull request deletes or newly skips, and fails until the PR's description
-# gives each one a one-line reason. It runs again when the description is edited, so adding a
-# reason clears it without a new push.
+# Lists every test a pull request deletes or newly skips, and any change to the guards' own script
+# or to this file, and fails until the PR's description gives each one a one-line reason. It runs
+# again when the description is edited, so adding a reason clears it without a new push.
+#
+# pull_request_target runs this file and the guards' script as they are on the base branch, so a
+# pull request cannot change the check that reads it. The job only reads the pull request's
+# commits with git: it never checks them out, runs, installs or builds anything from them.
 name: Test guards
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
 
 concurrency:
-  group: test-guards-${{ github.ref }}
+  group: test-guards-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -21,11 +25,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - name: Fetch the pull request's commits without checking them out
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/remotes/pull/head"
       - name: List deleted and newly skipped tests, each with its reason on the PR
-        # The checkout is the PR merged into its base, so its first parent, HEAD^1, is exactly that
-        # base; the event's base sha can lag behind it and take in tests other PRs changed.
-        # The description reaches the script as an environment variable, never inside the command,
-        # so nothing written in it is run.
+        # The checkout is the base branch, so HEAD is the base; the guards diff from where the
+        # pull request left it. The description reaches the script as an environment variable,
+        # never inside the command, so nothing written in it is run.
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: python3 skills/ask-team/scripts/test-guards.py --base HEAD^1 --body-env PR_BODY
+        run: >-
+          python3 skills/ask-team/scripts/test-guards.py --base HEAD --head refs/remotes/pull/head
+          --body-env PR_BODY
+          --guard skills/ask-team/scripts/test-guards.py --guard .github/workflows/test-guards.yml
