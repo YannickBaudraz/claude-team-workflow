@@ -11,6 +11,8 @@ A retro closes each epic, as on a team using a Kanban flow. It reads the **evide
 
 ## 1. Gather the evidence
 
+When the epic's retro already exists, with the user's confirmation but not yet the client's decision, go straight to section 3 to record that decision and close the epic.
+
 Using the project map and the tracker doc (`docs/agents/issue-tracker.md`), collect:
 
 - the epic, its PRD, its interface design when it has one, and its design doc, its stories and tickets with their states;
@@ -34,7 +36,7 @@ Done when each angle above has its findings with sources, or an explicit "nothin
 
 ## 3. Verdict
 
-Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm. When the project map's kind is client, the client's decision on the epic counts too: record it in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it in the retro beside the user's confirmation. Once both are in, close the epic on the tracker, and its parent issue too when this epic was the last one open under it.
+Judge the epic against its PRD's goals and its acceptance criteria: **accepted**, **accepted with open items**, or **not accepted**. An unfinished ticket makes it *not accepted* unless the user decides otherwise. The verdict is the user's to confirm. When the project map's kind is client, the client's decision on the epic counts too: record it in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it in the retro beside the user's confirmation. In a public repo, name the client's approver by role only, and link where the map's Client section keeps the client's details, without quoting the evidence. Once both are in, close the epic on the tracker, and its parent issue too when this epic was the last one open under it. When the client's decision comes after the retro is written, the user runs `/epic-retro <epic>` again to record it in the retro and close the epic.
 
 ## 4. Confirm the project facts
 
@@ -48,7 +50,7 @@ Call the Skill tool with `lesson-learned` on the epic's commit range, so the eng
 
 ## 6. Action items and the document
 
-Propose at most about 7 action items, each with an owner and where it lands: a rule in the coding standards the project map names, a check a tool can run, a template change, or a ticket. Apply none of them; the user decides.
+Propose at most about 7 action items, each with an owner and where it lands: a rule in the coding standards the project map names, a check a tool can run, a template change, a ticket, or a change request. Apply none of them; the user decides.
 
 Write the retro where the project map puts retros: evidence gaps, findings with sources, verdict, lessons, action items, and the status of the previous retro's items.
 

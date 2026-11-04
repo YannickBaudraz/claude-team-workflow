@@ -43,7 +43,7 @@ For a new project, read what discovery produced: the conversation, the repo's `G
   - Data: no personal data, ordinary personal data, or sensitive data, money or credentials.
 - For a client project, the client's part of the map: the client's approver; where the client reads, published copies of the repo's documents or a shared documentation tool, with internal notes kept apart; the client's brand guidelines and accessibility obligations; the contract's acceptance terms (the window, the criteria, who signs); the client's security and privacy obligations; who owns each account and secret, using the client's own accounts where possible; and, at handover, which documents the client keeps and where, and the removal of every access to the client's accounts and data.
 
-Done when every tool is named (or explicitly "none"), every project fact has a value, and the user has confirmed the answers.
+Done when every tool is named (or explicitly "none"), every project fact has a value, for a client project every row of the Client section has an answer (or an explicit "none"), and the user has confirmed the answers.
 
 ## 3. Decide where each kind of document lives
 
@@ -68,11 +68,13 @@ Move anything discovery already wrote (glossary terms, ADRs) when the map puts i
 
 For each convention, the repo's own file wins when it has one: the map points at it, and you add only what the workflow needs from the template, showing each added line to the user for approval. When the repo has none, copy the template where the map says, adapted to the project's stack and tools:
 
-- the definition of done, from `definition-of-done.md`. For a client project, add the contract's acceptance terms as items: the acceptance window, the criteria, and who signs;
+- the definition of done, from `definition-of-done.md`;
 - the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow;
 - the PR template, from `pull-request-template.md`, at the code host's path: `.github/pull_request_template.md`, `.gitlab/merge_request_templates/Default.md` or `.gitea/pull_request_template.md`. The workflow needs its ticket link and its definition-of-done checklist.
 
-Done when each convention exists where the map says, every added line was approved, and the user has seen the list.
+For a client project, add the contract's acceptance terms to the definition of done as items, whether it is the repo's own file or the template's copy: the acceptance window, the criteria, and who signs. In a public repo, who signs is named by role only, and anything the contract keeps confidential stays where the map's Client section links. Show each added line to the user for approval.
+
+Done when each convention exists where the map says, for a client project the definition of done holds the acceptance terms, every added line was approved, and the user has seen the list.
 
 ## 6. Guard the merge
 

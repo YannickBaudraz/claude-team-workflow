@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # UI design
 
-Step 8 of the flow, for an epic with a user interface: the interface designer's part, after the PRD and the technical design. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
+Step 8 of the flow, for an epic with a graphical interface: the interface designer's part, after the PRD and the technical design. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
 
 Reference files in this folder:
 
@@ -105,7 +105,7 @@ Say at the top what the user did not decide: open words, the skill's readings, c
 
 When the product has no visual direction yet, also write its **visual direction** where the project map puts it: the taste rules with their tests, and the approved direction's surface decisions (typeface roles, colour roles, how actions are treated, theme surfaces), each with its reason. Later epics read it in section 1 and keep to it.
 
-When the user approves, end each document with the line `Approved by <their name> on <date>`. For a client project whose contract has the client approve the interface design or the visual direction, write that line only once the client's decision is recorded in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it beside the line.
+When the user approves, end each document with the line `Approved by <their name> on <date>`. For a client project whose contract has the client approve the interface design or the visual direction, write that line only once the client's decision is recorded in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it beside the line. In a public repo, name the client's approver by role only, and link where the map's Client section keeps the client's details, without quoting the evidence.
 
 The build at step 11 follows the interface design. At step 12, `REVIEWER.md` reviews the built screens the same way.
 
