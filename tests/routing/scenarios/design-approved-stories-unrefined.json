@@ -1,5 +1,5 @@
 {
-  "why": "Epic #1's PRD and design doc are approved, Pantry has no user interface so step 8 is skipped, and its stories are outcomes only: refinement is next, step 9, with the first story.",
+  "why": "Epic #1's PRD and design doc are approved, Pantry has no user interface so step 8 is skipped, and its stories are outcomes only: refinement is next, step 9, with the first story. On its Gate line and in After that, the tickets themselves wait on no approval: the user confirms the breakdown in the session that makes it. Approvals of the PRD, the design doc or a PR are other steps and pass (the check is in checks.py).",
   "layers": [
     "base",
     "setup",
@@ -9,5 +9,8 @@
     "design"
   ],
   "next": "/specification\\s+#?3(?![\\w-])",
-  "light": "/specification\\s+#?3(?![\\w-])"
+  "light": "/specification\\s+#?3(?![\\w-])",
+  "must_not": [
+    {"check": "old ticket gate"}
+  ]
 }

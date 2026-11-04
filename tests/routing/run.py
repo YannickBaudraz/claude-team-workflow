@@ -18,8 +18,9 @@ nothing saved.
     ask       what the user brings, appended to /ask-team (default: nothing)
     next      a regex the answer's Next block must match
     must      regexes the whole answer must match
-    must_not  regexes it must not match
+    must_not  regexes it must not match, or {"check": <name>} for a check in checks.py it must not fail
     light     a regex the Next block of `/ask-team next` must match (default: not run light)
+    light_must_not  as must_not, for the light answer; must and must_not read the full answer only
     prs       the pull requests the stub gh serves (tests/routing/stub/gh), each as gh's --json gives it
     saves     whether the router saves its answer here (default: true)
     git       whether the project is a git repo (default: true)
@@ -56,6 +57,10 @@ import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# The end-to-end harness loads this file from its own folder: checks.py must still be found, after its own modules.
+sys.path.append(HERE)
+import checks
+
 LAYERS = os.path.join(HERE, "layers")
 SCENARIOS = os.path.join(HERE, "scenarios")
 TOOLS = ("Read,Glob,Grep,Bash(git log:*),Bash(git status:*),Bash(git worktree list:*),Bash(git rev-parse:*),"
@@ -113,8 +118,13 @@ def grade(scenario, answer):
         failures.append(f"Next block '{block}' does not match /{scenario['next']}/")
     failures += [f"answer lacks /{pattern}/" for pattern in scenario.get("must", [])
                  if not re.search(pattern, answer)]
-    failures += [f"answer has /{pattern}/" for pattern in scenario.get("must_not", [])
-                 if re.search(pattern, answer)]
+    for pattern in scenario.get("must_not", []):
+        if isinstance(pattern, dict):
+            found = checks.CHECKS[pattern["check"]](answer)
+            if found:
+                failures.append(f"answer fails the check '{pattern['check']}': \"{found}\"")
+        elif re.search(pattern, answer):
+            failures.append(f"answer has /{pattern}/")
     return failures
 
 
@@ -281,16 +291,26 @@ def report(scenarios, outcomes, tested, effort):
                   f"- Expects: " + ("a light answer of a few lines" if scenario.get("mode") == "light" else "the router's form")
                   + f", and a Next block matching `{scenario.get('next', '')}`"
                   + "".join(f"; the answer matches `{m}`" for m in scenario.get("must", []))
-                  + "".join(f"; the answer does not match `{m}`" for m in scenario.get("must_not", [])),
+                  + "".join(f"; the answer passes the check '{m['check']}' in checks.py" if isinstance(m, dict)
+                            else f"; the answer does not match `{m}`" for m in scenario.get("must_not", [])),
                   f"- Scenario file: [{name.removesuffix('-next')}.json]({tested['blob']}/scenarios/{name.removesuffix('-next')}.json)", "",
                   "| Run | Verdict | Next block |", "|---|---|---|"]
         for run in outcomes[name]:
             verdict = "pass" if not run["failures"] else "FAIL: " + "; ".join(run["failures"])
+            verdict = verdict.replace('|', '\\|').replace(chr(10), ' / ')
             lines.append(f"| {run['number']} | {verdict} | {next_block(run['answer']).replace('|', '\\|').replace(chr(10), ' / ')} |")
         for run in outcomes[name]:
             lines += ["", f"<details><summary>Run {run['number']}: the router's full answer</summary>", "",
                       run["answer"].strip(), "", "</details>"]
     return "\n".join(lines) + "\n"
+
+
+def light(scenario):
+    """The scenario as `/ask-team next` runs it: its light regex for the Next block, nothing saved, and of the
+    checks on the whole answer only light_must_not, since must and must_not are written for the full answer."""
+    kept = {key: value for key, value in scenario.items() if key not in ("must", "must_not", "light_must_not")}
+    return {**kept, "mode": "light", "next": scenario["light"], "saves": False,
+            "must_not": scenario.get("light_must_not", [])}
 
 
 def main():
@@ -313,8 +333,7 @@ def main():
             if args.mode != "light":
                 scenarios[name] = scenario
             if args.mode != "full" and "light" in scenario:
-                scenarios[f"{name}-next"] = {**{k: v for k, v in scenario.items() if k not in ("must", "must_not")},
-                                             "mode": "light", "next": scenario["light"], "saves": False}
+                scenarios[f"{name}-next"] = light(scenario)
     if not scenarios:
         sys.exit("no scenario matches")
     results = os.path.join(HERE, "results", time.strftime("%Y%m%d-%H%M%S"))

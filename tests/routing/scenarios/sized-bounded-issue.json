@@ -1,5 +1,5 @@
 {
-  "why": "/change-request sized a bounded change and wrote its Next line: tickets for it, not the roadmap. The user confirms the breakdown in that session, so the Gate line never has the tickets waiting on an approval.",
+  "why": "/change-request sized a bounded change and wrote its Next line: tickets for it, not the roadmap. The user confirms the breakdown in the session that makes it, so no Gate line, step 10 line (the light answer's included) or After that has the tickets themselves waiting on an approval or approved by publishing; approving the breakdown is that confirmation and passes (the check is in checks.py).",
   "layers": [
     "base",
     "code",
@@ -11,7 +11,10 @@
   },
   "next": "/to-tickets\\s+#?3(?![\\w-])",
   "must_not": [
-    "(?im)^\\*\\*Gate:\\*\\*(?:[^\\n]*?[;:.,])?(?![^\\n;:.,]*\\b(?:no|not|never|without|nothing|none|instead|rather|already)\\b)[^\\n;:.,]*?\\b(?:approv\\w*\\s+(?:the\\s+|each\\s+|every\\s+)?(?:tickets?|breakdown)|approval\\s+of\\s+(?:the\\s+)?(?:tickets?|breakdown)|tickets?\\s+(?:are\\s+|be\\s+|is\\s+)?approv\\w*|tickets?[^\\n;:.,]*\\b(?:wait|waits|waiting)\\b[^\\n;:.,]*\\bapprov\\w*|sign\\w*\\s+off\\s+on\\s+(?:the\\s+)?(?:tickets?|breakdown)|approv\\w*[^\\n;:.,]*\\bbefore\\b[^\\n;:.,]*\\bpublish\\w*|publish\\w*[^\\n;:.,]*\\bonce\\s+approved)\\b"
+    {"check": "old ticket gate"}
   ],
-  "light": "/to-tickets\\s+#?3(?![\\w-])"
+  "light": "/to-tickets\\s+#?3(?![\\w-])",
+  "light_must_not": [
+    {"check": "old ticket gate"}
+  ]
 }

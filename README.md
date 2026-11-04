@@ -25,7 +25,7 @@ The whole workflow on one page: https://yannickbaudraz.github.io/claude-team-wor
 | `docs/build-workflow.py` | Builds the workflow page from the router's `SKILL.md` and `REGISTRY.md` |
 | `tests/end-to-end/` | One fixture ticket that touches a screen, built in one session and reviewed in a fresh one, read against the harness's own check of the page: what today's build and review chain does, so a change to it shows |
 | `docs/fonts/` | The page's fonts, served with it so no visitor's browser calls a third party |
-| `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands, the touches tests, the parser's tests and the end-to-end harness's tests, builds the page and publishes it to GitHub Pages on every push to `main` |
+| `.github/workflows/pages.yml` | Checks the contracts, runs the merge guard's table of refused and allowed commands, the touches tests, the parser's tests, the end-to-end harness's tests and the routing scenarios' offline tests, builds the page and publishes it to GitHub Pages on every push to `main` |
 
 The community skills are installed from their authors' repositories, not copied here: their licences stay with them, and upgrades come from them, at the commit this repo pins.
 
