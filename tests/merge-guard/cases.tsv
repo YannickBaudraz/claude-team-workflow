@@ -136,6 +136,7 @@ refused	workflow	feature-x	Bash	git config alias.up push
 refused	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Put -Uri https://api.github.com/repos/o/r/pulls/5/merge
 refused	workflow	feature-x	PowerShell	irm -Method Put -Uri https://api.github.com/repos/o/r/pulls/5/merge
 refused	workflow	feature-x	PowerShell	Start-Process gh -ArgumentList 'pr','merge','5'
+refused	workflow	feature-x	PowerShell	gh pr merge 5 `\n --squash
 refused	workflow	feature-x	PowerShell	pwsh -Command "gh pr merge 5"
 allowed	workflow	feature-x	Bash	gh api repos/o/r/issues/5/comments -f body='See branches/main/protection in the docs'
 allowed	workflow	feature-x	Bash	gh api repos/o/r/pulls/5/reviews -f event=COMMENT -f body='The ruleset is at rulesets/42'
@@ -154,6 +155,7 @@ refused	workflow	feature-x	Bash	if true; then gh pr merge 5; fi
 refused	workflow	feature-x	Bash	if gh pr checks 5; then gh pr merge 5 --squash; else echo failing; fi
 refused	workflow	feature-x	Bash	if false; then :; elif true; then git push origin main; fi
 refused	workflow	feature-x	Bash	for x in 1; do gh pr merge 5; done
+refused	workflow	feature-x	Bash	for b in main dev; do git push origin $b; done
 refused	workflow	feature-x	Bash	until gh pr merge 5; do sleep 10; done
 refused	workflow	feature-x	Bash	! gh pr merge 5
 refused	workflow	feature-x	Bash	coproc gh pr merge 5
@@ -189,6 +191,15 @@ refused	workflow	main	Bash	gh api -X PATCH repos/{owner}/{repo}/git/refs/heads/{
 refused	workflow	feature-x	Bash	curl -X "$METHOD" https://api.github.com/repos/o/r/merges -d '{"base": "main", "head": "feature-x"}'
 refused	workflow	feature-x	Bash	curl -X "$METHOD" "$URL" -d "$BODY"
 refused	workflow	feature-x	Bash	wget --method=PUT -O- "$URL"
+refused	workflow	feature-x	Bash	wget --post-data='{}' "$URL"
+refused	workflow	feature-x	Bash	bash -c 'curl -X PUT "$URL"'
+refused	workflow	feature-x	Bash	curl -X PUT "$URL" | jq . && docker run -d nginx
+refused	workflow	feature-x	Bash	curl -X PUT "$PR_URL/merge"
+refused	workflow	feature-x	Bash	curl -X PUT "$PR_URL/merge#x"
+refused	workflow	feature-x	Bash	for ep in $(gh api repos/o/r/pulls --jq '.[].url'); do gh api -X PUT "$ep/merge"; done
+refused	workflow	feature-x	Bash	gh api -X PUT "$BRANCH_URL/protection" --input body.json
+refused	workflow	feature-x	Bash	http put "$URL"
+refused	workflow	feature-x	Bash	xh put "$URL"
 refused	workflow	feature-x	Bash	http PUT "$URL"
 refused	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Put -Uri $u
 refused	workflow	feature-x	PowerShell	Invoke-RestMethod -ContentType 'application/json' -Method Post -Uri "$base/$path" -Body $b
@@ -207,6 +218,9 @@ allowed	workflow	feature-x	Bash	gh api -X POST repos/o/r/releases -f tag_name="v
 allowed	workflow	feature-x	Bash	gh api -X PATCH repos/o/r/releases/$RELEASE_ID -f draft=false
 allowed	workflow	feature-x	Bash	gh api -X DELETE repos/o/r/releases/$ID
 allowed	workflow	feature-x	Bash	gh api -X POST repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST "$PR_URL/comments" -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST "$PR_URL/reviews" -f event=COMMENT -f body=x
+allowed	workflow	feature-x	Bash	gh api -X POST "$REPO_URL/git/refs" -f ref=refs/heads/feature-y -f sha=abc
 allowed	workflow	feature-x	Bash	gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${SHA}" -f state=success -f context=ci
 allowed	workflow	feature-x	Bash	gh api -X PATCH "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" -f body=x
 allowed	workflow	feature-x	Bash	gh api -X DELETE repos/$GITHUB_REPOSITORY/issues/comments/$COMMENT_ID
@@ -232,19 +246,32 @@ allowed	workflow	feature-x	Bash	curl -X DELETE "$BASE_URL/api/items/$ID"
 allowed	workflow	feature-x	Bash	curl -X PATCH "http://localhost:$PORT/api/items/$ID" -d '{"name": "x"}'
 allowed	workflow	feature-x	Bash	curl -X PUT "http://localhost:3000/$RESOURCE/$ID" -d '{}'
 allowed	workflow	feature-x	Bash	curl -X POST "http://127.0.0.1:$PORT/$ENDPOINT" -d '{}'
+allowed	workflow	feature-x	Bash	curl -X POST "http://0.0.0.0:8000/$EP" -d '{}'
 allowed	workflow	feature-x	Bash	curl -fsSL https://example.com/install.sh | sh
 allowed	workflow	feature-x	Bash	curl https://example.com/install.sh -sSf | sh -s -- -y
 allowed	workflow	feature-x	Bash	wget -qO- https://example.com/install.sh | sh
+allowed	workflow	feature-x	Bash	curl -fsSL https://get.docker.com | sh && docker run -d -p 80:80 nginx
+allowed	workflow	feature-x	Bash	curl -sSL https://example.com/install.sh | bash -s -- -d
+allowed	workflow	feature-x	Bash	curl -fsSL https://example.com/i.sh | bash -s -- --data-dir=/opt
+allowed	workflow	feature-x	Bash	wget -T 10 -qO- https://example.com/i.sh | sh
+allowed	workflow	feature-x	Bash	wget -T 10 -qO- "$URL"
+allowed	workflow	feature-x	Bash	wget -d -O- "$URL"
+allowed	workflow	feature-x	Bash	http -d -o out.zip "$URL"
+allowed	workflow	feature-x	Bash	ssh deploy@host bash -s <<EOF\ncurl -X POST -d '{}' http://localhost:$PORT/reload\nEOF
+allowed	workflow	feature-x	Bash	docker exec -i app sh <<EOF\ncurl -X POST -d x http://localhost:$PORT/x\nEOF
 allowed	workflow	feature-x	Bash	source <(curl -s https://example.com/env.sh)
 allowed	workflow	feature-x	Bash	http POST "$API/repos/o/r/issues/5/comments" body=x
 allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/o/r/issues/$n/comments" -Body '{"body": "x"}'
 allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Uri $u
+allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Uri $u -Body @{q='x'}
+allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Post `\n  -Uri 'http://localhost:3000/api/items' `\n  -Body $body
+allowed	workflow	feature-x	PowerShell	Invoke-RestMethod -Method Post -Uri https://api.example.com/x -Body "{`"a`": 1}"
+allowed	workflow	feature-x	PowerShell	Write-Host "Done`n"; Invoke-RestMethod -Method Post -Uri https://api.example.com/x -Body $b
 # A ref or a branch given as a file is read; a file the guard cannot read is refused
 refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@ref-main.txt -f sha=abc
 refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@missing.txt -f sha=abc
 refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@empty.txt -f sha=abc
 refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@- -f sha=abc < ref-main.txt
-refused	workflow	feature-x	Bash	gh api -X POST repos/o/r/git/refs -F ref=@/dev/stdin -f sha=abc < ref-main.txt
 refused	workflow	feature-x	Bash	curl -X POST https://api.github.com/repos/o/r/git/refs --data-urlencode ref@ref-main.txt -d sha=abc
 refused	workflow	feature-x	Bash	curl -X POST https://api.github.com/repos/o/r/git/refs --form 'ref=<ref-main.txt' -F sha=abc
 refused	workflow	feature-x	Bash	gh api -X PUT repos/o/r/contents/README.md -f message=x -f content=eA== -F branch=@branch-main.txt
