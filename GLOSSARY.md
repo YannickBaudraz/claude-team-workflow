@@ -11,3 +11,5 @@ The domain terms this repo's code uses, one entry per term. It starts empty and 
 **Missed class**: A change whose risk class was set too low when it was sized, so that a check in the review chain later had to raise it. Each retro adds the narrowest path that covers such a change to CI's risky paths.
 
 **Standard security class**: The middle security class, for a project that people other than its developer can reach, or that holds ordinary personal data. Below it, Baseline covers a local-only project with no personal data; Standard adds a light threat model, the PRD's security and privacy block, and abuse examples on boundary rules.
+
+**Test guards**: Scans of the files a pull request changes, for every test it deletes and every test it newly skips. The build runs them before it opens the PR, and CI runs them on every PR where it has them. Each listed change needs a one-line reason in the PR's description, which the developer reads before merging. They stand in for the approval of each commit, which only pair mode keeps.

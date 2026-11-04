@@ -18,11 +18,19 @@ tests/routing/stub/gh, so a run reaches no code host. The merge stays out: no st
 the run fails if main moves. CI is run by this script on what was pushed, and its result is put
 on the pull request as the `tests` check, before the reviews read it.
 
-`/build-ticket` stops for the developer, before each commit and before the pull request. A
-stand-in developer answers each stop with the same fixed reply until the pull request is open
-and nothing is left to push, and each answer counts as one of the developer's touches. The reply
-approves only what the session just showed: a looser one would read as a blanket approval and
-undercount them. The skills' own Arguments come from REGISTRY.md, as the router prints them.
+`/build-ticket` stops for the developer before the pull request; it stops before each commit only
+when paired, and this run does not pair. A stand-in developer answers each stop with the same
+fixed reply until the pull request is open and nothing is left to push, and each answer counts
+as one of the developer's touches. The reply approves only what the session just showed: a
+looser one would read as a blanket approval and undercount them. The skills' own Arguments
+come from REGISTRY.md, as the router prints them.
+
+The build takes the usual path, with no characterization test and no full-diff read for a small
+change in an existing codebase: the fixture is a new product, its code and its setup one commit,
+and its ticket belongs to a story. Its project map names GitHub Actions, but the fixture has no
+pipeline files: this script stands in for that CI and runs the fixture's commands on what was
+pushed, but not the test guards. The build runs the guards in its session and puts their lines
+on the pull request, and nothing checks their reasons.
 
 What passes: the chain reaches a pull request, CI on it is green, this script's own reading of
 the page (page_check.py) finds every acceptance criterion met, no commit carries an attribution,
