@@ -2,8 +2,10 @@
 """Check REGISTRY.md against what is installed and configured.
 
 For every skill row: the skill exists on disk (or is built in), its visibility
-matches its frontmatter and ~/.claude/settings.json, every skill it calls can
-actually be called, and it says what it does. Every skill SKILL.md names is in
+matches its frontmatter and ~/.claude/settings.json (for a skill denied per
+project, the project settings template, and its frontmatter and the user settings
+leave it loadable elsewhere), no other row lists a denied skill as callable, every
+skill it calls can actually be called, and it says what it does. Every skill SKILL.md names is in
 the registry, the step contracts close (check-contracts.py), and the workflow page
 can still be built from SKILL.md and the registry. Exit code 1 when anything is wrong.
 """
@@ -36,6 +38,9 @@ def plugin_file(name, default):
 PLUGINS = plugin_file("installed_plugins.json", {"plugins": {}})["plugins"]
 OVERRIDES = SETTINGS.get("skillOverrides", {})
 DENIED = set(SETTINGS.get("permissions", {}).get("deny", []))
+# The settings /project-setup writes into each workflow project: a skill denied there is denied per project.
+TEMPLATE = os.path.join(os.path.dirname(REGISTRY), "templates", "claude-settings.json")
+PROJECT_DENIED = set(json.load(open(TEMPLATE)).get("permissions", {}).get("deny", [])) if os.path.exists(TEMPLATE) else set()
 ENABLED = SETTINGS.get("enabledPlugins", {})
 MARKETPLACES = plugin_file("known_marketplaces.json", {})
 THIS_REPO = "YannickBaudraz/claude-team-workflow"
@@ -120,14 +125,36 @@ def command_only(path):
 problems, table = [], {}
 COMMUNITY = community_sources()
 for row in flow.skill_rows(open(REGISTRY, encoding="utf-8").read()):
-    # Keyed by the full name: engineering:code-review and code-review are different skills.
+    # Keyed by the full name: engineering:code-review and mattpocock-skills:code-review are different skills.
     table[row["command"].lstrip("/")] = row
+paths = {key: skill_file(row) for key, row in table.items()}
+
+
+# Claude Code matches a deny rule against the skill a call resolves to, not the name the call uses:
+# with Skill(mattpocock-skills:tdd) denied, a call to the bare name tdd is blocked too. So a rule
+# that names a row denies every row that resolves to the same SKILL.md. File -> the row the rule names.
+# A user-settings rule that names no row is left alone: those settings also hold the user's own rules.
+def denied_files(rules):
+    return {paths[key]: key for key in table if paths[key] and f"Skill({key})" in rules}
+
+
+MACHINE_DENIED_FILES, PROJECT_DENIED_FILES = denied_files(DENIED), denied_files(PROJECT_DENIED)
 for key, row in table.items():
     name = bare(key)
     if row["does"] == "":
         problems.append(f"{row['command']}: no Does line")
     visibility = row["visibility"]
-    path = skill_file(row)
+    # Checked before the plugin checks below, so a denied row on a disabled plugin is checked too.
+    rule = f"Skill({key})"
+    per_project = row["denied in"] == "project settings"
+    if visibility == "denied" and row["denied in"] not in ("user settings", "project settings"):
+        problems.append(f"{row['command']}: denied, but Denied in says '{row['denied in']}', "
+                        "not user settings or project settings")
+    elif visibility != "denied" and row["denied in"]:
+        problems.append(f"{row['command']}: registry says {visibility}, but Denied in says '{row['denied in']}'")
+    elif per_project and rule not in PROJECT_DENIED:
+        problems.append(f"{row['command']}: denied in project settings, but templates/claude-settings.json has no {rule}")
+    path = paths[key]
     if path == "":
         problems.append(f"{row['command']}: not found for source '{row['source']}'")
         continue
@@ -136,11 +163,21 @@ for key, row in table.items():
     if visibility == "built-in":
         continue
     overridden = OVERRIDES.get(name, "on") != "on"
-    denied = f"Skill({row['command'].lstrip('/')})" in DENIED
-    actual = ("denied" if denied else "hidden" if OVERRIDES.get(name) == "user-invocable-only"
+    actual = ("denied" if path in MACHINE_DENIED_FILES else "hidden" if OVERRIDES.get(name) == "user-invocable-only"
               else "typed" if command_only(path) else "auto")
-    if actual != visibility or (visibility == "auto" and overridden):
+    if per_project:
+        # Denied per project only: everywhere else, Claude may still load it.
+        if actual != "auto":
+            problems.append(f"{row['command']}: denied in project settings only, but settings and frontmatter "
+                            f"make it {actual} everywhere")
+        elif overridden:
+            problems.append(f"{row['command']}: denied in project settings only, but ~/.claude/settings.json "
+                            f"sets skillOverrides {name} to {OVERRIDES[name]} everywhere")
+    elif actual != visibility or (visibility == "auto" and overridden):
         problems.append(f"{row['command']}: registry says {visibility}, settings and frontmatter say {actual}")
+    if path in PROJECT_DENIED_FILES and PROJECT_DENIED_FILES[path] != key:
+        problems.append(f"{row['command']}: is the same skill as {PROJECT_DENIED_FILES[path]}, which "
+                        "templates/claude-settings.json denies, so workflow projects block it too")
     for callee in filter(None, (c.strip() for c in row["calls"].split(","))):
         if callee.startswith("file:"):
             target = callee[5:]
@@ -150,6 +187,16 @@ for key, row in table.items():
             problems.append(f"{row['command']}: calls {callee}, which is missing from the registry")
         elif table[callee]["visibility"] not in ("auto", "built-in"):
             problems.append(f"{row['command']}: calls {callee}, which is {table[callee]['visibility']} and cannot be called")
+
+# Every skill rule in the project settings template denies exactly one row that says it is denied in project settings.
+# A rule without one skill name (Skill alone, Skill(*), a prefix) would block more than the registry says.
+for rule in sorted(PROJECT_DENIED):
+    if rule.split("(")[0].strip() != "Skill":
+        continue
+    skill = re.fullmatch(r"Skill\(([^()*\s]+)\)", rule)
+    if not skill or table.get(skill.group(1), {}).get("denied in") != "project settings":
+        problems.append(f"templates/claude-settings.json denies {rule}, "
+                        "which is not one registry row denied in project settings")
 
 # Every command, and every bare skill name, that the router names (Maintenance is about this repo).
 named = set()

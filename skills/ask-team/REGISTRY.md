@@ -9,7 +9,7 @@ Every skill the team workflow names, and how it is reached. `scripts/check-regis
 - `typed`: command-only by its own frontmatter; only the user starts it.
 - `hidden`: command-only through `skillOverrides: "user-invocable-only"` in `~/.claude/settings.json`; only the user starts it.
 - `auto`: Claude may load it on its own, and other skills may call it.
-- `denied`: blocked for Claude by `permissions.deny`; the user can still type it.
+- `denied`: blocked for Claude by `permissions.deny`, in the settings its row's **Denied in** names; the user can still type it.
 - `built-in`: ships with Claude Code.
 
 A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a call to a `typed` or `hidden` one. `file:` marks a skill read directly from disk, which works whatever its visibility.
@@ -53,12 +53,10 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `test-driven-development` | `addyosmani/agent-skills` | hidden | 11 Build, read by /build-ticket |  |  | The red-green-refactor loop. |
 | `incremental-implementation` | `addyosmani/agent-skills` | hidden | 11 Build, read by /build-ticket |  |  | Thin slices, each one verified before the next. |
 | `finishing-a-development-branch` | `obra/superpowers` | hidden | 11 Build, read by /build-ticket |  |  | Final checks and the options for integrating the branch. |
-| `tdd` | `mattpocock/skills` | auto | ad-hoc test-first work | codebase-design |  | Test-first work with red-green-refactor and integration tests. |
 | `codebase-design` | `mattpocock/skills` | auto | any time |  |  | Shared vocabulary for deep modules: interfaces, seams, testability. |
 | `pr` | `mattpocock/skills` | auto | 11 Build, PR bodies |  |  | Writes pull request bodies. |
 | `pr-screenshots` | `YannickBaudraz/claude-team-workflow` | auto | 11 Build, PR bodies |  |  | Renders a visible change from the base branch and the PR branch, and attaches the before and after pairs to the PR body with gh. |
 | `/code-review-and-quality` | `addyosmani/agent-skills` | hidden | 12 Review chain |  | `<PR>`. Against the ticket's acceptance criteria and the coding standards the project map names. Post the findings on the PR. | A multi-axis review of a change before it merges. |
-| `code-review` | `mattpocock/skills` | auto | ad-hoc reviews |  |  | Reviews changes since a fixed point against the repo's coding standards and the originating spec. |
 | `/security-review` | Claude Code | built-in | 12 Review chain |  | Run `gh pr checkout <PR> --detach` first: it reviews the current branch's diff, so a fresh session on main has nothing to review. `--detach` because git refuses a branch another worktree, such as the build's, still holds. | Claude Code's built-in security review of the pending changes. |
 | `receiving-code-review` | `obra/superpowers` | auto | 11 Build, rework |  |  | How to act on review feedback: check each point before changing code, never agree blindly. |
 | `/plannotator-review` | `backnotprop/plannotator` | typed | 12 Review chain, the user reviews |  | `<PR or worktree>` | Opens the diff in your browser to annotate; Claude then works through your notes. |
@@ -87,11 +85,15 @@ The first cell is plain text, never a backticked command, and the table has no D
 
 Each one overlaps something the workflow already covers with different rules: an `auto` skill above, a step's own skill and the documents it writes, or Claude Code's own memory. It is denied so only that one is used.
 
-| Command | Source | Visibility | Duplicates |
-|---|---|---|---|
-| `engineering:architecture` | `anthropics/knowledge-work-plugins` | denied | domain-modeling (ADRs) |
-| `engineering:code-review` | `anthropics/knowledge-work-plugins` | denied | code-review |
-| `engineering:debug` | `anthropics/knowledge-work-plugins` | denied | diagnosing-bugs |
-| `engineering:testing-strategy` | `anthropics/knowledge-work-plugins` | denied | tdd |
-| `anthropic-skills:frontend-design` | `anthropics/skills` | denied | /ui-design and the product's visual direction |
-| `productivity:memory-management` | `anthropics/knowledge-work-plugins` | denied | Claude Code's own memory |
+**Denied in** says where its deny rule is written. `user settings`: in `install/settings-fragment.json`, which `install.sh` merges into `~/.claude/settings.json`, so the skill is blocked on the whole machine. `project settings`: in `templates/claude-settings.json`, which `/project-setup` writes into each workflow project's `.claude/settings.json`, so the denial is written per project and the skill still loads in work outside workflow projects. A deny rule blocks the skill a call resolves to, whatever name the call uses: `Skill(mattpocock-skills:tdd)` also blocks a call to the bare `tdd`, while `Skill(mattpocock-skills:code-review)` leaves Claude Code's own `/code-review` alone. So no other row may list a denied skill as callable, and a skill denied in project settings must still load everywhere else. The check reports both, for deny rules that name a row of this registry.
+
+| Command | Source | Visibility | Denied in | Duplicates |
+|---|---|---|---|---|
+| `engineering:architecture` | `anthropics/knowledge-work-plugins` | denied | user settings | domain-modeling (ADRs) |
+| `engineering:code-review` | `anthropics/knowledge-work-plugins` | denied | user settings | /code-review-and-quality |
+| `engineering:debug` | `anthropics/knowledge-work-plugins` | denied | user settings | diagnosing-bugs |
+| `engineering:testing-strategy` | `anthropics/knowledge-work-plugins` | denied | user settings | test-driven-development |
+| `anthropic-skills:frontend-design` | `anthropics/skills` | denied | user settings | /ui-design and the product's visual direction |
+| `productivity:memory-management` | `anthropics/knowledge-work-plugins` | denied | user settings | Claude Code's own memory |
+| `mattpocock-skills:tdd` | `mattpocock/skills` | denied | project settings | test-driven-development: the red-green-refactor loop /build-ticket runs for each acceptance criterion. Its own rules differ: no refactoring inside the loop, tests only at agreed seams |
+| `mattpocock-skills:code-review` | `mattpocock/skills` | denied | project settings | /acceptance-review and /code-review-and-quality, the review chain's checks against the ticket and the coding standards |

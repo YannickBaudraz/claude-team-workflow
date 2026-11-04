@@ -110,13 +110,14 @@ def workflow_tables(text):
 
 
 def skill_rows(text):
-    """Every row of REGISTRY.md that names a skill, in whichever table: its first cell is backticked."""
+    """Every row of REGISTRY.md that names a skill, in whichever table: its first cell is backticked.
+    "denied in" is the settings a denied row's deny rule is written in, "" in a table without that column."""
     for table in tables(text):
         for cells, row in zip(table[1:], records(table)):
             if cells[0].startswith("`"):
                 yield {"command": cells[0].strip("`"), "source": row["source"],
                        "visibility": row["visibility"], "calls": row.get("calls", ""),
-                       "does": row.get("does")}
+                       "does": row.get("does"), "denied in": row.get("denied in", "")}
 
 
 def used_at(row):

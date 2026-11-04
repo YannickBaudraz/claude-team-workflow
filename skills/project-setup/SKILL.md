@@ -67,7 +67,7 @@ Done when each convention exists where the map says, every added line was approv
 
 ## 6. Guard the merge
 
-In this project the merge is the user's act. The settings keep the agent from merging a PR, pushing to the default branch or changing a branch rule: a filter against mistakes, not a lock, since the agent works under the user's own login.
+In this project the merge is the user's act. The settings keep the agent from merging a PR, pushing to the default branch or changing a branch rule: a filter against mistakes, not a lock, since the agent works under the user's own login. The same settings deny the skills the workflow's registry (`~/.claude/skills/ask-team/REGISTRY.md`) lists as denied in project settings: each brings a second set of rules for work a workflow step already does, so Claude follows the step's own. The user can still type them, and outside workflow projects they load as before.
 
 - Merge `templates/claude-settings.json` into the repo's `.claude/settings.json`, creating it when absent: keep its other keys, add each deny rule it lacks, and add the hook entry once. Copy `~/.claude/skills/ask-team/hooks/merge-guard.py` to `.claude/hooks/merge-guard.py`. Show the user the diff before writing. A global gitignore may ignore `.claude`: run `git check-ignore -v` on both files, add them with `git add -f` when ignored, and tell the user. Both are committed, so every local session and every single-repository cloud session on this repo carries them; a cloud thread of a Claude project or a cloud session on several repositories does not (FLOW.md, Sessions).
 - Write the commands the user runs themselves, in a terminal or in shell mode (`!`); the guard refuses them to the agent:
