@@ -1,5 +1,5 @@
 {
-  "why": "The project map has its Project facts table, whose interface fact is command line, so step 8 is skipped; Epic #1's PRD and design doc are approved and its stories are outcomes only: refinement is next, step 9, with the first story.",
+  "why": "The project map's Project facts table says the interface is command line, while its Interface designs row has a home and Epic #1's PRD names the screens it adds: under the earlier rule, a home and screens, step 8 would run, so reading the fact is what skips it. The PRD and design doc are approved and the stories are outcomes only, so refinement is next, step 9, with the first story.",
   "layers": [
     "base",
     "setup",
@@ -9,6 +9,6 @@
     "design",
     "facts-command-line"
   ],
-  "next": "/specification\\s+#?3(?![\\w-])",
-  "light": "/specification\\s+#?3(?![\\w-])"
+  "next": "^(?![\\s\\S]*/ui-design)/specification\\s+#?3(?![\\w-])",
+  "light": "^(?![\\s\\S]*/ui-design)/specification\\s+#?3(?![\\w-])"
 }

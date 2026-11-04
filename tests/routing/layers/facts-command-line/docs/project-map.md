@@ -14,7 +14,7 @@
 
 | Fact | Value | Why | Confirmed |
 |---|---|---|---|
-| Interface | command line | Pantry is a command-line tool. | 2026-10-01 |
+| Interface | command line | Pantry runs in a terminal: its screens are text it prints and prompts it asks. A web page may come after the walking skeleton. | 2026-10-01 |
 | Deploy target | none | It runs on the developer's laptop. | 2026-10-01 |
 | Users | the developer only; made for home cooks, who can be reached among friends | A tool for the developer's own kitchen first. | 2026-10-01 |
 | Model-driven features | none | | 2026-10-01 |
@@ -31,8 +31,8 @@
 | Problem statement and solution brief | repo: `docs/product/` | | product owner | Small project, one repo. |
 | Roadmap | story map: `docs/product/story-map.md`; epics: issue tracker, one per release slice | | product owner | The map shapes the slices; the tracker holds the epics. |
 | PRDs | repo: `docs/prd/<epic>.md` | | product owner | |
-| Interface designs | none: no user interface | | | Pantry is a command-line tool. |
-| Visual direction | none: no user interface | | | |
+| Interface designs | repo: `docs/interface/<epic>.md` | | interface designer | Kept for the web page that may come after the walking skeleton. |
+| Visual direction | repo: `docs/interface/visual-direction.md` | | interface designer | One for the product, once it has a web page. |
 | Design docs | repo: `docs/design/<epic>.md` | | architect | Next to the code they describe. |
 | ADRs | repo: `docs/adr/` | | architect | |
 | Epics, stories and tickets | issue tracker: `issues/` | | everyone | |

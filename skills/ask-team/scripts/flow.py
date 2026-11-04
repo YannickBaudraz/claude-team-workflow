@@ -1,4 +1,5 @@
-"""The one reader of the workflow's tables: FLOW.md's Main flow and Step contracts, and REGISTRY.md.
+"""The one reader of the workflow's tables: FLOW.md's Main flow and Step contracts, REGISTRY.md,
+and the homes the project map template names.
 
 check-contracts.py, check-registry.py and the workflow page (docs/workflow/sources.py) read these
 files through here, so a change to their structure changes one parser. Every function takes a
@@ -101,6 +102,17 @@ def step_contracts(text):
     outputs = [(output, [maker.strip().strip("`") for maker in makers.split(",")], home)
                for output, makers, home in found[1][1:]]
     return contracts, outputs
+
+
+# The project map's sections whose first column names a home: a tool, or a kind of document.
+HOME_SECTIONS = ("Tools", "Where each kind of document lives")
+
+
+def map_homes(text):
+    """The homes a project map names: the first cell of each row in its Tools table and its table of
+    where each kind of document lives. Its other tables, such as the project's facts, hold no homes."""
+    return {cells[0] for title in HOME_SECTIONS
+            for table in tables(section(text, title) or "") for cells in table[1:]}
 
 
 def workflow_tables(text):

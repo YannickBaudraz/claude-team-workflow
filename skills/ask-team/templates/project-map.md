@@ -32,7 +32,7 @@ Only for a project whose kind is client; delete this section otherwise. When the
 
 | For the client | What, or who |
 |---|---|
-| Approver | <name and role> |
+| Approver | <role, and the name; in a public repo, the role only, the name kept where the section links> |
 | Where the client reads | <published copies of the repo's documents / a shared documentation tool>. The client reads rendered artefacts: clickable wireframes, shots, a preview or staging link. Internal notes stay apart. |
 | Brand guidelines and accessibility obligations | <links, or none> |
 | Acceptance terms | <the window, the criteria and who signs>; copied into the definition of done |
