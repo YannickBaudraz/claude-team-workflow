@@ -1,12 +1,12 @@
 ---
 name: project-setup
-description: Set up a project for the team workflow, new or existing: decide its tools and where each kind of document lives, write the project map, and place the conventions.
+description: Set up a project for the team workflow, new or existing: record its facts, decide its tools and where each kind of document lives, write the project map, and place the conventions.
 disable-model-invocation: true
 ---
 
 # Project setup
 
-Runs before any planning: after discovery (`/grill-with-docs`) for a new project, or when an **existing codebase** joins the workflow, where the repo itself is the context. Its output is the **project map**: which tools the project uses and where each kind of document lives, read by agents and people alike. Templates live in `~/.claude/skills/ask-team/templates/`.
+Runs before any planning: after discovery (`/grill-with-docs`) for a new project, or when an **existing codebase** joins the workflow, where the repo itself is the context. Its output is the **project map**: the facts about the project that decide which steps run, which tools it uses and where each kind of document lives, read by agents and people alike. Templates live in `~/.claude/skills/ask-team/templates/`.
 
 Placement is decided from this project's context, never from a default list. Some answers are obvious; many depend on the situation (a database shared by several apps, a domain owned by non-developers, a project small enough to keep everything in the repo). What the repo already has outranks the templates: they fill gaps, they replace nothing.
 
@@ -33,8 +33,17 @@ For a new project, read what discovery produced: the conversation, the repo's `G
 - Which issue tracker, documentation tool, code host and CI does it use, if any?
 - Is the domain shared with other systems or repos, and does a domain doc already exist? Who owns it?
 - Who reads which documents: developers only, or also people who never open the repo?
+- The **project facts**, for the map's Project facts table, each with its reason. For an existing codebase, propose each from what the code shows (a UI framework, a deploy workflow, calls to a model's API, a login), and ask only what it cannot show:
+  - Interface: graphical, command line or API only, or none.
+  - Deploy target: its name, or none.
+  - Users: none yet, the developer only, or others. Name who the product is for and whether those people can be reached for research, even while it has no users yet.
+  - Model-driven features: yes, or none.
+  - Kind: personal, client or sold. Personal is the fallback: a project whose kind is not set runs as a personal one, and every step the kind turns on names it.
+  - Exposure: local only, known people (such as a client's staff), or public internet.
+  - Data: no personal data, ordinary personal data, or sensitive data, money or credentials.
+- For a client project, the client's part of the map: the client's approver; where the client reads, published copies of the repo's documents or a shared documentation tool, with internal notes kept apart; the client's brand guidelines and accessibility obligations; the contract's acceptance terms (the window, the criteria, who signs); the client's security and privacy obligations; who owns each account and secret, using the client's own accounts where possible; and, at handover, which documents the client keeps and where, and the removal of every access to the client's accounts and data.
 
-Done when every tool is named (or explicitly "none") and the user has confirmed the answers.
+Done when every tool is named (or explicitly "none"), every project fact has a value, for a client project every row of the Client section has an answer (or an explicit "none"), and the user has confirmed the answers.
 
 ## 3. Decide where each kind of document lives
 
@@ -42,7 +51,7 @@ Fill the table in `templates/project-map.md` for every kind of document this pro
 
 - Where the repo already keeps a kind of document, propose that place. The template's suggestion only fills a kind the repo has nowhere for.
 - For a kind the repo has nowhere for, propose the project's own tool for it first: its documentation tool, project management tool or tracker. The repo is the place when the project has no such tool, or for what agents read with the code, such as the glossary and the coding standards.
-- The Interface designs and Visual direction rows are for a product with a user interface; for one without, they read "none: no user interface".
+- The Interface designs and Visual direction rows are for a product whose Interface fact is graphical; for any other, they read "none: no user interface".
 - The map itself goes in the **highest source of truth**: the documentation tool when the project has one above its repos, otherwise the repo.
 - Every repo keeps its own `GLOSSARY.md`, limited to the domain knowledge its code uses. When a domain doc exists, it wins on meaning, and agents only read it. A new glossary starts empty: `domain-modeling` fills it as terms come up.
 - For an existing codebase with no problem statement or roadmap, the Roadmap row reads "none; planned at step 4 when wanted". The router reads that row, so planning stays a choice rather than the next step.
@@ -51,7 +60,7 @@ Done when every row has a place and a reason, and the user has approved the tabl
 
 ## 4. Write the map and the pointer
 
-Write the map where step 3 put it. When it lives outside the repo, add the pointer from the template to the repo's `CLAUDE.md` or `AGENTS.md`, whichever exists; ask which to create when neither does. The pointer is the only line this step adds to that file.
+Write the map where step 3 put it, with its Project facts table dated today and, for a client project, its Client section; delete that section for any other kind. When it lives outside the repo, add the pointer from the template to the repo's `CLAUDE.md` or `AGENTS.md`, whichever exists; ask which to create when neither does. The pointer is the only line this step adds to that file.
 
 Move anything discovery already wrote (glossary terms, ADRs) when the map puts it elsewhere.
 
@@ -63,7 +72,9 @@ For each convention, the repo's own file wins when it has one: the map points at
 - the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow;
 - the PR template, from `pull-request-template.md`, at the code host's path: `.github/pull_request_template.md`, `.gitlab/merge_request_templates/Default.md` or `.gitea/pull_request_template.md`. The workflow needs its ticket link and its definition-of-done checklist.
 
-Done when each convention exists where the map says, every added line was approved, and the user has seen the list.
+For a client project, add the contract's acceptance terms to the definition of done as items, whether it is the repo's own file or the template's copy: the acceptance window, the criteria, and who signs. In a public repo, who signs is named by role only, and anything the contract keeps confidential stays where the map's Client section links. Show each added line to the user for approval.
+
+Done when each convention exists where the map says, for a client project the definition of done holds the acceptance terms, every added line was approved, and the user has seen the list.
 
 ## 6. Guard the merge
 

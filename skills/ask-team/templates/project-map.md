@@ -12,6 +12,34 @@ Where this project's work and knowledge live, for the people and the agents work
 | CI | <GitHub Actions / GitLab CI / Gitea Actions / none> | <pipeline URL> | <CLI> |
 | Design | <Figma / none> | <file URL> | <MCP server> |
 
+## Project facts
+
+The facts that differ between projects and decide which steps run. Each row has its reason and the date it was last confirmed: setup fills them, and each epic retro confirms them again. A fact that changed sends the work it turns on through `/change-request`.
+
+| Fact | Value | Why | Confirmed |
+|---|---|---|---|
+| Interface | <graphical / command line or API only / none> | | <date> |
+| Deploy target | <its name / none> | | <date> |
+| Users | <none yet / the developer only / others>; made for <who the product is for>, who <can / cannot> be reached | | <date> |
+| Model-driven features | <yes / none> | | <date> |
+| Kind | <personal / client / sold> | | <date> |
+| Exposure | <local only / known people, such as a client's staff / public internet> | | <date> |
+| Data | <no personal data / ordinary personal data / sensitive data, money or credentials> | | <date> |
+
+## Client
+
+Only for a project whose kind is client; delete this section otherwise. When the map lives in a public repo, this section names roles only: the client's names and account details stay in the documentation tool or another private place, which the section links.
+
+| For the client | What, or who |
+|---|---|
+| Approver | <role, and the name; in a public repo, the role only, the name kept where the section links> |
+| Where the client reads | <published copies of the repo's documents / a shared documentation tool>. The client reads rendered artefacts: clickable wireframes, shots, a preview or staging link. Internal notes stay apart. |
+| Brand guidelines and accessibility obligations | <links, or none> |
+| Acceptance terms | <the window, the criteria and who signs>; copied into the definition of done |
+| Security and privacy obligations | <from the contract, or none> |
+| Accounts and secrets | <who owns each>. The client's own accounts are used where possible. |
+| At handover | <the documents the client keeps, and where>; every access to the client's accounts and data is removed |
+
 ## Where each kind of document lives
 
 One row per kind of document this project produces. When a new kind appears, decide its place and add a row before writing the first one.

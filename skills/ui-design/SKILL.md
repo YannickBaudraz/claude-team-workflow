@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # UI design
 
-Step 8 of the flow, for an epic with a user interface: the interface designer's part, after the PRD and the technical design. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
+Step 8 of the flow, for an epic with a graphical interface: the interface designer's part, after the PRD and the technical design. The skill carries the design thinking: it turns the product's jobs and the user's **taste rules** into **directions**, shows them early and cheaply, then builds and reviews what is still in play. A good design usually **merges** the best parts of several directions, so the skill harvests parts across variants and the user steers the merge.
 
 Reference files in this folder:
 
@@ -21,7 +21,7 @@ The user decides; the skill shows. Every point the user has not decided (an open
 
 - Read the project map, the epic, its PRD, its design doc for the technical limits the screens work within, and the glossary and ADRs it touches. When the epic's interface design, or the visual direction this epic writes, already exists, approved or not, review it with the user instead of starting over, then go to section 7 to fold in their changes and write the approval line.
 - List the screens the epic adds or changes, and write each one's job in one line: the user's situation, what they get done there, how often. Check each job line against the epic's tasks for that screen, so no task is dropped: the review later judges only the jobs written here.
-- Find the product's taste rules in its visual direction, where the project map puts it; when there is none yet, ask who the screens are for, what the product must feel like, and what they want to avoid.
+- Find the product's taste rules in its visual direction, where the project map puts it; when there is none yet, ask who the screens are for, what the product must feel like, and what they want to avoid. For a client project, the client's brand guidelines and accessibility obligations, which the map's Client section links, are inputs to the taste rules and the visual direction, and every direction keeps to them.
 - Give every rule, found or given, a **test**: how a reviewer would tell from a screenshot that a screen breaks it. Map every clause of the user's taste statement to a rule, so none is dropped.
 - Ask about every rule without a test, and every assumption the user could correct, in one batched question. Ask what each vague word means to them. When examples help, offer readings that span the plausible range and say what each would look like; a single execution offered as a yes/no turns a choice into a confirmation. When an answer names something to avoid, ask what they want in its place.
 - Write each rule in the user's words, with the skill's reading beside it, labelled as such. A word the user hands back or cannot pin down becomes an **open word**: recorded, and shown in step 2, never settled silently.
@@ -105,7 +105,7 @@ Say at the top what the user did not decide: open words, the skill's readings, c
 
 When the product has no visual direction yet, also write its **visual direction** where the project map puts it: the taste rules with their tests, and the approved direction's surface decisions (typeface roles, colour roles, how actions are treated, theme surfaces), each with its reason. Later epics read it in section 1 and keep to it.
 
-When the user approves, end each document with the line `Approved by <their name> on <date>`.
+When the user approves, end each document with the line `Approved by <their name> on <date>`. For a client project whose contract has the client approve the interface design or the visual direction, write that line only once the client's decision is recorded in writing, through the documentation tool's approval feature or an email or ticket kept as evidence, and link it beside the line. In a public repo, name the client's approver by role only, and link where the map's Client section keeps the client's details, without quoting the evidence.
 
 The build at step 11 follows the interface design. At step 12, `REVIEWER.md` reviews the built screens the same way.
 

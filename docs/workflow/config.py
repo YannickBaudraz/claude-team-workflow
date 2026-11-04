@@ -30,7 +30,7 @@ TERMS = [
 # step has no sentence here.
 STEP_SUMMARIES = {
     1: 'Claude questions you about the idea until it is clear, noting terms and decisions as it goes.',
-    2: "Claude chooses the project's tools and where each kind of document lives, keeping what an existing repo already has.",
+    2: "Claude records the facts that decide which steps run, chooses the project's tools and where each kind of document lives, keeping what an existing repo already has.",
     3: 'The open decisions are mapped on the tracker and settled one at a time.',
     4: 'The problem is framed, who it affects and how success is measured, then a one-page brief outlines the answer.',
     5: 'A workshop with you maps what users do, step by step, and the stories under each step.',
