@@ -12,4 +12,4 @@ The domain terms this repo's code uses, one entry per term. It starts empty and 
 
 **Standard security class**: The middle security class, for a project that people other than its developer can reach, or that holds ordinary personal data. Below it, Baseline covers a local-only project with no personal data; Standard adds a light threat model, the PRD's security and privacy block, and abuse examples on boundary rules.
 
-**Test guards**: CI's scans of a pull request's diff for every test it deletes and every test it newly skips. Each listed change needs a one-line reason in the PR's description, which the developer reads before merging. They stand in for the approval of each commit, which only pair mode keeps.
+**Test guards**: Scans of the files a pull request changes, for every test it deletes and every test it newly skips. The build runs them before it opens the PR, and CI runs them on every PR where it has them. Each listed change needs a one-line reason in the PR's description, which the developer reads before merging. They stand in for the approval of each commit, which only pair mode keeps.

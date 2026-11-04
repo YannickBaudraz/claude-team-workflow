@@ -25,6 +25,13 @@ as one of the developer's touches. The reply approves only what the session just
 looser one would read as a blanket approval and undercount them. The skills' own Arguments
 come from REGISTRY.md, as the router prints them.
 
+The build takes the usual path, with no characterization test and no full-diff read for a small
+change in an existing codebase: the fixture is a new product, its code and its setup one commit,
+and its ticket belongs to a story. Its project map names GitHub Actions, but the fixture has no
+pipeline files: this script stands in for that CI and runs the fixture's commands on what was
+pushed, but not the test guards. The build runs the guards in its session and puts their lines
+on the pull request, and nothing checks their reasons.
+
 What passes: the chain reaches a pull request, CI on it is green, this script's own reading of
 the page (page_check.py) finds every acceptance criterion met, no commit carries an attribution,
 main has not moved, the acceptance review prints a verdict that agrees with page_check.py and posts
