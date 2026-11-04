@@ -10,7 +10,7 @@ The rules a reviewer checks a diff against. They hold judgement calls only: anyt
 | Every skill the workflow names is in the registry, installed and pinned | check-registry.py | `python3 skills/ask-team/scripts/check-registry.py` |
 | The workflow page matches FLOW.md and REGISTRY.md | build-workflow.py | `python3 docs/build-workflow.py --check` |
 | The merge guard refuses and allows the commands in its table | unittest | `python3 -m unittest discover -v tests/merge-guard` |
-| The touches counter, the shared parser and the end-to-end harness | unittest | `python3 -m unittest discover tests/measures`, `tests/flow`, `tests/end-to-end` |
+| The touches counter, the shared parser, the registry check's deny rules and the end-to-end harness | unittest | `python3 -m unittest discover tests/measures`, `tests/flow`, `tests/end-to-end` |
 | Routing answers for the scenarios a change touches | tests/routing | `python3 tests/routing/run.py <scenarios> --runs 3 --model claude-opus-5-5 --effort medium` |
 
 ## Judgement calls
