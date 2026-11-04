@@ -1,5 +1,5 @@
 {
-  "why": "/change-request placed a story in an epic whose PRD is approved: the PRD takes it in and is approved again, as the story's Next line says.",
+  "why": "/change-request placed a story in an epic whose PRD is approved: the PRD takes it in and is approved again, as the story's Next line says. On its Gate line and in After that, the tickets themselves wait on no approval: the user confirms the breakdown in the session that makes it. Approvals of the PRD, the design doc or a PR are other steps and pass (the check is in checks.py).",
   "layers": [
     "base",
     "setup",
@@ -13,5 +13,8 @@
     "issues/5-add-with-no-unit.md": "Type: story\nStatus: open\nParent: 1\nLabels: enhancement, ready-for-human\n\n# Add an item counted in pieces\n\nAs a cook, I add eggs without a unit, so things counted in pieces fit too. Decided: a missing unit means pieces. Open: how `use` reads a missing unit.\n\nSize: fits epic #1\nNext: /deliver-prd #1\n"
   },
   "next": "^/deliver-prd\\s+#?1(?![\\w-])",
-  "light": "/deliver-prd\\s+#?1(?![\\w-])"
+  "light": "/deliver-prd\\s+#?1(?![\\w-])",
+  "must_not": [
+    {"check": "old ticket gate"}
+  ]
 }

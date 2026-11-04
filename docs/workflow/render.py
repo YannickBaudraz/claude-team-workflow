@@ -225,11 +225,14 @@ def answers(router):
         if session and together and int(together.group(1)) < number <= int(together.group(2)):
             session += '. ' + voice(together.group(0))
         command = re.search(r'`([^`]+)`', step['command'])
+        # A step with no gate whose output is confirmed in its session shows that confirmation instead.
+        confirmed = next((sentence for sentence in sentences(step['output'])
+                          if re.search(r'\bby confirmation\b', sentence, re.I)), '')
         out[number] = dict(
             name=step['name'], role=step['role'], label=ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else ''),
             command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
             session=esc(session), gate=esc(mark) if step['gate'] else '',
-            gate_out=link_steps(md(shown)) if step['gate'] else esc(no_gate),
+            gate_out=link_steps(md(shown)) if step['gate'] else link_steps(md(confirmed)) if confirmed else esc(no_gate),
             next=[dict(label=label, to=to) for label, to in ways_out(number)],
             # The loops the step sits in, outermost first, for the page's count of them.
             loops=(['epic'] if number >= router['lead'][0] else [])
