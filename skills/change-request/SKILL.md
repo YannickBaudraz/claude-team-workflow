@@ -1,6 +1,6 @@
 ---
 name: change-request
-description: Bring a feature, an improvement, a bug fix, an incident's fix or a postmortem's actions into an existing project: diagnose or grill it as needed, size it with the user, and write it as one issue with the next command, or one per action for a postmortem.
+description: "Bring a feature, an improvement, a bug fix, an incident's fix or a postmortem's actions into an existing project: diagnose or grill it as needed, size it with the user, and write it as one issue with the next command, or one per action for a postmortem."
 argument-hint: "<change, or its issue, or a postmortem>"
 disable-model-invocation: true
 ---

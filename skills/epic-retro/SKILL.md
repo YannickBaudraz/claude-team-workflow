@@ -1,6 +1,6 @@
 ---
 name: epic-retro
-description: Run the retrospective of a finished epic from the evidence it left: sourced findings, a verdict against the epic's goals, and action items.
+description: "Run the retrospective of a finished epic from the evidence it left: sourced findings, a verdict against the epic's goals, and action items."
 argument-hint: "<epic id>"
 disable-model-invocation: true
 ---
