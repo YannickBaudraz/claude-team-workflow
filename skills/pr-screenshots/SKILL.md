@@ -1,6 +1,6 @@
 ---
 name: pr-screenshots
-description: Before and after screenshots in a pull request body, attached with gh. Use when opening or updating a PR that changes what a user sees: layout, styles, copy, a rendered page or component.
+description: "Before and after screenshots in a pull request body, attached with gh. Use when opening or updating a PR that changes what a user sees: layout, styles, copy, a rendered page or component."
 ---
 
 # PR screenshots

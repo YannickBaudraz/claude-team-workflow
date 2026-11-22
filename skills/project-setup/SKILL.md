@@ -1,6 +1,6 @@
 ---
 name: project-setup
-description: Set up a project for the team workflow, new or existing: decide its tools and where each kind of document lives, write the project map, and place the conventions.
+description: "Set up a project for the team workflow, new or existing: decide its tools and where each kind of document lives, write the project map, and place the conventions."
 disable-model-invocation: true
 ---
 
