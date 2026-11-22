@@ -5,12 +5,12 @@ description: "Before and after screenshots in a pull request body, attached with
 
 # PR screenshots
 
-Reviewers judge a visible change from the PR body, without checking out the branch. Give them **pairs**: one image of the base branch with what the change removes marked red, one image of the PR branch with what it adds marked green, each under a title that says what changed. Both show the same state, with the same viewport and stored settings, so the only difference is the change.
+Reviewers judge a visible change from the PR body, without checking out the branch. Give them **pairs**: one image of the base branch with what the change removes marked red, one image of the PR branch with what it adds marked green, each under a title that says what changed. A change that only removes, or only adds, needs one image: the side that shows it. Both sides show the same state, with the same viewport and stored settings, so the only difference is the change.
 
 `shot-diff` makes the pairs: it opens two pages in Chrome, marks what differs and crops each image to it.
 
 ```
-npx @yannickbaudraz/shot-diff@0.6.0 --help
+npx @yannickbaudraz/shot-diff@0.7.0 --help
 ```
 
 Run that first. The steps below say what each run must achieve; `--help` says which option achieves it.
@@ -53,6 +53,7 @@ Shoot each listed part in its own run, and the whole page once when the dry run 
 
 - the state: every option its dry run had, what was left out of the comparison included;
 - a short title that says what changed in that part: a long one wraps over several lines on a narrow image;
+- one image instead of a pair when the part's changes are all removals, or all additions: the other side would show nothing marked;
 - its own file prefix, in one output folder for the PR, so that no run overwrites another;
 - for a run of one part, the part exactly as the dry run printed it. A wider one, such as a whole section, gives an image as wide as the page;
 - a device pixel ratio of 1 when the image will be narrower than the PR's text column, about 900 px, as most parts and a page at phone width are; a dry run given the part prints its width. GitHub shows such an image at its file's size, so at a ratio of 2 the part appears twice as large and twice as tall. A wider image is shrunk to the column, so it keeps the default ratio and stays sharp.
@@ -60,7 +61,7 @@ Shoot each listed part in its own run, and the whole page once when the dry run 
 What comes back:
 
 - A run can come back as several numbered pairs: a long part, or the whole page. Keep each pair that shows a change no other kept pair shows.
-- A pair keeps both images, even when only one side has a mark.
+- A pair with changes on both sides keeps both images, even when only one of them has a mark.
 - A run of one part reports the other parts' changes as ignored: their own runs show them. When the same run marks nothing on either image, the ignored change is the one it was meant to show: a block that exists on one side only, beside the part named. Delete its images and shoot the whole page instead.
 - When a run prints any other warning, do what the warning names and run again. When it names nothing, tell the user.
 
