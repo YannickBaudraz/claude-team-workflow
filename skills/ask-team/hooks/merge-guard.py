@@ -25,6 +25,56 @@ $'...' strings, case, arithmetic and every $(...), `...`, <(...) and >(...), eac
 command of its own. A # or a << inside quotes is text to it, as to the shell. What it cannot
 follow, or what depends on values it cannot know, such as a heredoc fed to a shell that expands
 variables, it refuses. tests/merge-guard/test_shell_reading.py holds it to that against bash.
+For the PowerShell tool, a backtick that ends a line joins the next one, as PowerShell does; its
+other backticks are read as bash reads them. A command after a reserved word (if, then, else,
+elif, while, until, do, !, coproc) is checked like any other: `if true; then gh pr merge 5; fi`
+is refused.
+
+An API write (gh api, curl, wget, http, xh, Invoke-RestMethod, Invoke-WebRequest) whose endpoint
+holds a variable or a substitution is refused when the endpoint could be one of the paths the
+checks protect, with the method and fields the call sends: `curl -X PUT "$URL"` is refused, while
+`gh api -X POST repos/o/r/issues/$N/comments` is not, since its readable part rules out every
+protected path. The guard reads such an endpoint this way. Its query, scheme and host are dropped,
+and so is its base URL: what comes before repos/, orgs/ or graphql, else a variable the rest of
+the path follows ("$BASE_URL/api/items"), and GitHub Enterprise Server's api/v3. An endpoint on
+localhost, 127.0.0.1, 0.0.0.0 or [::1] is not the code host: its variables are not checked. A
+variable right after repos/ is the owner, or owner/repo when a GitHub resource name or nothing
+follows it (repos/$GITHUB_REPOSITORY/issues); one in the owner's or the repository's place is a
+name. A variable at the path's start, right after the repository or the organization, or after
+git/refs/ or contents/ may stand for any text; any other stands for text within its own segment
+(pulls/$N). A variable the path starts with may also hold the start of a protected path when the
+path ends as only a protected path does, in merge, merges, merge-upstream, protection, rulesets
+or refs: "$PR_URL/merge" is refused, "$PR_URL/comments" is not. A method that comes from a
+variable counts as each write method; a method word is read in any case (http put). gh's {owner}
+and {repo} are names and its {branch} is the current branch. curl's options are read as curl
+reads them (-s is a flag, -sX PUT sets the method), and wget's as wget does (-T 10 is a timeout,
+--post-data sends a body); of HTTPie and xh only `http METHOD URL items` is read; PowerShell's
+options with gh's list.
+
+The ref and branch checks also read a value given as a file (-F ref=@file, --data-urlencode
+branch@file, --form 'branch=<file'), and refuse when the file is missing or empty or is stdin;
+a default_branch field is refused whatever its value.
+
+These checks read text: they catch the forms an agent writes in normal work, by mistake or habit.
+They do not stop a command crafted to get past them; the review of a change and the developer's
+read of the diff do. The guard does not read: a variable that holds more of the path than its
+place gives it (repos/$REPO/$WHAT, or "$BRANCH_URL/protection/restrictions", which does not end
+as only a protected path does), or a query, a fragment or a .. segment; an endpoint with a host
+but no scheme (api.github.com/$EP); a GraphQL query or a body field held in a variable (-f
+query="$Q", -f state="$STATE"), let through as before; the shell's brace expansion and curl's URL
+globs; any URL after curl's first; a curl long option it does not know that takes a value, whose
+value it reads as a word; HTTPie's and xh's options, and so a method after one (http -a u:p PUT
+"$URL") or a method they infer from the items; PowerShell's URI given without -Uri after an option
+that takes a value (-ContentType 'application/json' -Method Put $u); a program named through a
+variable or quotes ($CLIENT, c''url); the input xargs -I or find -exec puts in a command; on a
+line that names nothing else the guard looks for, an API call run through eval or find -exec; a
+file the same command line writes before the request reads it. A $ that single quotes keep
+literal in a URL is read as a variable, so such a write may be refused when it need not be. A
+ref or a branch in a variable (-f branch=$B) is let through as before: its value is not known
+before the command runs, and refusing it would refuse ordinary writes to a feature branch. One
+in a JSON body (-d '{...}', --input) is read as before: a ref gets through, a branch is refused
+as missing. A PowerShell call with no -Method sends a GET, so its endpoint in a variable is not
+checked, whatever -Body holds.
 
 It is a filter on the commands the agent runs, not a lock. It cannot see inside a script file
 a command runs. The branch rule on the code host still refuses a direct push to the default
@@ -33,9 +83,13 @@ developer's login, which the agent uses; only a separate login without merge rig
 
 install.sh copies this file to ~/.claude/hooks/, a path that never moves with a branch
 checkout, and /project-setup copies it into the project's .claude/hooks/. It exits at once
-for a command that names no merge, push, branch rule, default branch, advisory or GraphQL
-call, and looks for a project map only for a command it would refuse. A command it cannot read is
-refused when it names one of those. It refuses with exit code 2 and says why on stderr.
+for a command that names no merge, push, branch rule, default branch, advisory or GraphQL call,
+and no API client given a method, a body or a file to upload, and looks for a project map only for
+a command it would refuse. A command that names only an API client's write is checked for its
+API calls alone: `curl -fsSL URL | sh && docker run -d nginx` is let through, as before. A
+command it cannot read is refused when it names a merge, a push, a branch rule, a default branch,
+an advisory or a GraphQL call; one that names only an API client's write is let through, as
+before. It refuses with exit code 2 and says why on stderr.
 
 The table of refused and allowed commands is tests/merge-guard/cases.tsv, run in CI.
 """
@@ -87,6 +141,62 @@ GH_BUILTINS = {"agent-task", "alias", "api", "attestation", "auth", "browse", "c
 GH_VALUE_OPTIONS = {"-R", "--repo", "--hostname", "-X", "--method", "-H", "--header", "-f", "-F", "--field",
                     "--raw-field", "--input", "-q", "--jq", "-t", "--template", "--cache", "-p", "--preview",
                     "-b", "--branch", "-s", "--source"}
+# Words bash reads as reserved at a command's start: the command after them is checked as any other.
+RESERVED = {"if", "then", "else", "elif", "while", "until", "do", "!", "coproc"}
+# The API clients and the signs of a write, for the quick filter: a command naming one of them and
+# a method, a body or a file to upload is checked for its API calls even when it names nothing else
+# the guard looks for. A sign elsewhere on the line (docker run -d) does not make the rest checked.
+API_CALL = re.compile(r"\b(curl|wget|xh|invoke-restmethod|irm|invoke-webrequest|iwr)\b|(^|[\s;&|(])https?(\s|$)", re.I)
+WRITE_SIGN = re.compile(r"""(?<![^\s'"])(-[A-Za-z]*[XdFT]|--(request|method|data|form|json|upload-file|post))"""
+                        r"""|(?i:(?<![^\s'"])-(method|body|infile)\b|\b(PUT|POST|PATCH|DELETE)\b)""")
+# An endpoint on this machine: a variable in its path cannot hide one of the code host's paths.
+LOCAL_HOST = re.compile(r"^[a-z][\w+.-]*://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])([:/]|$)", re.I)
+# Text whose value the guard cannot know: a substitution's output, a shell or PowerShell variable.
+UNREADABLE = re.compile(rf"{UNKNOWN}|\$\{{[^}}]*\}}|\$(env:)?\w+|\$[@*#?!$-]")
+# curl's short options that take a value; every other one is a flag (-s, -f, -L).
+CURL_SHORT_VALUES = set("dFHXuoAebcwxUEmrCDTKYyztQP")
+CURL_LONG_VALUES = {
+    "--request", "--data", "--data-raw", "--data-binary", "--data-ascii", "--data-urlencode", "--json", "--form",
+    "--form-string", "--header", "--upload-file", "--config", "--expand-data", "--variable", "--url", "--user",
+    "--output", "--user-agent", "--referer", "--cookie", "--cookie-jar", "--write-out", "--proxy", "--cert",
+    "--cacert", "--capath", "--key", "--oauth2-bearer", "--max-time", "--connect-timeout", "--retry", "--retry-delay",
+    "--retry-max-time", "--dump-header", "--resolve", "--connect-to", "--limit-rate", "--output-dir", "--range",
+    "--continue-at", "--unix-socket", "--netrc-file", "--trace", "--trace-ascii", "--stderr", "--url-query",
+    "--max-redirs", "--proto", "--interface", "--aws-sigv4", "--noproxy", "--proxy-user"}
+# The curl options api_request reads; the others, with their values, say nothing about what is sent where.
+CURL_READ = {"-X", "--request", "-d", "--data", "--data-raw", "--data-binary", "--data-ascii", "--data-urlencode",
+             "--json", "--form", "--form-string", "-T", "--upload-file", "-K", "--config", "--expand-data",
+             "--variable", "--url", "-G", "--get"}
+# wget's short options that take a value; every other one is a flag (-q, -d, -c), and -n takes the
+# letter after it (-nv). Its long options that take a value, and the ones api_request reads.
+WGET_SHORT_VALUES = set("oaeiBtTwOQPUlARDIX")
+WGET_LONG_VALUES = {
+    "--output-document", "--output-file", "--append-output", "--timeout", "--tries", "--wait", "--header", "--user",
+    "--password", "--http-user", "--http-password", "--user-agent", "--referer", "--directory-prefix",
+    "--input-file", "--execute", "--quota", "--level", "--load-cookies", "--save-cookies", "--limit-rate",
+    "--dns-timeout", "--connect-timeout", "--read-timeout", "--ca-certificate", "--certificate", "--private-key"}
+WGET_READ = {"--method": "-X", "--body-data": "-d", "--post-data": "-d", "--body-file": "--input",
+             "--post-file": "--input"}
+# The paths the checks in check_path protect: {} stands for a name, * for any text. An endpoint the
+# guard cannot read is checked as each of these it could be, with the fields the call sends.
+PROTECTED = ("repos/{}/{}/pulls/{}/merge", "repos/{}/{}/merges", "repos/{}/{}/merge-upstream",
+             "repos/{}/{}/branches/{}/protection", "repos/{}/{}/branches/{}/protection/*", "repos/{}/{}/rulesets",
+             "repos/{}/{}/rulesets/*", "orgs/{}/rulesets", "orgs/{}/rulesets/*", "repos/{}/{}/git/refs",
+             "repos/{}/{}/contents/*", "repos/{}/{}", "repos/{}/{}/security-advisories/{}", "graphql")
+# The last segments of the protected paths that only a protected path ends with.
+PROTECTED_ENDS = {"merge", "merges", "merge-upstream", "protection", "rulesets", "refs"}
+# What follows owner/repo in GitHub's repository endpoints: a variable right before one of them is
+# read as owner/repo, as $GITHUB_REPOSITORY is.
+REPO_RESOURCES = {
+    "actions", "activity", "assignees", "attestations", "autolinks", "automated-security-fixes", "branches",
+    "check-runs", "check-suites", "code-scanning", "code-security-configuration", "codeowners", "codespaces",
+    "collaborators", "comments", "commits", "community", "compare", "contents", "contributors", "dependabot",
+    "dependency-graph", "deployments", "dispatches", "environments", "events", "forks", "generate", "git", "hooks",
+    "import", "immutable-releases", "installation", "interaction-limits", "invitations", "issues", "keys", "labels",
+    "languages", "lfs", "license", "merge-upstream", "merges", "milestones", "notifications", "pages",
+    "private-vulnerability-reporting", "projects", "properties", "pulls", "readme", "releases", "rules", "rulesets",
+    "secret-scanning", "security-advisories", "stargazers", "stats", "statuses", "subscribers", "subscription",
+    "tags", "tarball", "teams", "topics", "traffic", "transfer", "vulnerability-alerts", "zipball"}
 
 
 class Refused(Exception):
@@ -409,10 +519,11 @@ def simple_commands(command):
 
 
 def unwrap(tokens):
-    """The command once assignments and wrappers such as env, sudo or timeout are dropped."""
+    """The command once reserved words such as then or do, assignments and wrappers such as env, sudo
+    or timeout are dropped."""
     while tokens:
         word = os.path.basename(tokens[0]).lower()
-        if re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[0]):
+        if tokens[0] in RESERVED or re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[0]):
             tokens = tokens[1:]
         elif word in WRAPPERS:
             values = WRAPPER_VALUES.get(word, set())
@@ -552,15 +663,85 @@ def check_git(tokens, directory):
                         break
 
 
-def api_request(arguments):
-    """The method, the endpoint, the field values and the files a gh api, curl or PowerShell call sends.
-    A file sent as a field's value is a (name, path) pair, so its text is read as that field's."""
-    method, endpoint, values, files, fields = None, None, [], [], False
+def curl_arguments(arguments):
+    """curl's arguments with each short option apart (-sX PUT is -s -X PUT, -dx is -d x), -F spelled
+    --form, and every option api_request does not read dropped with its value, so that a flag such
+    as -s or -f is never read as taking the next word."""
+    out, index = [], 0
+    while index < len(arguments):
+        argument = arguments[index]
+        following = arguments[index + 1] if index + 1 < len(arguments) else ""
+        index += 1
+        if argument.startswith("--"):
+            name, glued, value = argument.partition("=")
+            takes = name in CURL_LONG_VALUES and not glued
+            out += ([name, value if glued else following] if name in CURL_LONG_VALUES else [name]) \
+                if name in CURL_READ else []
+            index += 1 if takes else 0
+        elif argument.startswith("-") and len(argument) > 1:
+            for at, letter in enumerate(argument[1:], 1):
+                if letter in CURL_SHORT_VALUES:
+                    value = argument[at + 1:] or following
+                    index += 0 if argument[at + 1:] else 1
+                    option = "--form" if letter == "F" else "-" + letter
+                    out += [option, value] if option in CURL_READ else []
+                    break
+                if "-" + letter in CURL_READ:
+                    out.append("-" + letter)
+        else:
+            out.append(argument)
+    return out
+
+
+def other_client_arguments(client, arguments):
+    """What api_request reads of a wget, HTTPie or xh call: wget's --method, --body-data and
+    --post-data and their file forms, spelled as gh's, and its words; HTTPie's and xh's words only
+    (http METHOD URL items). Every other option is dropped with its value, so that wget -T 10 is a
+    timeout and not an upload, and http -d a download and not a body."""
+    out, index = [], 0
+    while index < len(arguments):
+        argument = arguments[index]
+        following = arguments[index + 1] if index + 1 < len(arguments) else ""
+        index += 1
+        if not argument.startswith("-") or argument == "-":
+            out.append(argument)
+        elif client != "wget":
+            continue
+        elif argument.startswith("--"):
+            name, glued, value = argument.partition("=")
+            if name in WGET_READ:
+                out += [WGET_READ[name], value if glued else following]
+            index += 1 if not glued and (name in WGET_READ or name in WGET_LONG_VALUES) else 0
+        else:
+            letters = argument[1:]
+            while letters:
+                if letters[0] == "n":
+                    letters = letters[2:]
+                elif letters[0] in WGET_SHORT_VALUES:
+                    index += 0 if letters[1:] else 1
+                    break
+                else:
+                    letters = letters[1:]
+    return out
+
+
+def api_request(arguments, client=""):
+    """The method, the endpoint, the field values and the files a gh api, curl, wget, HTTPie, xh or
+    PowerShell call sends. A file sent as a field's value is a (name, path) pair, so its text is read
+    as that field's."""
+    method, endpoint, values, files, fields, get = None, None, [], [], False, False
+    if client == "curl":
+        arguments = curl_arguments(arguments)
+    elif client in ("wget", "http", "https", "xh"):
+        arguments = other_client_arguments(client, arguments)
     index = 0
     while index < len(arguments):
         argument = arguments[index]
         following = arguments[index + 1] if index + 1 < len(arguments) else ""
         lowered = argument.lower()
+        if argument in ("-G", "--get"):  # curl sends the data as the query of a GET
+            get, index = True, index + 1
+            continue
         if argument in ("-X", "--method", "--request") or lowered == "-method":
             method, index = following.upper(), index + 2
             continue
@@ -613,7 +794,7 @@ def api_request(arguments):
             fields = True
             values.append(re.sub(r"^(-[fFd]|--[a-z-]+=)", "", argument))
         elif argument in GH_VALUE_OPTIONS or lowered in ("-uri", "-h", "--header", "-headers"):
-            if lowered == "-uri" and endpoint is None:
+            if lowered == "-uri":
                 endpoint = following
             index += 2
             continue
@@ -630,7 +811,19 @@ def api_request(arguments):
             files.append((name, source[1:]) if name else source[1:])
     if values and any(v in ("-",) for v in values):
         files.append("-")
-    return (method or ("POST" if fields else "GET")), (endpoint or ""), values, files
+    return (method or ("POST" if fields and not get else "GET")), (endpoint or ""), values, files
+
+
+def read_file(name, directory):
+    """A file's text, or None when the guard cannot read it before the command runs: stdin, or a
+    file that is missing."""
+    if name in ("-", ""):
+        return None
+    try:
+        with open(os.path.join(directory or ".", os.path.expanduser(name)), encoding="utf-8") as sent:
+            return sent.read()
+    except (OSError, ValueError):
+        return None
 
 
 def read_sent(files, directory):
@@ -638,21 +831,143 @@ def read_sent(files, directory):
     texts = []
     for name in files:
         field, name = name if isinstance(name, tuple) else ("", name)
-        if name in ("-", ""):
+        text = read_file(name, directory)
+        if text is None:
             return None
-        try:
-            with open(os.path.join(directory or ".", os.path.expanduser(name)), encoding="utf-8") as sent:
-                texts.append(f"{field}={sent.read()}" if field else sent.read())
-        except OSError:
-            return None
+        texts.append(f"{field}={text}" if field else text)
     return "\n".join(texts)
 
 
-def check_api(arguments, directory, redirected=False):
-    """A merge, a write to the default branch, a branch-rule change or an advisory's publication through the code host's API."""
-    method, endpoint, values, files = api_request(arguments)
+def field_values(name, values, files, directory):
+    """The values a request sends for one field: given inline (name=value) or as a file it names
+    (-F name=@file, --data-urlencode name@file, --form 'name=<file'). A file it cannot read, or
+    that holds nothing, gives None."""
+    found = [v.split("=", 1)[1] for v in values if v.startswith(name + "=") and not v.startswith(name + "=@")]
+    for sent in files:
+        if isinstance(sent, tuple) and sent[0] == name:
+            text = read_file(sent[1], directory)
+            found.append(text.strip() if text and text.strip() else None)
+    return found
+
+
+# What an unreadable stretch of an endpoint may stand for: any text, or text within one segment.
+ANY_TEXT, SEGMENT_TEXT = 1, 2
+
+
+def endpoint_items(endpoint):
+    """The endpoint's path as could_be reads it: its characters, and ANY_TEXT or SEGMENT_TEXT for each
+    stretch the guard cannot read. The query and the scheme and host are dropped; so is the API's base
+    URL: what comes before repos/, orgs/ or graphql, else a variable the rest of the path follows, as
+    in "$BASE_URL/api/items", and GitHub Enterprise Server's api/v3. The owner and the repository are
+    names, read as o and r: a variable right after repos/ stands for owner/repo when a resource name
+    or nothing follows it. A stretch at the path's start, right after the repository or the
+    organization, or after git/refs/ or contents/ may stand for any text; any other stands for text
+    within its segment."""
+    path = re.sub(r"^[A-Za-z][\w+.-]*://[^/]*", "", endpoint.split("?", 1)[0].split("#", 1)[0])
+    segments = [s for s in path.split("/") if s not in ("", ".")]
+    anchor = next((i for i, s in enumerate(segments) if s in ("repos", "orgs") and i + 1 < len(segments)
+                   or s == "graphql" and i + 1 == len(segments)), None)
+    if anchor is not None:
+        segments = segments[anchor:]
+    elif len(segments) > 1 and UNREADABLE.fullmatch(segments[0]):
+        segments = segments[1:]
+    if anchor is None and segments[:2] == ["api", "v3"]:
+        segments = segments[2:]
+    if segments[:1] == ["repos"] and len(segments) > 1:
+        whole = UNREADABLE.fullmatch(segments[1]) and (len(segments) == 2 or segments[2] in REPO_RESOURCES)
+        segments = ["repos", "o", "r"] + segments[2 if whole else 3:]
+    elif segments[:1] == ["orgs"]:
+        segments = ["orgs", "o"] + segments[2:]
+    items = []
+    for index, segment in enumerate(segments):
+        items += ["/"] if index else []
+        wide = index == 0 or segments[:index] in (["repos", "o", "r"], ["orgs", "o"]) \
+            or segments[index - 1] == "contents" or segments[max(index - 2, 0):index] == ["git", "refs"]
+        at = 0
+        for found in UNREADABLE.finditer(segment):
+            items += list(segment[at:found.start()]) + [ANY_TEXT if wide else SEGMENT_TEXT]
+            at = found.end()
+        items += list(segment[at:])
+    return items
+
+
+def could_be(items, template):
+    """Whether the path, each of its unreadable stretches filled with some text, can be the template,
+    in which {} stands for a name, with no slash, and * for any text."""
+    route, at = [], 0
+    while at < len(template):  # each wildcard of the template: one character, then any number more
+        if template.startswith("{}", at):
+            route += ["name", "names"]
+            at += 2
+        elif template[at] == "*":
+            route += ["text", "texts"]
+            at += 1
+        else:
+            route.append(template[at])
+            at += 1
+    seen, todo = set(), [(0, 0)]
+    while todo:
+        i, j = todo.pop()
+        if (i, j) in seen:
+            continue
+        seen.add((i, j))
+        if i == len(items) and j == len(route):
+            return True
+        item = items[i] if i < len(items) else ""
+        step = route[j] if j < len(route) else ""
+        if item in (ANY_TEXT, SEGMENT_TEXT):  # the stretch ends, or gives the template's next character
+            todo.append((i + 1, j))
+            if step and not (item == SEGMENT_TEXT and step == "/"):
+                todo.append((i, j + 1))
+        elif step in ("names", "texts"):  # the template's wildcard ends, or takes the path's next character
+            todo.append((i, j + 1))
+            if item and (step == "texts" or item != "/"):
+                todo.append((i + 1, j))
+        elif item and step and (item == step or step == "text" or step == "name" and item != "/"):
+            todo.append((i + 1, j + 1))
+    return False
+
+
+def check_api(arguments, directory, client="", redirected=False):
+    """A merge, a write to the default branch, a branch-rule change or an advisory's publication through
+    the code host's API. A method the guard cannot read counts as each write; a write to an endpoint it
+    cannot read is checked as each protected path the endpoint could be."""
+    method, endpoint, values, files = api_request(arguments, client)
+    if client == "gh" and "{branch}" in endpoint + "".join(values):
+        # gh fills {branch} with the current branch.
+        branch = git(directory, "rev-parse", "--abbrev-ref", "HEAD") or UNKNOWN
+        endpoint, values = endpoint.replace("{branch}", branch), [v.replace("{branch}", branch) for v in values]
+    methods = sorted(WRITE_METHODS) if UNREADABLE.search(method) else [method]
     path = re.sub(r"/+", "/", re.sub(r"/\./", "/", endpoint.split("?", 1)[0]))
     defaults = default_branches(directory)
+    for each in methods:
+        check_path(each, path, values, files, directory, redirected, defaults)
+    if not UNREADABLE.search(endpoint) or not set(methods) & WRITE_METHODS or LOCAL_HOST.match(endpoint):
+        return
+    if client in ("invoke-restmethod", "irm", "invoke-webrequest", "iwr") \
+            and not any(a.lower().startswith(("-me", "-custommethod")) for a in arguments):
+        return  # with no -Method the cmdlets send a GET, whatever -Body holds
+    items = endpoint_items(endpoint)
+    # A base URL in a variable before a protected last segment ("$PR_URL/merge") may hold the start
+    # of that protected path, as a URL an earlier call returned does.
+    bare = re.sub(r"^[A-Za-z][\w+.-]*://[^/]*", "", endpoint.split("?", 1)[0].split("#", 1)[0])
+    segments = [s for s in bare.split("/") if s]
+    lead = [ANY_TEXT, "/"] + items if len(segments) > 1 and UNREADABLE.fullmatch(segments[0]) \
+        and items[:1] != [ANY_TEXT] and segments[-1] in PROTECTED_ENDS else None
+    routes = PROTECTED + tuple(f"repos/{{}}/{{}}/git/refs/heads/{name}" for name in sorted(defaults))
+    for route in routes:
+        if could_be(items, route) or lead and not route.endswith("*") and could_be(lead, route):
+            example = route.replace("{}", "x").replace("*", "x")
+            for each in set(methods) & WRITE_METHODS:
+                try:
+                    check_path(each, example, values, files, directory, redirected, defaults)
+                except Refused as refused:
+                    raise Refused(f"an API write whose endpoint the guard cannot read, which could be {refused}") \
+                        from None
+
+
+def check_path(method, path, values, files, directory, redirected, defaults):
+    """The checks of check_api on one method and one endpoint path."""
     default = "|".join(map(re.escape, sorted(defaults)))
     if re.search(r"(^|/)graphql$", path):
         sent = read_sent(files, directory)
@@ -673,14 +988,19 @@ def check_api(arguments, directory, redirected=False):
         raise Refused("a branch rule change through the API")
     if re.search(rf"git/refs/heads/({default})$", path) and writing:
         raise Refused("a write to the default branch's ref through the API")
-    if re.search(r"git/refs$", path) and writing and any(re.search(rf"refs/heads/({default})$", v) for v in values):
-        raise Refused("a write to the default branch's ref through the API")
+    if re.search(r"git/refs$", path) and writing:
+        refs = field_values("ref", values, files, directory)
+        if None in refs or any(re.search(rf"refs/heads/({default})$", v) for v in values + refs):
+            raise Refused("a write to the default branch's ref through the API, or to a ref read from a file "
+                          "the guard cannot read")
     if re.search(r"/contents/", path) and method in ("PUT", "DELETE"):
-        branch = next((v.split("=", 1)[1] for v in values if v.startswith("branch=")), None)
-        if branch is None or branch in defaults:
-            raise Refused("a commit to the default branch through the API (contents)")
+        branches = field_values("branch", values, files, directory)
+        if not branches or None in branches or any(b in defaults for b in branches):
+            raise Refused("a commit to the default branch through the API (contents), or to a branch read from "
+                          "a file the guard cannot read")
     if re.search(r"/repos/[^/]+/[^/]+$", "/" + path.lstrip("/")) and method == "PATCH" \
-            and any(v.startswith("default_branch=") for v in values):
+            and (any(v.startswith("default_branch=") for v in values)
+                 or any(isinstance(f, tuple) and f[0] == "default_branch" for f in files)):
         raise Refused("a change of the default branch through the API")
     if re.search(r"security-advisories/[^/\s]+$", path) and writing:
         sent = read_sent(files, directory)
@@ -749,18 +1069,19 @@ def check_gh(tokens, directory, depth, origin):
     if words[:2] == ["repo", "sync"] and len(words) > 2:
         raise Refused("`gh repo sync` onto a branch of a repository on the code host")
     if words[:1] == ["api"]:
-        check_api(arguments[arguments.index("api") + 1:], directory)
+        check_api(arguments[arguments.index("api") + 1:], directory, "gh")
 
 
-def check_command(command, directory, depth=0, origin=None):
+def check_command(command, directory, depth=0, origin=None, api_only=False):
     """Refuse the command when it would be refused and either the session's directory
-    (origin) or the directory it acts in belongs to a project set up with the workflow."""
+    (origin) or the directory it acts in belongs to a project set up with the workflow.
+    With api_only, only the API clients' calls are checked, there and in what a shell's -c runs."""
     origin = origin or directory
     if depth > 5:
         raise Refused("commands nested too deep to check")
     code, substitutions = shell_code(command)
     for text in substitutions:
-        check_command(text, directory, depth + 1, origin)
+        check_command(text, directory, depth + 1, origin, api_only)
     for tokens, piped in simple_commands(code):
         settings = [t for t in tokens if re.match(r"^GIT_CONFIG(_COUNT|_KEY_\d+|_VALUE_\d+|_PARAMETERS)?=", t)]
         tokens = unwrap(tokens)
@@ -775,7 +1096,7 @@ def check_command(command, directory, depth=0, origin=None):
             directory = os.path.join(directory or ".", os.path.expanduser(tokens[-1]))
             continue
         try:
-            check_simple(word, tokens, directory, depth, origin, piped)
+            check_simple(word, tokens, directory, depth, origin, piped, api_only)
         except Refused:
             if workflow_project(origin) or workflow_project(target_directory(tokens, directory)):
                 raise
@@ -790,8 +1111,10 @@ def target_directory(tokens, directory):
     return directory
 
 
-def check_simple(word, tokens, directory, depth, origin, piped):
+def check_simple(word, tokens, directory, depth, origin, piped, api_only=False):
     options = [t for t in tokens[1:] if t.startswith("-")]
+    if api_only and word not in API_CLIENTS | SHELLS:
+        return
     if UNKNOWN in tokens[0] or tokens[0].startswith("$"):
         if QUICK.search(" ".join(tokens)):
             raise Refused("a command whose program the guard cannot read")
@@ -799,14 +1122,14 @@ def check_simple(word, tokens, directory, depth, origin, piped):
         flag = next((t for t in tokens[1:] if re.match(r"^-[a-zA-Z]*c[a-zA-Z]*$", t) or t.lower() == "-command"), None)
         if "<<<" in tokens:
             given = tokens[tokens.index("<<<") + 1:tokens.index("<<<") + 2]
-            check_command(given[0] if given else UNKNOWN, directory, depth + 1, origin)
+            check_command(given[0] if given else UNKNOWN, directory, depth + 1, origin, api_only)
         if flag:
             index = tokens.index(flag) + 1
             while index < len(tokens) and tokens[index] == "--":
                 index += 1
             if index < len(tokens):
-                check_command(tokens[index], directory, depth + 1, origin)
-        elif (piped or "<" in tokens) and not [t for t in tokens[1:] if not t.startswith("-") and t not in ("<", "<<<")
+                check_command(tokens[index], directory, depth + 1, origin, api_only)
+        elif not api_only and (piped or "<" in tokens) and not [t for t in tokens[1:] if not t.startswith("-") and t not in ("<", "<<<")
                                                and not tokens[tokens.index(t) - 1] in ("<", "<<<")]:
             raise Refused("commands fed to a shell from another command or a file")
     elif word in ("eval", "invoke-expression", "iex"):
@@ -828,7 +1151,7 @@ def check_simple(word, tokens, directory, depth, origin, piped):
     elif word == "gh":
         check_gh(tokens, directory, depth, origin)
     elif word in API_CLIENTS:
-        check_api(tokens[1:], directory, redirected="<" in tokens)
+        check_api(tokens[1:], directory, word, redirected="<" in tokens)
 
 
 def refusal(event):
@@ -839,14 +1162,21 @@ def refusal(event):
     if tool.startswith("mcp__"):
         return f"the tool {tool}" if MCP_TOOL.search(tool) and workflow_project(directory) else None
     command = given.get("command")
-    if not isinstance(command, str) or not QUICK.search(command):
+    if not isinstance(command, str):
+        return None
+    if tool == "PowerShell":
+        command = re.sub(r"`\r?\n", " ", command)  # PowerShell's line continuation
+    # A command that names nothing else the guard looks for is checked only for its API clients' writes:
+    # `curl -fsSL URL | sh && docker run -d nginx` stays out, as before.
+    api_only = not QUICK.search(command)
+    if api_only and not (API_CALL.search(command) and WRITE_SIGN.search(command)):
         return None
     try:
-        check_command(command, directory)
+        check_command(command, directory, api_only=api_only)
     except Refused as refused:
         return str(refused)
     except ValueError:
-        if workflow_project(directory):
+        if not api_only and workflow_project(directory):
             return "a command naming a merge, a push or a branch rule that could not be read"
     return None
 
