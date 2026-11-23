@@ -11,3 +11,4 @@ addyosmani/agent-skills#1347a9183c120abb76e7f83d80b032808b2001d8 incremental-imp
 davidlee/doctrine#0df1fae61f78575d84c97afd471ec6ac9dedbebd pair
 obra/superpowers#bb92a77741419a4ab5f06e711a283343f1ada0c3 finishing-a-development-branch receiving-code-review
 softaworks/agent-toolkit#3027f20f3181758385a1bb8c022d4041dfb4de84 lesson-learned
+warpdotdev/common-skills#8792394ff1b655e0af451b8fabb68ef0cfcbd208 write-pr-description

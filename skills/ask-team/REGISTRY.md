@@ -25,7 +25,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | Command | Source | Visibility | Used at | Calls | Arguments | Does |
 |---|---|---|---|---|---|---|
 | `/ask-team` | `YannickBaudraz/claude-team-workflow` | typed | entry point, any time |  |  | Reads where the project stands and prints the next command, the session to run it in, and what you must approve first. It never runs the step. |
-| `/project-setup` | `YannickBaudraz/claude-team-workflow` | typed | 2 Setup |  |  | Decides a new or existing project's tools and where each kind of document lives, writes the project map, and places the definition of done, PR template and coding standards, keeping the ones the repo already has. |
+| `/project-setup` | `YannickBaudraz/claude-team-workflow` | typed | 2 Setup |  |  | Decides a new or existing project's tools and where each kind of document lives, writes the project map, and places the definition of done and coding standards, keeping the ones the repo already has. |
 | `/build-ticket` | `YannickBaudraz/claude-team-workflow` | typed | 11 Build | file:incremental-implementation, file:test-driven-development, file:pair, file:finishing-a-development-branch | `<ticket id>`, then `pair <dials>` when pairing | Claims one ticket in the tracker, builds it test-first on its own branch, alone or paired, and opens a pull request with the template filled. An undisclosed security fix on a public repository is built only in the advisory's private fork. |
 | `/epic-retro` | `YannickBaudraz/claude-team-workflow` | typed | 14 Retro | lesson-learned | `<epic id>` | The retrospective of a finished epic from the evidence it left: sourced findings, a verdict against its goals, action items. It closes the epic once you confirm the verdict. |
 | `/change-request` | `YannickBaudraz/claude-team-workflow` | typed | way in | grilling, domain-modeling, diagnosing-bugs, file:ask-team | `<change, issue or postmortem>` | The way in for a feature, improvement or bug fix in an existing project, an incident's fix and a postmortem's actions: diagnoses or grills it as needed, sizes it with you, and writes it as one issue with the next command, or one per action for a postmortem. A suspected vulnerability stays on the private path. |
@@ -55,7 +55,7 @@ A skill may only **call** an `auto` or `built-in` skill: Claude Code refuses a c
 | `finishing-a-development-branch` | `obra/superpowers` | hidden | 11 Build, read by /build-ticket |  |  | Final checks and the options for integrating the branch. |
 | `tdd` | `mattpocock/skills` | auto | ad-hoc test-first work | codebase-design |  | Test-first work with red-green-refactor and integration tests. |
 | `codebase-design` | `mattpocock/skills` | auto | any time |  |  | Shared vocabulary for deep modules: interfaces, seams, testability. |
-| `pr` | `mattpocock/skills` | auto | 11 Build, PR bodies |  |  | Writes pull request bodies. |
+| `write-pr-description` | `warpdotdev/common-skills` | auto | 11 Build, PR bodies |  | Every reason, decision and review pointer comes from the ticket, the commits, the code or this session's own work. Leave out what none of them states. | Writes a PR body that gives the reviewer what the diff cannot: what and why first, behaviour changes, decisions and validation, then a cut pass. |
 | `pr-screenshots` | `YannickBaudraz/claude-team-workflow` | auto | 11 Build, PR bodies |  |  | Renders a visible change from the base branch and the PR branch, and attaches the before and after pairs to the PR body with gh. |
 | `/code-review-and-quality` | `addyosmani/agent-skills` | hidden | 12 Review chain |  | `<PR>`. Against the ticket's acceptance criteria and the coding standards the project map names. Post the findings on the PR. | A multi-axis review of a change before it merges. |
 | `code-review` | `mattpocock/skills` | auto | ad-hoc reviews |  |  | Reviews changes since a fixed point against the repo's coding standards and the originating spec. |
@@ -95,3 +95,4 @@ Each one overlaps something the workflow already covers with different rules: an
 | `engineering:testing-strategy` | `anthropics/knowledge-work-plugins` | denied | tdd |
 | `anthropic-skills:frontend-design` | `anthropics/skills` | denied | /ui-design and the product's visual direction |
 | `productivity:memory-management` | `anthropics/knowledge-work-plugins` | denied | Claude Code's own memory |
+| `mattpocock-skills:pr` | `mattpocock/skills` | denied | write-pr-description |
