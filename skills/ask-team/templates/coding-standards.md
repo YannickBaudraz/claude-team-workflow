@@ -9,6 +9,7 @@ The rules a reviewer checks a diff against. They hold judgement calls only: anyt
 | <formatting> | <formatter> | <command> |
 | <lint rules> | <linter> | <command> |
 | <types> | <type checker> | <command> |
+| Every test a pull request deletes or newly skips has a one-line reason in its description | test guards, in CI on every PR | <command> |
 
 ## Judgement calls
 

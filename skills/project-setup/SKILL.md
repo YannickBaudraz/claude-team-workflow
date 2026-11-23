@@ -60,7 +60,7 @@ Move anything discovery already wrote (glossary terms, ADRs) when the map puts i
 For each convention, the repo's own file wins when it has one: the map points at it, and you add only what the workflow needs from the template, showing each added line to the user for approval. When the repo has none, copy the template where the map says, adapted to the project's stack and tools:
 
 - the definition of done, from `definition-of-done.md`;
-- the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow.
+- the coding standards, from `coding-standards.md`. The *Enforced by tools* table comes from the commands step 1 found. Keep its test guards row only when the project's CI already runs `test-guards.py` on every pull request, with the command that runs them locally; otherwise drop it, since a row there claims a tool enforces it: `/ci-cd-and-automation` adds it once CI runs them. The judgement calls come from the repo's own guide when it has one; otherwise the section stays empty for retros to grow.
 
 Setup adds no PR template: `write-pr-description` writes each PR body. A template the repo already has stays, and that skill follows it.
 
