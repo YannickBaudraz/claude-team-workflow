@@ -16,7 +16,6 @@
     "user-story-mapping-workshop": "user-invocable-only",
     "user-story-mapping": "user-invocable-only",
     "deliver-prd": "user-invocable-only",
-    "technical-writing": "user-invocable-only",
     "writing-design-docs": "user-invocable-only",
     "specification": "user-invocable-only",
     "story-splitting": "user-invocable-only",

@@ -51,7 +51,7 @@ Done when every row has a place and a reason, and the user has approved the tabl
 
 ## 4. Write the map and the pointer
 
-Write the map where step 3 put it. When it lives outside the repo, add the pointer from the template to the repo's `CLAUDE.md` or `AGENTS.md`, whichever exists; ask which to create when neither does. The pointer is the only line this step adds to that file.
+Write the map where step 3 put it. When it lives outside the repo, add the pointer from the template to the repo's `CLAUDE.md` or `AGENTS.md`, whichever exists; ask which to create when neither does. Add the template's writing line to the same file in every project, so each session loads `technical-writing` before it writes a document. The pointer and the writing line are the only lines this step adds to that file.
 
 Move anything discovery already wrote (glossary terms, ADRs) when the map puts it elsewhere.
 

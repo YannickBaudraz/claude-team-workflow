@@ -4,6 +4,10 @@
 
 Tools, and where each kind of document lives: [docs/project-map.md](docs/project-map.md).
 
+## Writing
+
+Load `technical-writing` before you write or revise a document, a tracker item or any other technical prose for this project.
+
 ## Agent skills
 
 ### Issue tracker
