@@ -1508,6 +1508,29 @@ CHECK = False
 ```
 Listed: ci/guards.py changed
 
+## A change to a file in a folder named with --guard is listed
+
+Arguments: --guard ci/guards/
+File: ci/guards/rules.py
+Before:
+```
+CHECK = True
+```
+After:
+```
+CHECK = False
+```
+File: ci/guards2/rules.py
+Before:
+```
+CHECK = True
+```
+After:
+```
+CHECK = False
+```
+Listed: ci/guards/rules.py changed
+
 ## A JavaScript regex that holds slash-star hides no test below it
 
 File: src/cart.test.js

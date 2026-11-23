@@ -3,7 +3,7 @@ repo with the case's files on main and on a branch, and checks how it reads a PR
 
 Run: python3 -m unittest discover tests/test-guards
 TEST_GUARDS_SCRIPT=<path> runs the same tests against another copy of the script, such as the
-one on main, to see which of them a change makes pass.
+one on main, to see which of them a change makes pass; the copy needs its test_guards folder beside it.
 """
 import os
 import re
