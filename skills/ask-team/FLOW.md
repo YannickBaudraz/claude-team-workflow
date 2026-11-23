@@ -34,7 +34,7 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 | Step | Needs | Makes |
 |---|---|---|
 | 1 | idea (outside) | glossary terms, ADRs |
-| 2 | — | project map, tracker doc, definition of done, coding standards, PR template |
+| 2 | — | project map, tracker doc, definition of done, coding standards |
 | 3 | effort (outside), project map | decision tickets, sized issue |
 | 4 | project map | problem statement, solution brief |
 | 5 | solution brief | story map, epic |
@@ -43,7 +43,7 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 | 8 | epic, PRD, design doc | interface design, visual direction |
 | 9 | story, interface design (when the epic has a user interface) | refined story |
 | 10 | refined story or sized issue or epic | ticket |
-| 11 | ticket, definition of done, coding standards, PR template | pull request |
+| 11 | ticket, definition of done, coding standards | pull request |
 | 12 | pull request, ticket, coding standards | acceptance verdict, review |
 | 13 | pull request, acceptance verdict, review | merged pull request |
 | 14 | epic, PRD, merged pull request | retro |
@@ -58,7 +58,6 @@ What each step needs before it starts and what it leaves behind. A way in is a r
 | tracker doc | `/setup-matt-pocock-skills` | `docs/agents/issue-tracker.md` |
 | definition of done | `/project-setup` | Definition of done |
 | coding standards | `/project-setup` | Coding standards |
-| PR template | `/project-setup` | Code host |
 | decision tickets | `/wayfinder` | Issue tracker |
 | sized issue | `/change-request` | Issue tracker |
 | triaged issue | `/triage` | Issue tracker |

@@ -37,7 +37,7 @@ Open each pair. Retake any shot that is blank, caught mid-scroll or cropped off 
 
 ## 5. Attach
 
-The body's wording and layout belong to the `pr` skill: the pairs go where its Evidence section shows a before and an after. Reference each file there by its local path, as a Markdown image (`![Before: …](./list-phone-before.png)`), at native resolution.
+The body's wording and layout belong to `write-pr-description`: the pairs go where it puts the visual evidence for a user-visible change. Reference each file there by its local path, as a Markdown image (`![Before: …](./list-phone-before.png)`), at native resolution.
 
 Then attach every file the body names, with the path written exactly as in the body, Markdown image being the reference form `gh` documents rewriting:
 

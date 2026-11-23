@@ -57,7 +57,7 @@ Run the full test suite, type check, lint and build with the project's commands.
 
 ## 5. Open the pull request
 
-Except on the private path, below: read `~/.claude/skills/finishing-a-development-branch/SKILL.md` and follow it, recommending *push and create a pull request*. Write the body from the repo's pull request template, link the ticket, and move the ticket to the review state the tracker doc names.
+Except on the private path, below: read `~/.claude/skills/finishing-a-development-branch/SKILL.md` and follow it, recommending *push and create a pull request*. Write the body with `write-pr-description` (read `~/.claude/skills/write-pr-description/SKILL.md`). Every reason, decision and review pointer comes from the ticket, the commits, the code or this session's own work. Leave out what none of them states. Link the ticket, and move the ticket to the review state the tracker doc names.
 
 Then, except on the private path, tell the user the next step: once CI is green, the review chain in a **fresh session**, starting with `/acceptance-review <PR> against <ticket>`. The code review and the security review follow in that same session, unless the acceptance verdict sends the ticket back.
 

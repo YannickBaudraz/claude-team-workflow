@@ -6,7 +6,8 @@
       "Skill(engineering:debug)",
       "Skill(engineering:testing-strategy)",
       "Skill(anthropic-skills:frontend-design)",
-      "Skill(productivity:memory-management)"
+      "Skill(productivity:memory-management)",
+      "Skill(mattpocock-skills:pr)"
     ]
   },
   "skillOverrides": {
