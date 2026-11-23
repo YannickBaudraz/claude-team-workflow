@@ -46,3 +46,13 @@ Put this in the repo's `CLAUDE.md` (or `AGENTS.md`), whichever exists, when this
 
 Tools, and where each kind of document lives: <link to this map>.
 ```
+
+## Writing line for the repo
+
+Put this in the same file in every project, wherever the map lives:
+
+```markdown
+## Writing
+
+Load `technical-writing` before you write or revise a document, a tracker item or any other technical prose for this project.
+```
