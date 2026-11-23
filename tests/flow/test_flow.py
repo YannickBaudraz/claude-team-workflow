@@ -63,9 +63,9 @@ REGISTRY = """# Registry
 
 ## Denied duplicates
 
-| Command | Source | Visibility | Duplicates |
-|---|---|---|---|
-| `other:thing` | `them/repo` | denied | `/build` |
+| Command | Source | Visibility | Denied in | Duplicates |
+|---|---|---|---|---|
+| `other:thing` | `them/repo` | denied | project settings | `/build` |
 """
 
 
@@ -226,10 +226,13 @@ class SkillRows(unittest.TestCase):
 
     def test_it_keeps_the_columns_the_registry_check_reads(self):
         self.assertEqual(self.rows[1], {"command": "/build", "source": "`me/repo`", "visibility": "typed",
-                                        "calls": "a, b", "does": "Builds."})
+                                        "calls": "a, b", "does": "Builds.", "denied in": ""})
 
     def test_a_table_without_calls_or_does_says_so(self):
         self.assertEqual((self.rows[2]["calls"], self.rows[2]["does"]), ("", None))
+
+    def test_a_denied_row_says_which_settings_deny_it(self):
+        self.assertEqual(self.rows[2]["denied in"], "project settings")
 
 
 class UsedAt(unittest.TestCase):

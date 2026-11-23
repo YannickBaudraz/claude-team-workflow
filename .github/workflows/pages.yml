@@ -26,7 +26,7 @@ jobs:
         run: python3 -m unittest discover -v tests/merge-guard
       - name: Test the touches counter
         run: python3 -m unittest discover tests/measures
-      - name: Test the shared parser of FLOW.md and REGISTRY.md
+      - name: Test the shared parser of FLOW.md and REGISTRY.md, and the registry check's deny rules
         run: python3 -m unittest discover tests/flow
       - name: Test the end-to-end ticket's harness
         run: python3 -m unittest discover tests/end-to-end

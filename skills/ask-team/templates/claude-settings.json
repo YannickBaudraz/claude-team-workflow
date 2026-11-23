@@ -16,7 +16,9 @@
       "mcp__*merge*",
       "mcp__*push*",
       "mcp__*branch_protection*",
-      "mcp__*ruleset*"
+      "mcp__*ruleset*",
+      "Skill(mattpocock-skills:tdd)",
+      "Skill(mattpocock-skills:code-review)"
     ]
   },
   "hooks": {
