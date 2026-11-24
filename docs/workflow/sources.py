@@ -77,11 +77,15 @@ def read_router(paths):
     need(epics and most, 'Main flow no longer states the epics-per-roadmap preference')
 
     # The rules beside the table, by paragraph: a bold lead names its own group, the rest are the gates.
-    rule_groups = {'Gates': []}
+    rule_groups, placeholders = {'Gates': []}, ''
     for paragraph in re.split(r'\n\s*\n|\n(?=\*\*)', rules_text.strip()):
         lead = re.match(r'\*\*([^*]+?)\.\*\*\s*', paragraph)
         if lead:
             rule_groups[lead.group(1)] = sentences(paragraph[lead.end():])
+        elif paragraph.startswith('In these commands') and not placeholders:
+            # The note on <epic>, <story> and the rest says what words in commands mean, not
+            # a gate: the page lists it with the words.
+            placeholders = ' '.join(paragraph.split())
         else:
             rule_groups['Gates'] += sentences(paragraph)
 
@@ -120,7 +124,7 @@ def read_router(paths):
         ticket=list(range(tick, last)), close=last, review=review[0],
         ways=[line[2:].strip() for line in section(text, 'Ways in').splitlines() if line.startswith('- ')],
         any_time=re.findall(r'`([^`]+)`(?: \(([^)]*)\))?', section(text, 'Any time')),
-        gate_rules=sentences(rules_text), rule_groups=rule_groups, session_rules=sentences(sessions))
+        gate_rules=sentences(rules_text), rule_groups=rule_groups, placeholders=placeholders, session_rules=sentences(sessions))
 
 
 def read_registry(path, steps):
@@ -149,7 +153,7 @@ def read_registry(path, steps):
 
 
 def read_install(path):
-    """The README's Install section: what it needs, the commands, and what they do.
+    """The README's Install section: what it needs, the commands, and the paragraphs after them.
 
     Optional on purpose: when the section is missing or reshaped, the page drops the
     install commands and still builds, so rewording the README never fails the check."""
@@ -165,4 +169,4 @@ def read_install(path):
              for paragraph in re.sub(r'```.*?```', '', install.group(1), flags=re.S).split('\n\n')
              if paragraph.strip()]
     return dict(needs=prose[0] if prose else '', commands=code.group(1).strip().splitlines(),
-                after=prose[1] if len(prose) > 1 else '')
+                after=prose[1:])

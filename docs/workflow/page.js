@@ -127,7 +127,7 @@ function regroup(by) {
 // Each row opens from its heading; one button opens or closes them all, and a card's
 // title opens the row of its step.
 const status = document.getElementById('skills-status');
-const all = document.querySelector('.all');
+const all = document.querySelector('.skill-tools .all');
 const groups = [...document.querySelectorAll('section.group')];
 function setOpen(row, open) {
   row.classList.toggle('closed', !open);
@@ -148,6 +148,7 @@ groups.forEach(row => {
   // opens, so focus moves to the heading.
   row.addEventListener('click', event => {
     if (!row.classList.contains('closed') || event.target.closest('a, button:not(.more)')) return;
+    event.preventDefault();  // handled: the dock's click-away leaves it alone
     setOpen(row, true); label();
     if (event.target.closest('.more')) toggle.focus();
   });
@@ -160,6 +161,35 @@ all.addEventListener('click', () => {
   label();
   status.textContent = open ? 'Every group expanded.' : 'Every group collapsed.';
 });
+// The rules fold the same way: a row shows its first rule, opens from anywhere on it, and
+// closes from its heading; one button opens or closes them all.
+const ruleRows = [...document.querySelectorAll('.rule-row:not(.single)')], rulesAll = document.querySelector('.rules-all');
+function setRule(row, open) {
+  row.classList.toggle('closed', !open);
+  row.querySelector('.toggle').setAttribute('aria-expanded', open);
+  rulesAll.textContent = ruleRows.some(other => other.classList.contains('closed')) ? 'Expand all' : 'Collapse all';
+  rulesAll.classList.toggle('open', !ruleRows.some(other => other.classList.contains('closed')));
+}
+ruleRows.forEach(row => {
+  const heading = row.querySelector('h3'), toggle = document.createElement('button');
+  toggle.type = 'button'; toggle.className = 'toggle';
+  toggle.append(...heading.childNodes);
+  heading.append(toggle);
+  toggle.addEventListener('click', () => setRule(row, row.classList.contains('closed')));
+  row.addEventListener('click', event => {
+    if (!row.classList.contains('closed') || event.target.closest('a, button')) return;
+    event.preventDefault();  // handled: the dock's click-away leaves it alone
+    setRule(row, true);
+    toggle.focus({preventScroll: true});
+  });
+  setRule(row, false);
+});
+rulesAll.hidden = false;
+rulesAll.addEventListener('click', () => {
+  const open = ruleRows.some(row => row.classList.contains('closed'));
+  ruleRows.forEach(row => setRule(row, open));
+  status.textContent = open ? 'Every rule shown.' : 'Every rule group folded.';
+});
 const reached = hash => hash && document.getElementById(decodeURIComponent(hash.slice(1)));
 // A card or a skills row reached from a link is marked .landed once the scroll has been
 // still for a moment, so page.css fades its ring in where the eye arrives, not on the way.
@@ -167,7 +197,7 @@ let waiting, settled;
 function land(target) {
   removeEventListener('scroll', waiting);
   document.querySelectorAll('.landed').forEach(el => el.classList.remove('landed'));
-  if (!target || !target.matches('.card, section.group')) return;
+  if (!target || !target.matches('.card, section.group, li[data-skill]')) return;
   waiting = () => {
     clearTimeout(settled);
     settled = setTimeout(() => { removeEventListener('scroll', waiting); target.classList.add('landed'); }, 120);
@@ -175,16 +205,32 @@ function land(target) {
   addEventListener('scroll', waiting, {passive: true});
   waiting();
 }
-function openTarget() {
-  const target = reached(location.hash);
-  if (target && target.matches('section.group')) { setOpen(target, true); label(); }
+// A link into the skills list works in every grouping. A skill is found in whichever grouping
+// is on show; a step's row exists only grouped by role or moment, so grouped by kind the list
+// goes back to role first. The row holding the skill opens, and so does its fold.
+function openTarget(scroll = false) {
+  let target = reached(location.hash) || null;  // no hash gives "", which has no closest()
+  if (target && target.closest('[hidden]')) {
+    if (target.matches('li[data-skill]')) target = byKind.querySelector(`[data-skill="${target.dataset.skill}"]`);
+    else if (target.closest('#by-step')) {
+      switcher.querySelector('input[value="role"]').checked = true;
+      group('role');
+    }
+    scroll = true;
+  }
+  const row = target?.closest('section.group');
+  if (row?.querySelector('.toggle')) { setOpen(row, true); label(); }
+  const fold = target?.closest('details');
+  if (fold) fold.open = true;
+  // The browser scrolled before the row opened or the grouping changed: scroll again.
+  if (target && (scroll || row || fold)) target.scrollIntoView({block: 'start'});
   land(target);
 }
-addEventListener('hashchange', openTarget);
-// The same link again changes no hash but still scrolls there.
+addEventListener('hashchange', () => openTarget());
+// The same link again changes no hash, so its target is found and scrolled to here.
 document.addEventListener('click', event => {
   const link = event.target.closest('a[href^="#"]');
-  if (link && link.hash === location.hash) land(reached(link.hash));
+  if (link && link.hash === location.hash && !event.defaultPrevented) { event.preventDefault(); openTarget(true); }
 });
 
 switcher.hidden = false;
@@ -204,7 +250,8 @@ openTarget();
 // sits on its card, and from step to step that tab travels, so a loop shows where it goes
 // back to. Where you are is only in the address (?at=7, or ?at=done once the last epic
 // closes), so the browser's Back steps back and each project can keep its own link; the page
-// opened plainly starts with no step.
+// opened plainly starts with no step. Picking the open step again, a click elsewhere on the
+// page or Escape closes the answer.
 const answers = JSON.parse(document.getElementById('answers').textContent);
 const dock = document.getElementById('dock'), where = document.querySelector('.where');
 const cards = new Map([...document.querySelectorAll('.card')].map(card => [+card.id.slice(5), card]));
@@ -278,11 +325,16 @@ function fill() {
     field('session', '');
     field('out', '');
     field('gate', '');
+    field('skills', '');
+    field('rules', '');
   } else {
     field('run', step.command + copy(step.copy));
     field('session', step.session);
     field('out', step.out);
     field('gate', step.gate ? `<span class="gate-mark"><span class="dia"></span>${step.gate}</span> ${step.gate_out}` : step.gate_out);
+    field('skills', step.skills);
+    // The rules that bear on the step stay folded until asked for.
+    field('rules', step.rule_count ? `<details><summary>${step.rule_count} rule${step.rule_count > 1 ? 's' : ''} about this step</summary><ul>${step.rules}</ul></details>` : '');
   }
   dock.querySelector('.dock-next').replaceChildren(...(done ? [] : step.next).map(({label, to}) => {
     const button = document.createElement('button');
@@ -471,15 +523,19 @@ document.addEventListener('keydown', event => {
 document.addEventListener('click', event => {
   const pick = event.target.closest('button[data-at]'), next = event.target.closest('.go');
   const copy = event.target.closest('.copy'), keyed = event.detail === 0;
+  const card = event.target.closest('.card.pickable');
   if (pick) {
+    // The step you are on, picked again, closes its answer.
+    if (+pick.dataset.at === at) { close(); return; }
     if (keyed) back = pick;
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
   } else if (next) follow(next.dataset.label, parse(next.dataset.to));
-  else if (event.target.closest('.card.pickable') && !event.target.closest('a, button')
-           && getSelection().isCollapsed) {
-    // The whole card picks its step, as its number does; its links keep their own way, and a
-    // click that ends a text selection selects rather than picks. The number stays the key's way in.
-    go(+event.target.closest('.card').id.slice(5));
+  else if (card && !event.target.closest('a, button') && getSelection().isCollapsed) {
+    // The whole card picks its step, as its number does, and closes it when it is the one
+    // open; its links keep their own way, and a click that ends a text selection selects
+    // rather than picks. The number stays the key's way in.
+    const number = +card.id.slice(5);
+    if (number === at) close(); else go(number);
   }
   else if (copy) {
     // A browser can refuse the clipboard (a denied permission): say so rather than stay silent.
@@ -487,7 +543,70 @@ document.addEventListener('click', event => {
     navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy)
       .then(() => said('Copied'), () => said('Not copied'));
   } else if (event.target.closest('.dock-close')) close();
+  // A click anywhere else on the page closes the answer too, unless it is on a control with
+  // a job of its own (a link, a button, a fold, the appearance menu, a word's definition),
+  // ends a text selection, or opened a folded row (which marks it handled).
+  else if (at !== null && !dock.contains(event.target) && !event.defaultPrevented && getSelection().isCollapsed
+           && !event.target.closest('a, button, summary, label, input, select, textarea, .appearance, .term-pop')) close();
 });
+// A glossary word shows its definition where it is read: under the pointer after a moment,
+// on focus, or pinned by a click or tap, which then needs a click elsewhere or Escape to go.
+// Its link to "Words used here" stays for a browser without popovers.
+const termPop = document.createElement('div');
+termPop.className = 'term-pop';
+termPop.id = 'term-pop';
+termPop.setAttribute('popover', 'manual');
+termPop.setAttribute('role', 'tooltip');
+document.body.append(termPop);
+if (typeof termPop.showPopover === 'function') {
+  let shown = null, pinned = false, timer;
+  const show = term => {
+    clearTimeout(timer);
+    const word = document.getElementById(term.hash.slice(1));
+    termPop.replaceChildren(
+      Object.assign(document.createElement('b'), {textContent: word ? word.textContent : term.textContent}),
+      ' ' + term.dataset.meaning + ' ',
+      Object.assign(document.createElement('a'), {href: term.hash, textContent: 'All words'}));
+    if (!termPop.matches(':popover-open')) termPop.showPopover();
+    const box = term.getBoundingClientRect(), pop = termPop.getBoundingClientRect();
+    const left = Math.max(8, Math.min(box.left, innerWidth - pop.width - 8));
+    const below = box.bottom + 8 + pop.height < innerHeight;
+    termPop.style.left = `${left}px`;
+    termPop.style.top = `${below ? box.bottom + 8 : box.top - pop.height - 8}px`;
+    term.setAttribute('aria-describedby', 'term-pop');
+    shown = term;
+  };
+  const hide = () => {
+    clearTimeout(timer);
+    if (termPop.matches(':popover-open')) termPop.hidePopover();
+    shown?.removeAttribute('aria-describedby');
+    shown = null; pinned = false;
+  };
+  document.querySelectorAll('a.term').forEach(term => {
+    term.dataset.meaning = term.title;
+    term.removeAttribute('title');
+    term.addEventListener('mouseenter', () => { if (!pinned) { clearTimeout(timer); timer = setTimeout(() => show(term), 250); } });
+    term.addEventListener('mouseleave', () => { if (!pinned) { clearTimeout(timer); timer = setTimeout(hide, 200); } });
+    term.addEventListener('focus', () => { if (!pinned) show(term); });
+    term.addEventListener('blur', () => { if (!pinned) hide(); });
+    term.addEventListener('click', event => {
+      event.preventDefault();
+      if (pinned && shown === term) { hide(); return; }
+      show(term); pinned = true;
+    });
+  });
+  termPop.addEventListener('mouseenter', () => clearTimeout(timer));
+  termPop.addEventListener('mouseleave', () => { if (!pinned) timer = setTimeout(hide, 200); });
+  termPop.addEventListener('click', event => { if (event.target.closest('a')) hide(); });
+  document.addEventListener('click', event => {
+    if (pinned && !event.target.closest('a.term, .term-pop')) hide();
+  });
+  addEventListener('scroll', () => { if (shown && !pinned) hide(); else if (shown) show(shown); }, {passive: true});
+  // Caught before the dock's own Escape, so closing a definition leaves the dock open.
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && termPop.matches(':popover-open')) { event.preventDefault(); shown?.focus(); hide(); }
+  }, true);
+}
 // Escape closes the dock from anywhere, unless it is closing the appearance menu.
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && at !== null && !event.defaultPrevented && !panel.matches(':popover-open')) close();

@@ -198,7 +198,35 @@ def answer_html(router):
             f'<div class="where-steps" role="group" aria-labelledby="where-title">{picks}</div></div></div>')
 
 
-def answers(router):
+def steps_named(text):
+    """Every step a sentence names: "steps 4 to 8 and 13" gives 4 to 8 and 13."""
+    found = set()
+    for run in re.finditer(r'\b[Ss]teps? (\d{1,2}(?:(?: to |, | and |, and )\d{1,2})*)', text):
+        for first, last in re.findall(r'(\d{1,2})(?: to (\d{1,2}))?', run.group(1)):
+            found.update(range(int(first), int(last or first) + 1))
+    return found
+
+
+def step_rules(router, number, said):
+    """The rules beside the flow that bear on one step, by group, in the sources' order: the
+    sentences that name the step, and for the steps of the ticket loop that rework moves
+    between, the rework rules. Sessions is left out, since the answer's Session line comes
+    from it, and so is a sentence the answer already says in other words (said)."""
+    loop = {router['ticket'][0], router['review']}
+    words = set(re.findall(r'[a-z]+', said.lower()))
+    found = []
+    for title, rules in router['rule_groups'].items():
+        for rule in rules:
+            if number not in steps_named(rule) and not (title == 'Rework' and number in loop):
+                continue
+            own = re.findall(r'[a-z]+', rule.lower())
+            if own and sum(word in words for word in own) / len(own) > .6:
+                continue
+            found.append((title, rule))
+    return found
+
+
+def answers(router, skills=None):
     """What /ask-team would answer at each step, for the page's "I'm on this step": the
     command as SKILL.md writes it, the session Sessions names, what has to be approved
     before the step after it, and where the step leads.
@@ -245,6 +273,8 @@ def answers(router):
         # A step with no gate whose output is confirmed in its session shows that confirmation instead.
         confirmed = next((sentence for sentence in sentences(step['output'])
                           if re.search(r'\bby confirmation\b', sentence, re.I)), '')
+        said = ' '.join([session, step['output']])
+        rules = step_rules(router, number, said)
         out[number] = dict(
             name=step['name'], role=step['role'], label=ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else ''),
             command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
@@ -253,6 +283,12 @@ def answers(router):
             # The output in full, for a step whose gate line does not already carry it.
             out='' if step['gate'] else link_steps(md(' '.join(sentence for sentence in sentences(shown) if sentence != confirmed))),
             next=[dict(label=label, to=to) for label, to in ways_out(number)],
+            # The rules that bear on the step, folded under the answer, and the step's skills.
+            rules=''.join(f'<li><span class="rule-group">{esc(title)}</span> {link_steps(md(voice(rule)))}</li>'
+                          for title, rule in rules),
+            rule_count=len(rules),
+            skills=', '.join(f'<a href="#skills-{number}"><code>{esc(name)}</code></a>'
+                             for name in (skills or {}).get(number, [])),
             # The loops the step sits in, outermost first, for the page's count of them.
             loops=(['epic'] if number >= router['lead'][0] else [])
             + ([step['qual'][4:]] if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket') else [])

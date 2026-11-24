@@ -217,11 +217,25 @@ a{color:inherit;text-underline-offset:.2em}
 .panels .when{color:var(--muted);font-size:.9375rem}
 .panels dt{font-weight:700}
 .panels dd{margin:2px 0 0;color:var(--muted);font-size:.9375rem}
-/* The rules flow through columns like a page of text, so a long group shares its height with the short ones. */
-.rule-groups{display:block;columns:3;column-gap:40px}
-.rule-groups > div{margin-bottom:32px}
-.rule-groups h3{break-after:avoid}
-.rule-groups li,.rule-groups dl > div{break-inside:avoid}
+/* Rules: one row per group, its name and count on the left, its rules on the right. Folded
+   (page.js), a row shows its first rule and opens from anywhere on it; open, from its heading. */
+.rule-tools{display:flex;justify-content:flex-end;margin:-40px 0 8px;min-height:32px}
+.rule-row{position:relative;display:grid;grid-template-columns:minmax(0,16rem) minmax(0,1fr);column-gap:32px;align-items:start;padding:14px 12px;margin-inline:-12px;border-radius:10px;scroll-margin-top:68px}
+.rule-row::before{content:"";position:absolute;top:0;left:12px;right:12px;border-top:1px solid var(--rule)}
+.rule-row h3{font-size:1.125rem;margin:0}
+.rule-row.single h3{padding-left:26px}
+.rule-row h3,.rule-row .toggle{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:28px}
+.rule-row .count{color:var(--muted);font-size:.8125rem;font-weight:600;font-family:var(--body)}
+.rule-row .rules{list-style:none;margin:0;padding:0;display:grid;gap:12px;max-width:75ch}
+.rule-row.closed{cursor:pointer}
+.rule-row.closed .rules li:not(:first-child){display:none}
+.rule-row.closed .rules li:first-child{color:var(--muted)}
+.rule-row:has(.toggle):hover{background:var(--surface)}
+.rule-row:has(.toggle):hover::before,.rule-row:has(.toggle):hover + .rule-row::before{display:none}
+.rule-row:is(.closed:hover,:has(.toggle:hover)) .toggle::before{background:var(--ink)}
+.rule-row:is(.closed:hover,:has(.toggle:hover)) .toggle .name{text-decoration:underline;text-underline-offset:.2em}
+.words{margin-top:32px;--n:1}
+.words dl{grid-template-columns:repeat(auto-fill,minmax(16rem,1fr));column-gap:32px}
 .rules li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start}
 .rules .dot{width:7px;height:2px;background:var(--muted);margin-top:12px}
 .rules .dia{margin-top:8px}
@@ -315,12 +329,31 @@ a{color:inherit;text-underline-offset:.2em}
 .group li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
 .group li p{flex-basis:100%;margin:0;color:var(--muted);font-size:.9375rem;line-height:1.45}
 .group li > code{font-size:.875rem}
+/* A skill reached from a link: ringed where the eye lands, below the bar and the skill tools. */
+li[data-skill]{scroll-margin-top:128px;border-radius:6px}
+li[data-skill].landed{outline:2px solid var(--c,var(--ink));outline-offset:6px}
 .src{font-size:.8125rem;color:var(--muted);text-decoration-color:var(--hint);padding:6px 0;margin:-6px 0}
 .group li > .src{flex-basis:100%}
 a.src:hover{color:var(--ink);text-decoration-color:currentColor}
 .step-ref{text-decoration-color:var(--muted)}
 .term{text-decoration:underline dotted var(--muted) 1.5px}
+/* A glossary word's definition, beside the word (page.js places it in the top layer). */
+.term-pop{position:fixed;inset:auto;margin:0;max-width:min(320px,calc(100vw - 16px));padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.875rem;line-height:1.45;box-shadow:0 14px 32px -16px rgb(0 0 0 / .45)}
+.term-pop b{display:block;margin-bottom:2px}
+.term-pop a{display:inline-block;margin-top:4px;color:var(--muted);font-size:.8125rem;font-weight:600;text-decoration-color:var(--hint)}
+.term-pop a:hover{color:var(--ink)}
 .panels dt:target{color:var(--dev)}
+/* Other ways in: one line each, the situation then its command; the bullet opens under it. */
+.way summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;cursor:pointer;list-style:none;padding:6px 0 6px 22px;position:relative;font-weight:600}
+.way summary::-webkit-details-marker{display:none}
+.way summary::before{content:"";position:absolute;left:0;top:.62em;width:14px;height:14px;background:var(--muted);-webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat;transform:rotate(-90deg)}
+.way[open] summary::before{transform:none}
+.way summary:hover::before{background:var(--ink)}
+.way summary:hover{text-decoration:underline;text-underline-offset:.2em;text-decoration-color:var(--hint)}
+.way-cmd{font-weight:400}
+.panels .way-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:6px 0 6px 22px;font-weight:600}
+.panels ul:has(.way){gap:0}
+.panels .way > p{margin:2px 0 10px 22px;color:var(--muted);font-size:.9375rem;line-height:1.5}
 .any-time{margin:0;line-height:2}
 .any-time a{text-decoration-color:var(--rule)}
 .group details{margin-top:12px}
@@ -331,6 +364,8 @@ a.src:hover{color:var(--ink);text-decoration-color:currentColor}
 .tag{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--rule);color:var(--muted);font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .install p:not(.foot){margin:0;max-width:70ch}
 .install .when{color:var(--muted)}
+.install-more{margin-top:-8px}
+.install .install-more > p{margin:2px 0 10px 22px;color:var(--muted);max-width:70ch}
 /* Two steps: install, then run. Each reads as one block; the second starts after a break. */
 .install p.then{margin-top:16px;font-weight:600}
 .install p.cmd,.install p.cmd + p.when{margin-top:-8px}
@@ -387,6 +422,11 @@ button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .dock-answer dt{color:var(--muted);font-weight:600}
 .dock-answer dd{margin:0}
 .dock-answer code{white-space:normal}
+.dock-rules summary{cursor:pointer;color:var(--muted);font-weight:600;width:fit-content}
+.dock-rules summary:hover{color:var(--ink)}
+.dock-rules ul{list-style:none;margin:6px 0 2px;padding:0 0 0 12px;border-left:1px solid var(--rule);display:grid;gap:6px;max-width:80ch}
+.rule-group{display:inline-block;margin-right:4px;color:var(--muted);font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dock-skills a{text-decoration-color:var(--hint)}
 .dock-gate .gate-mark{display:inline-flex;margin-right:4px}
 .copy{margin-left:8px;padding:1px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--paper);color:var(--ink);font:inherit;font-size:.75rem;font-weight:600;cursor:pointer;vertical-align:1px}
 .copy:hover{border-color:var(--muted)}
@@ -424,7 +464,7 @@ kbd + kbd{margin-left:-1px}
   .joint.phone{display:flex;justify-content:center}
   .into-epic{grid-template-columns:minmax(0,1fr)}
   .into-epic > span{grid-column:1}
-  .router,.fork,.fork ul,.panels{grid-template-columns:minmax(0,1fr)} .rule-groups{columns:2}
+  .router,.fork,.fork ul,.panels{grid-template-columns:minmax(0,1fr)} .rule-row{grid-template-columns:minmax(0,1fr);row-gap:6px}
   .group{grid-template-columns:minmax(0,1fr);row-gap:6px}
   .group-body{padding-left:26px}
   .fork-note{grid-column:1}
@@ -451,7 +491,7 @@ kbd + kbd{margin-left:-1px}
    padding; the first link's text stays on the page's left edge, scrolled or not (these
    outrank the rules above). */
 @media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .install .cmd{font-size:1.5rem} }
-@media (max-width: 600px){ .rule-groups{columns:1} .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
+@media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 /* Motion only says what changed or where you are; nothing moves on its own. A new mode or
    palette lands at once, nothing fading after it (.repaint). The rest waits for
    no reduced-motion preference: a card or a skills row reached from a link fades its ring in

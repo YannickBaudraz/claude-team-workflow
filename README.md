@@ -35,11 +35,14 @@ The community skills are installed from their authors' repositories, not copied 
 Needs Claude Code (`claude`), Node.js for `npx`, `jq` and `python3`.
 
 ```bash
-git clone https://github.com/YannickBaudraz/claude-team-workflow.git ~/Dev/claude-team-workflow
-~/Dev/claude-team-workflow/install.sh
+git clone https://github.com/YannickBaudraz/claude-team-workflow.git
+cd claude-team-workflow
+./install.sh
 ```
 
-The script links this repo's skills into `~/.claude/skills`, so edits here are live. It shows the settings diff and asks before changing `~/.claude/settings.json`. Start a new Claude Code session afterwards. On a first install, or after the plugin's pin changes, Claude Code registers the pinned plugin only when a session starts: the first run says so, and a second run after that session installs Matt Pocock's plugin. Until then, the registry check reports the plugin off its pin.
+Clone it wherever you keep code. The script links this repo's skills into `~/.claude/skills`, so edits here are live. The links point at the clone: if you move it, run the script again. Before it changes `~/.claude/settings.json`, it shows the diff and asks. Start a new Claude Code session afterwards.
+
+On a first install, or after the plugin's pin changes, Claude Code registers the pinned plugin only when a session starts. The first run says so, and a second run after that session installs Matt Pocock's plugin. Until then, the registry check reports the plugin off its pin.
 
 ## Maintenance
 
