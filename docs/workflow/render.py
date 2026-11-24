@@ -92,8 +92,10 @@ def card_html(step, level=3):
     number = step['number']
     label = ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else '')
     note = f'<p class="note">{md(cap(step["note"]))}</p>' if step['note'] else ''
-    out, mark = shown_output(step['output'])
-    result = (f'<p class="out">{link_steps(md(out))}</p>' if out else '') + (
+    # The card names what the step leaves; the dock's answer for the step gives the full output.
+    _, mark = shown_output(step['output'])
+    makes = cap(', '.join(step['makes']))
+    result = f'<p class="out"><span class="out-k">Makes</span> {md(makes)}</p>' + (
         f'<p class="gate-mark"><span class="dia"></span>{esc(mark)}</p>' if step['gate'] else '')
     return (f'<article class="card{" optional" if step["optional"] else ""} p-{step["role"]}" id="step-{number}">'
             f'<div class="card-head"><span class="num">{number}</span>'
@@ -107,10 +109,25 @@ def card_html(step, level=3):
             + (f'<div class="result">{result}</div>' if result else '') + '</article>')
 
 
+PER_ROW = 4
+
+
 def flow_html(router, numbers, cls='flow', level=3):
-    cards = [card_html(router['steps'][number], level) for number in numbers]
-    joins = [arr() for _ in numbers[:-1]]
-    return f'<div class="{cls}">' + ''.join(card + join for card, join in zip(cards, joins + [''])) + '</div>'
+    """Steps in balanced rows of at most four, each card the width the first row gives it, so a
+    shorter row's cards line up under the first. A row that wraps says which step it goes on to."""
+    def row(part):
+        cards = [card_html(router['steps'][number], level) for number in part]
+        joins = [arr() for _ in part[:-1]]
+        return f'<div class="{cls}">' + ''.join(card + join for card, join in zip(cards, joins + [''])) + '</div>'
+    if len(numbers) <= PER_ROW:
+        return row(numbers)
+    # Balanced rows, the longer first: five steps make three and two.
+    count = -(-len(numbers) // PER_ROW)
+    per = -(-len(numbers) // count)
+    rows = [numbers[start:start + per] for start in range(0, len(numbers), per)]
+    wraps = [f'<p class="wrap-on">{link()}<span class="wrap-text">Then step {part[0]}</span></p>' for part in rows[1:]]
+    return (f'<div class="rows" style="--per:{per}">' + ''.join(row(part) + wrap for part, wrap in zip(rows, wraps + ['']))
+            + '</div>')
 
 
 def link_steps(markup):
@@ -233,6 +250,8 @@ def answers(router):
             command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
             session=esc(session), gate=esc(mark) if step['gate'] else '',
             gate_out=link_steps(md(shown)) if step['gate'] else link_steps(md(confirmed)) if confirmed else esc(no_gate),
+            # The output in full, for a step whose gate line does not already carry it.
+            out='' if step['gate'] else link_steps(md(' '.join(sentence for sentence in sentences(shown) if sentence != confirmed))),
             next=[dict(label=label, to=to) for label, to in ways_out(number)],
             # The loops the step sits in, outermost first, for the page's count of them.
             loops=(['epic'] if number >= router['lead'][0] else [])

@@ -115,7 +115,7 @@ a{color:inherit;text-underline-offset:.2em}
 .ai{display:inline-block;flex:none;width:24px;height:24px;background:currentColor;-webkit-mask:var(--arrow) center/contain no-repeat;mask:var(--arrow) center/contain no-repeat}
 .ai.ext{width:15px;height:15px;transform:rotate(-45deg)}
 /* Between steps, a thin connector rather than a heavy arrow. */
-.arr .ai,.joint .ai,.into-epic .ai{width:22px;height:10px;-webkit-mask-image:var(--link);mask-image:var(--link)}
+.arr .ai,.joint .ai,.into-epic .ai,.wrap-on .ai{width:22px;height:10px;-webkit-mask-image:var(--link);mask-image:var(--link)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 24px;list-style:none;padding:0;margin:0;font-size:.875rem}
 .wrap > .legend{margin:16px 0 -8px}
 .legend li{display:flex;align-items:center;gap:7px}
@@ -156,6 +156,10 @@ a{color:inherit;text-underline-offset:.2em}
 .band{display:grid;gap:12px}
 .flow{display:flex;align-items:stretch}
 .arr{flex:0 0 var(--gap);display:flex;justify-content:center;align-items:center;color:var(--muted)}
+/* Wrapped rows: a card keeps the first row's width even when its row holds fewer. */
+.rows > .flow > .card{flex:0 0 calc((100% - (var(--per) - 1) * var(--gap)) / var(--per))}
+.wrap-on{margin:0;display:flex;align-items:center;gap:4px;min-height:34px;padding-left:4px;color:var(--muted);font-weight:700;font-size:.875rem}
+.wrap-on .ai{transform:rotate(90deg)}
 .card{flex:1 1 0;min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .card.optional{border-style:dashed;border-color:var(--muted)}
 .card-head{display:flex;align-items:center;gap:8px}
@@ -182,6 +186,7 @@ a{color:inherit;text-underline-offset:.2em}
 .arg{font-weight:400;color:var(--muted);white-space:normal}
 .result{margin-top:auto;padding-top:8px;border-top:1px solid var(--rule);display:grid;gap:8px}
 .out{margin:0;font-weight:600;font-size:.8438rem;line-height:1.4}
+.out-k{display:block;color:var(--muted);font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
 .gate-mark{margin:0;display:flex;align-items:center;gap:8px;color:var(--you);font-weight:700;font-size:.8125rem}
 /* Frames: each title straddles its border 12px above its cards, its text on the cards'
    left edge; the nested ticket frame steps its inset down. */
@@ -194,14 +199,12 @@ a{color:inherit;text-underline-offset:.2em}
 .joint > span{display:flex;justify-content:center;align-items:center;gap:4px;min-height:30px}
 .joint .down{grid-column:1 / span 2;justify-content:flex-start;padding-left:calc(var(--ticket-pad) + 1.5px);font-size:.875rem}
 .joint .down .ai{transform:rotate(90deg)}
-.into-epic .link,.joint .link{margin-inline:4px}
+.into-epic .link,.joint .link,.wrap-on .link{margin-inline:4px}
 .into-epic{margin:-18px 0 -12px;padding-inline:calc(var(--frame-pad) + 1.5px);color:var(--muted);font-weight:700}
 /* Read like the ticket loop's cue: the arrow down, then what it leads into. */
 .into-epic > span{grid-column:1;justify-self:start;display:flex;align-items:center;gap:4px;min-height:30px;font-size:.875rem;line-height:1.3}
 .into-epic .ai{transform:rotate(90deg)}
-.ticket-row{display:flex;align-items:stretch}
-.ticket-row > .card{flex:1 1 0}
-.ticket{flex:3 1 0;min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:22px var(--ticket-pad) var(--ticket-pad);position:relative}
+.ticket{min-width:0;border:1.5px dashed var(--muted);border-radius:12px;padding:22px var(--ticket-pad) var(--ticket-pad);position:relative}
 .ticket > .band-title{font-size:1.125rem;left:calc(var(--ticket-pad) - 6px);padding:0 6px}
 .loop-note,.epic-note{margin:12px 0 0;font-size:.875rem;font-weight:700;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
 .epic-note{margin-top:16px}
@@ -214,6 +217,11 @@ a{color:inherit;text-underline-offset:.2em}
 .panels .when{color:var(--muted);font-size:.9375rem}
 .panels dt{font-weight:700}
 .panels dd{margin:2px 0 0;color:var(--muted);font-size:.9375rem}
+/* The rules flow through columns like a page of text, so a long group shares its height with the short ones. */
+.rule-groups{display:block;columns:3;column-gap:40px}
+.rule-groups > div{margin-bottom:32px}
+.rule-groups h3{break-after:avoid}
+.rule-groups li,.rule-groups dl > div{break-inside:avoid}
 .rules li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:6px;align-items:start}
 .rules .dot{width:7px;height:2px;background:var(--muted);margin-top:12px}
 .rules .dia{margin-top:8px}
@@ -340,6 +348,10 @@ pre.shell code{font-size:.875rem;white-space:pre;line-height:1.7}
 button.num:hover{background:color-mix(in srgb,var(--c) 16%,var(--surface));box-shadow:inset 0 0 0 2px var(--c)}
 button.num[aria-pressed="true"]{background:var(--c);color:var(--on-role)}
 .card{position:relative}
+/* The whole card picks its step (page.js marks it pickable once its number is a button). */
+.card.pickable{cursor:pointer}
+.card.pickable:not(.here):hover{border-color:color-mix(in srgb,var(--c) 55%,var(--rule))}
+.card.pickable:not(.here):hover button.num{background:color-mix(in srgb,var(--c) 16%,var(--surface));box-shadow:inset 0 0 0 2px var(--c)}
 .card.behind{background:var(--paper)}
 .card.behind :is(.summary,.out){color:var(--muted)}
 .card.here{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 24px -14px rgb(0 0 0 / .4)}
@@ -405,14 +417,14 @@ kbd + kbd{margin-left:-1px}
 .p-product{--c:var(--product)} .p-design{--c:var(--design)} .p-arch{--c:var(--arch)} .p-dev{--c:var(--dev)} .p-review{--c:var(--review)} .p-you{--c:var(--you)}
 @media (max-width: 1100px){
   .wrap,.bar-in{max-width:calc(720px + 2 * clamp(16px,4vw,40px))}
-  .flow,.ticket-row{flex-direction:column}
-  .flow > .arr,.ticket-row > .arr{height:34px;flex-basis:auto}
-  .flow > .arr .ai,.ticket-row > .arr .ai{transform:rotate(90deg)}
+  .flow{flex-direction:column}
+  .flow > .arr{height:34px;flex-basis:auto} .rows > .flow > .card{flex-basis:auto} .wrap-on{justify-content:center;padding:0} .wrap-on .wrap-text{display:none}
+  .flow > .arr .ai{transform:rotate(90deg)}
   .joint{display:none}
   .joint.phone{display:flex;justify-content:center}
   .into-epic{grid-template-columns:minmax(0,1fr)}
   .into-epic > span{grid-column:1}
-  .router,.fork,.fork ul,.panels{grid-template-columns:minmax(0,1fr)}
+  .router,.fork,.fork ul,.panels{grid-template-columns:minmax(0,1fr)} .rule-groups{columns:2}
   .group{grid-template-columns:minmax(0,1fr);row-gap:6px}
   .group-body{padding-left:26px}
   .fork-note{grid-column:1}
@@ -434,12 +446,12 @@ kbd + kbd{margin-left:-1px}
 /* Side by side, the glossary has more entries than the rules beside it: a wider column in
    two, so the three columns end together. */
 @media (min-width: 1101px){ .joint.phone{display:none} .card-head{min-height:1.875rem}
-  #rules .panels{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.5fr)} #rules dl{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px} }
+  }
 /* A 360px phone fits the four links, the appearance button and GitHub only with tighter
    padding; the first link's text stays on the page's left edge, scrolled or not (these
    outrank the rules above). */
 @media (max-width: 420px){ .bar a{padding-inline:6px} .bar ul li:nth-child(2) a,.bar:not(.scrolled) ul li:nth-child(2) a{margin-left:-6px} .theme{gap:1px;padding:0 4px 0 6px} .theme .chev{width:10px;height:10px} .install .cmd{font-size:1.5rem} }
-@media (max-width: 600px){ .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
+@media (max-width: 600px){ .rule-groups{columns:1} .group-by legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)} .group-by label{padding:7px 12px} .bar .home{display:none} .bar li:nth-child(2) a{margin-left:-12px} .bar ul{gap:0} .bar .out-link{margin-left:8px} :root{--frame-pad:12px;--ticket-pad:8px} }
 /* Motion only says what changed or where you are; nothing moves on its own. A new mode or
    palette lands at once, nothing fading after it (.repaint). The rest waits for
    no reduced-motion preference: a card or a skills row reached from a link fades its ring in

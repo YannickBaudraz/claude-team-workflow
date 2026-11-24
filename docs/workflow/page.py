@@ -11,7 +11,7 @@ from . import render
 from .config import (DARK, FACES, GROUP_TITLES, ICON, LEDE, LIGHT, OUTSIDE, PAGE_URL, PALETTE_SOURCES,
                      PALETTES, REGISTRY, REPO_URL, ROLE_NAMES, SKILL, TERMS, TITLE)
 from .palettes import PAPERS, palette_css, tokens
-from .render import (AI, answer_html, answers, arr, card_html, esc, flow_html, link, link_steps, link_terms, md,
+from .render import (AI, answer_html, answers, card_html, esc, flow_html, link, link_steps, link_terms, md,
                      slug, voice)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -62,7 +62,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
     legend += ('<li><span class="dia"></span>Gate: you approve before moving on</li>'
                '<li><span class="dash-sw"></span>Only when needed</li>'
                # Only the script makes a step's number a button.
-               '<li class="pick-sw" hidden><span class="num">1</span>Pick the step you are on</li>')
+               '<li class="pick-sw" hidden><span class="num">1</span>Click the card of the step you are on</li>')
     # The router's command, by the router and under Install, over a rule with one segment per role
     # it sends you to, in the legend's order.
     roles = ''.join(f'<i class="p-{role}"></i>' for role in ROLE_NAMES)
@@ -93,10 +93,14 @@ def build(router, groups, kinds, sources, install, digest, version=None):
     listed += [name for name, _, _ in groups.get('any', []) if name.lstrip('/') not in already]
     any_time = ', '.join(f'<a href="#skills-{home.get(name.lstrip("/"), "any")}"><code>{esc(name)}</code></a>'
                          for name in listed)
-    gates = ''.join(f'<li><span class="dia"></span><span>{link_steps(md(rule))}</span></li>'
-                    for rule in router['gate_rules'])
-    sessions = ''.join(f'<li><span class="dot"></span><span>{link_steps(md(rule))}</span></li>'
-                       for rule in router['session_rules'])
+    # Gates and rework first, then sessions, then the rules that differ between projects.
+    blocks = list(router['rule_groups'].items())
+    blocks = blocks[:2] + [('Sessions', router['session_rules'])] + blocks[2:]
+    rule_blocks = ''.join(
+        f'<div><h3>{esc(title)}</h3><ul class="rules">'
+        + ''.join(f'<li><span class="{"dia" if title == "Gates" else "dot"}"></span>'
+                  f'<span>{link_steps(md(rule))}</span></li>' for rule in rules)
+        + '</ul></div>' for title, rules in blocks)
     source_text = ''.join(open(path, encoding='utf-8').read() for path in [*SKILL, REGISTRY])
     terms = ''.join(f'<div><dt id="term-{slug(term)}">{esc(term)}</dt><dd>{esc(meaning)}</dd></div>'
                     for term, pattern, meaning in TERMS if re.search(pattern, source_text, re.I))
@@ -263,13 +267,13 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 {flow_html(router, router['lead'])}
 <div class="joint cols4"><span class="down">{link()}Then, for each ticket: steps {router['ticket'][0]} to {router['ticket'][-1]}</span></div>
 <div class="joint phone"><span class="down">{link()}Then, for each ticket: steps {router['ticket'][0]} to {router['ticket'][-1]}</span></div>
-<div class="ticket-row">
+<div class="rows" style="--per:{len(router['ticket'])}">
 <section class="ticket" aria-labelledby="band-ticket"><h3 class="band-title" id="band-ticket">Per ticket</h3>
 {flow_html(router, router['ticket'], level=4)}
 <p class="loop-note"><i class="loop"></i>A ticket sent back at {router['review']} goes back to {router['ticket'][0]}, at most twice</p>
 </section>
-{arr()}
-{card_html(steps[router['close']])}
+<p class="wrap-on">{link()}<span class="wrap-text">After the last ticket: step {router['close']}</span></p>
+<div class="flow">{card_html(steps[router['close']])}</div>
 </div>
 <p class="epic-note"><i class="loop"></i><a href="#step-{first_lead}">After {router['close']}, the next epic starts again at {first_lead}.</a></p>
 </section>
@@ -279,9 +283,8 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 </section>
 <section class="section" id="rules" aria-labelledby="rules-title">
 <h2 id="rules-title">Rules</h2>
-<div class="panels">
-<div><h3>Gates</h3><ul class="rules">{gates}</ul></div>
-<div><h3>Sessions</h3><ul class="rules">{sessions}</ul></div>
+<div class="panels rule-groups">
+{rule_blocks}
 <div><h3>Words used here</h3><dl>{terms}</dl></div>
 </div>
 </section>
@@ -307,7 +310,7 @@ def build(router, groups, kinds, sources, install, digest, version=None):
 </main>
 <aside class="dock" id="dock" aria-labelledby="dock-step" aria-keyshortcuts="ArrowRight ArrowLeft Escape" tabindex="-1" hidden><div class="dock-in">
 <div class="dock-head"><span class="num"></span><div><p class="dock-step" id="dock-step" aria-live="polite"></p><p class="role dock-role"></p><p class="dock-via"></p><p class="dock-score"></p></div></div>
-<dl class="dock-answer"><div class="dock-run"><dt>Next</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
+<dl class="dock-answer"><div class="dock-run"><dt>Next</dt><dd></dd></div><div class="dock-session"><dt>Session</dt><dd></dd></div><div class="dock-out"><dt>Output</dt><dd></dd></div><div class="dock-gate"><dt>Gate</dt><dd></dd></div></dl>
 <div class="dock-play"><div class="dock-next" role="group" aria-label="When this step is done"></div><p class="dock-keys" aria-hidden="true"></p></div>
 <button type="button" class="dock-close" aria-label="Close the answer" aria-keyshortcuts="Escape" title="Close (Esc)"><i></i></button>
 </div></aside>

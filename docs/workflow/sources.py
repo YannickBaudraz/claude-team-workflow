@@ -76,6 +76,23 @@ def read_router(paths):
     most = re.search(r'never more than (\d+)', rules_text)
     need(epics and most, 'Main flow no longer states the epics-per-roadmap preference')
 
+    # The rules beside the table, by paragraph: a bold lead names its own group, the rest are the gates.
+    rule_groups = {'Gates': []}
+    for paragraph in re.split(r'\n\s*\n|\n(?=\*\*)', rules_text.strip()):
+        lead = re.match(r'\*\*([^*]+?)\.\*\*\s*', paragraph)
+        if lead:
+            rule_groups[lead.group(1)] = sentences(paragraph[lead.end():])
+        else:
+            rule_groups['Gates'] += sentences(paragraph)
+
+    # What each step leaves behind, from Step contracts: the card's short output line.
+    contracts = flow.step_contracts(text)
+    need(contracts, 'FLOW.md has no Step contracts tables')
+    for key, _, makes in contracts[0]:
+        if key in steps:
+            steps[key]['makes'] = makes
+    need(all(step.get('makes') for step in steps.values()), 'Step contracts should name what every step makes')
+
     sessions = section(text, 'Sessions')
     roles = {}
     for word, _, numbers, _ in role_steps(sessions):
@@ -103,7 +120,7 @@ def read_router(paths):
         ticket=list(range(tick, last)), close=last, review=review[0],
         ways=[line[2:].strip() for line in section(text, 'Ways in').splitlines() if line.startswith('- ')],
         any_time=re.findall(r'`([^`]+)`(?: \(([^)]*)\))?', section(text, 'Any time')),
-        gate_rules=sentences(rules_text), session_rules=sentences(sessions))
+        gate_rules=sentences(rules_text), rule_groups=rule_groups, session_rules=sentences(sessions))
 
 
 def read_registry(path, steps):

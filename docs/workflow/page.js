@@ -221,6 +221,7 @@ cards.forEach((card, number) => {
   button.setAttribute('aria-label', `I'm on step ${number}, ${answers.steps[number].name}`);
   button.title = `I'm on step ${number}`;
   badge.replaceWith(button);
+  card.classList.add('pickable');
 });
 document.querySelector('.pick-sw').hidden = false;
 const picks = [...document.querySelectorAll('button[data-at]')];
@@ -275,10 +276,12 @@ function fill() {
   if (done) {
     field('run', `For the next change: ${answers.end}${copy(answers.end_copy)}`);
     field('session', '');
+    field('out', '');
     field('gate', '');
   } else {
     field('run', step.command + copy(step.copy));
     field('session', step.session);
+    field('out', step.out);
     field('gate', step.gate ? `<span class="gate-mark"><span class="dia"></span>${step.gate}</span> ${step.gate_out}` : step.gate_out);
   }
   dock.querySelector('.dock-next').replaceChildren(...(done ? [] : step.next).map(({label, to}) => {
@@ -472,6 +475,12 @@ document.addEventListener('click', event => {
     if (keyed) back = pick;
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
   } else if (next) follow(next.dataset.label, parse(next.dataset.to));
+  else if (event.target.closest('.card.pickable') && !event.target.closest('a, button')
+           && getSelection().isCollapsed) {
+    // The whole card picks its step, as its number does; its links keep their own way, and a
+    // click that ends a text selection selects rather than picks. The number stays the key's way in.
+    go(+event.target.closest('.card').id.slice(5));
+  }
   else if (copy) {
     // A browser can refuse the clipboard (a denied permission): say so rather than stay silent.
     const said = text => { copy.textContent = text; setTimeout(() => { copy.textContent = 'Copy'; }, 1500); };
