@@ -7,7 +7,8 @@ registry, the project map template and this repo's skills.
 - Every output has a maker and a home, and every maker says it makes it: its Does line
   names the output, or a sentence of its Arguments creates, writes or saves it. A skill of
   this repo says it in its own SKILL.md.
-- Every home is a row of the project map template, a tool of its Tools table, or a path.
+- Every home is a kind of document the project map template places, a tool of its Tools table,
+  or a path. Its other tables, such as the project's facts, name no homes.
 - Every document a gated step makes has a maker that writes its approval line, the
   `Approved by <name> on <date>` FLOW.md defines, in its Arguments or its own SKILL.md.
 - Every command this repo's workflow skills name is in the registry.
@@ -67,9 +68,7 @@ step_rows, output_rows = contracts
 registry = {row["command"].strip("`"): row
             for table in flow.workflow_tables(open(REGISTRY, encoding="utf-8").read()) for row in table}
 
-kinds = set()
-for table in flow.tables(open(MAP, encoding="utf-8").read()):
-    kinds.update(cells[0] for cells in table[1:])
+kinds = flow.map_homes(open(MAP, encoding="utf-8").read())
 
 # The steps: what each needs and makes, in flow order; a way in is keyed by its command.
 made_at, needs = {}, {}

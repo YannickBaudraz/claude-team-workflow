@@ -205,6 +205,39 @@ class StepContracts(unittest.TestCase):
         self.assertIsNone(flow.step_contracts("## Other\n"))
 
 
+MAP = """# Project map
+
+## Tools
+
+| Tool | What we use |
+|---|---|
+| Issue tracker | GitHub |
+
+## Project facts
+
+| Fact | Value |
+|---|---|
+| Interface | graphical |
+
+## Where each kind of document lives
+
+| Kind | Lives in |
+|---|---|
+| PRDs | repo |
+"""
+
+
+class MapHomes(unittest.TestCase):
+    def test_tools_and_kinds_of_document_are_homes(self):
+        self.assertEqual(flow.map_homes(MAP), {"Issue tracker", "PRDs"})
+
+    def test_a_fact_is_no_home(self):
+        self.assertNotIn("Interface", flow.map_homes(MAP))
+
+    def test_a_map_without_those_sections_names_no_homes(self):
+        self.assertEqual(flow.map_homes("## Project facts\n| Fact |\n|---|\n| Interface |\n"), set())
+
+
 class WorkflowTables(unittest.TestCase):
     def test_only_the_table_with_a_does_column_counts(self):
         found = flow.workflow_tables(REGISTRY)
