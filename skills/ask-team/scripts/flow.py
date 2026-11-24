@@ -24,14 +24,16 @@ def section(text, title):
 
 
 def tables(text):
-    """Every markdown table in text, as a list of rows of cells, header first."""
+    """Every markdown table in text, as a list of rows of cells, header first. A pipe written
+    \\| inside a cell, as in a shell pipeline in code, stays in the cell as |."""
     found, current = [], None
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("|"):
             current = None
             continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        cells = [cell.strip().replace("\\|", "|")
+                 for cell in re.split(r"(?<!\\)\|", line.strip("|"))]
         if all(set(cell) <= set("-: ") for cell in cells):
             continue
         if current is None:
@@ -44,6 +46,11 @@ def tables(text):
 def records(table):
     """A table's rows as dicts, keyed by its column headers in lower case."""
     header = [cell.lower() for cell in table[0]]
+    for cells in table[1:]:
+        # A short row lacks its last keys; a long one has a pipe that split a cell.
+        need(len(cells) <= len(header),
+             f"A row has {len(cells)} cells under {len(header)} headers, starting {cells[0]}: "
+             "write a pipe inside a cell as \\|")
     return [dict(zip(header, cells)) for cells in table[1:]]
 
 
