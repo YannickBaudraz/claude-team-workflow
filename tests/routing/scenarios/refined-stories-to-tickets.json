@@ -1,5 +1,5 @@
 {
-  "why": "Every story of the epic is refined and no ticket exists yet: break them into tickets.",
+  "why": "Every story of the epic is refined and no ticket exists yet: break them into tickets. The user confirms the breakdown in the session that makes it, so no Gate line, step 10 line (the light answer's included) or After that has the tickets themselves waiting on an approval or approved by publishing; approving the breakdown is that confirmation and passes (the check is in checks.py).",
   "layers": [
     "base",
     "code",
@@ -11,5 +11,11 @@
     "refined"
   ],
   "next": "^/to-tickets\\s+#?(1|3)(?![\\w-])",
-  "light": "/to-tickets\\s+#?(1|3)(?![\\w-])"
+  "must_not": [
+    {"check": "old ticket gate"}
+  ],
+  "light": "/to-tickets\\s+#?(1|3)(?![\\w-])",
+  "light_must_not": [
+    {"check": "old ticket gate"}
+  ]
 }
