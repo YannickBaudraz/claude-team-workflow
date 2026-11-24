@@ -92,8 +92,10 @@ def card_html(step, level=3):
     number = step['number']
     label = ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else '')
     note = f'<p class="note">{md(cap(step["note"]))}</p>' if step['note'] else ''
-    out, mark = shown_output(step['output'])
-    result = (f'<p class="out">{link_steps(md(out))}</p>' if out else '') + (
+    # The card names what the step leaves; the dock's answer for the step gives the full output.
+    _, mark = shown_output(step['output'])
+    makes = cap(', '.join(step['makes']))
+    result = f'<p class="out"><span class="out-k">Makes</span> {md(makes)}</p>' + (
         f'<p class="gate-mark"><span class="dia"></span>{esc(mark)}</p>' if step['gate'] else '')
     return (f'<article class="card{" optional" if step["optional"] else ""} p-{step["role"]}" id="step-{number}">'
             f'<div class="card-head"><span class="num">{number}</span>'
@@ -107,10 +109,25 @@ def card_html(step, level=3):
             + (f'<div class="result">{result}</div>' if result else '') + '</article>')
 
 
+PER_ROW = 4
+
+
 def flow_html(router, numbers, cls='flow', level=3):
-    cards = [card_html(router['steps'][number], level) for number in numbers]
-    joins = [arr() for _ in numbers[:-1]]
-    return f'<div class="{cls}">' + ''.join(card + join for card, join in zip(cards, joins + [''])) + '</div>'
+    """Steps in balanced rows of at most four, each card the width the first row gives it, so a
+    shorter row's cards line up under the first. A row that wraps says which step it goes on to."""
+    def row(part):
+        cards = [card_html(router['steps'][number], level) for number in part]
+        joins = [arr() for _ in part[:-1]]
+        return f'<div class="{cls}">' + ''.join(card + join for card, join in zip(cards, joins + [''])) + '</div>'
+    if len(numbers) <= PER_ROW:
+        return row(numbers)
+    # Balanced rows, the longer first: five steps make three and two.
+    count = -(-len(numbers) // PER_ROW)
+    per = -(-len(numbers) // count)
+    rows = [numbers[start:start + per] for start in range(0, len(numbers), per)]
+    wraps = [f'<p class="wrap-on">{link()}<span class="wrap-text">Then step {part[0]}</span></p>' for part in rows[1:]]
+    return (f'<div class="rows" style="--per:{per}">' + ''.join(row(part) + wrap for part, wrap in zip(rows, wraps + ['']))
+            + '</div>')
 
 
 def link_steps(markup):
@@ -181,7 +198,35 @@ def answer_html(router):
             f'<div class="where-steps" role="group" aria-labelledby="where-title">{picks}</div></div></div>')
 
 
-def answers(router):
+def steps_named(text):
+    """Every step a sentence names: "steps 4 to 8 and 13" gives 4 to 8 and 13."""
+    found = set()
+    for run in re.finditer(r'\b[Ss]teps? (\d{1,2}(?:(?: to |, | and |, and )\d{1,2})*)', text):
+        for first, last in re.findall(r'(\d{1,2})(?: to (\d{1,2}))?', run.group(1)):
+            found.update(range(int(first), int(last or first) + 1))
+    return found
+
+
+def step_rules(router, number, said):
+    """The rules beside the flow that bear on one step, by group, in the sources' order: the
+    sentences that name the step, and for the steps of the ticket loop that rework moves
+    between, the rework rules. Sessions is left out, since the answer's Session line comes
+    from it, and so is a sentence the answer already says in other words (said)."""
+    loop = {router['ticket'][0], router['review']}
+    words = set(re.findall(r'[a-z]+', said.lower()))
+    found = []
+    for title, rules in router['rule_groups'].items():
+        for rule in rules:
+            if number not in steps_named(rule) and not (title == 'Rework' and number in loop):
+                continue
+            own = re.findall(r'[a-z]+', rule.lower())
+            if own and sum(word in words for word in own) / len(own) > .6:
+                continue
+            found.append((title, rule))
+    return found
+
+
+def answers(router, skills=None):
     """What /ask-team would answer at each step, for the page's "I'm on this step": the
     command as SKILL.md writes it, the session Sessions names, what has to be approved
     before the step after it, and where the step leads.
@@ -228,12 +273,22 @@ def answers(router):
         # A step with no gate whose output is confirmed in its session shows that confirmation instead.
         confirmed = next((sentence for sentence in sentences(step['output'])
                           if re.search(r'\bby confirmation\b', sentence, re.I)), '')
+        said = ' '.join([session, step['output']])
+        rules = step_rules(router, number, said)
         out[number] = dict(
             name=step['name'], role=step['role'], label=ROLE_NAMES[step['role']] + (f' · {step["qual"]}' if step['qual'] else ''),
             command=link_steps(md(step['command'])), copy=command.group(1) if command else '',
             session=esc(session), gate=esc(mark) if step['gate'] else '',
             gate_out=link_steps(md(shown)) if step['gate'] else link_steps(md(confirmed)) if confirmed else esc(no_gate),
+            # The output in full, for a step whose gate line does not already carry it.
+            out='' if step['gate'] else link_steps(md(' '.join(sentence for sentence in sentences(shown) if sentence != confirmed))),
             next=[dict(label=label, to=to) for label, to in ways_out(number)],
+            # The rules that bear on the step, folded under the answer, and the step's skills.
+            rules=''.join(f'<li><span class="rule-group">{esc(title)}</span> {link_steps(md(voice(rule)))}</li>'
+                          for title, rule in rules),
+            rule_count=len(rules),
+            skills=', '.join(f'<a href="#skills-{number}"><code>{esc(name)}</code></a>'
+                             for name in (skills or {}).get(number, [])),
             # The loops the step sits in, outermost first, for the page's count of them.
             loops=(['epic'] if number >= router['lead'][0] else [])
             + ([step['qual'][4:]] if step['qual'].startswith('per ') and step['qual'] not in ('per epic', 'per ticket') else [])

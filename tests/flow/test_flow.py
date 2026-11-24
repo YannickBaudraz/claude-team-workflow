@@ -102,6 +102,9 @@ class Tables(unittest.TestCase):
     def test_indentation_and_trailing_spaces_do_not_matter(self):
         self.assertEqual(flow.tables("  | a |  \n  | 1 |  \n"), [[["a"], ["1"]]])
 
+    def test_an_escaped_pipe_stays_in_its_cell(self):
+        self.assertEqual(flow.tables("| a | b |\n| `x \\| y` | 2 |\n")[0][1], ["`x | y`", "2"])
+
     def test_no_table_is_no_tables(self):
         self.assertEqual(flow.tables("just prose\n"), [])
 
@@ -112,6 +115,10 @@ class Records(unittest.TestCase):
 
     def test_a_short_row_lacks_the_last_keys(self):
         self.assertEqual(flow.records([["A", "B"], ["1"]]), [{"a": "1"}])
+
+    def test_a_row_longer_than_the_header_is_refused(self):
+        with self.assertRaises(flow.SourceError):
+            flow.records([["A", "B"], ["1", "2", "3"]])
 
     def test_a_table_with_only_its_header_has_no_records(self):
         self.assertEqual(flow.records([["A", "B"]]), [])
