@@ -34,6 +34,10 @@ jobs:
         run: python3 -m unittest discover tests/test-guards
       - name: Test what the routing scenarios check, offline
         run: python3 -m unittest discover tests/routing
+      - name: Run the page's script in headless Chrome
+        run: python3 -m unittest discover -v tests/page-script
+        env:
+          REQUIRE_BROWSER: 1
       - name: Build the page
         run: python3 docs/build-workflow.py --out _site/index.html
       - uses: actions/upload-pages-artifact@v5
