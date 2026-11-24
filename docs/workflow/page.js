@@ -250,8 +250,8 @@ openTarget();
 // sits on its card, and from step to step that tab travels, so a loop shows where it goes
 // back to. Where you are is only in the address (?at=7, or ?at=done once the last epic
 // closes), so the browser's Back steps back and each project can keep its own link; the page
-// opened plainly starts with no step. Picking the open step again, a click elsewhere on the
-// page or Escape closes the answer.
+// opened plainly starts with no step. Picking the step you are on again, or a click elsewhere
+// on the page, hides the answer and keeps the step; the close button and Escape leave it.
 const answers = JSON.parse(document.getElementById('answers').textContent);
 const dock = document.getElementById('dock'), where = document.querySelector('.where');
 const cards = new Map([...document.querySelectorAll('.card')].map(card => [+card.id.slice(5), card]));
@@ -280,6 +280,10 @@ let score = {}, moves = [], picked = -1, busy = false;
 let landing = [];
 // The step button the dock was opened from with the keyboard: closing returns there.
 let back = null;
+// Put away by a click elsewhere or on the open step's card: the step stays (its tab, ?at= and
+// the loops counted) and only its answer is hidden, until that card brings it back. The
+// close button and Escape still leave the step.
+let shut = false;
 function field(name, value) {
   dock.querySelector(`.dock-${name}`).hidden = !value;
   dock.querySelector(`.dock-${name} dd`).innerHTML = value;
@@ -291,8 +295,8 @@ function fill() {
     card.classList.toggle('here', number === at);
   });
   picks.forEach(pick => pick.setAttribute('aria-pressed', String(+pick.dataset.at === at)));
-  root.classList.toggle('has-dock', at !== null);
-  dock.hidden = at === null;
+  root.classList.toggle('has-dock', at !== null && !shut);
+  dock.hidden = at === null || shut;
   dock.classList.toggle('end', done);
   if (at === null || done) here.remove(); else cards.get(at).querySelector('.card-head').append(here);
   if (at === null) return;
@@ -394,7 +398,8 @@ function glide(card) {
 const settle = {duration: 550, easing: 'cubic-bezier(.16,1,.3,1)'};
 async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   if (to === at && !label && !undo) return;
-  const was = at, before = score;
+  const was = at, before = score, wasShut = shut;
+  shut = false;
   landing.forEach(animation => animation.cancel());  // a move made mid-flight stops it where it is
   landing = [];
   document.querySelector('.here-mark.flying')?.remove();
@@ -423,7 +428,7 @@ async function go(to, {how = '', push = true, label = null, undo = null} = {}) {
   // The last epic closed: the tab is lifted off the board, since no step is left to be on.
   const flyer = to === 'done' && from ? pickUp(here) : null;
   fill();
-  if (was === null) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  if (was === null || wasShut) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
   if (to === 'done' && was !== 'done') finish(flyer);
   tick(before);
   busy = false;
@@ -494,6 +499,22 @@ function close() {
     if (focused && from) from.focus();
   });
 }
+// Hides the answer, or shows it again, and keeps the step; at the end of the roadmap there is
+// no card to bring it back, so it stays.
+function shutDock(value) {
+  if (shut === value || at === null || at === 'done') return;
+  const focused = dock.contains(document.activeElement);
+  shut = value;
+  if (value) {
+    const away = still.matches ? Promise.resolve()
+      : dock.animate({translate: ['0 0', '0 100%']}, {duration: 250, easing: 'cubic-bezier(.7,0,.84,0)'}).finished;
+    away.then(() => { if (shut) fill(); });
+    if (focused) anchor()?.focus();
+  } else {
+    fill();
+    if (!still.matches) dock.animate({translate: ['0 100%', '0 0']}, {duration: 350, easing: settle.easing});
+  }
+}
 // For Tab, the dock sits right after the step button it answers, though it is drawn at the
 // window's foot: Tab from that button enters it, and leaving it, either way, comes back to
 // the page beside that button rather than at the page's start or end.
@@ -525,17 +546,21 @@ document.addEventListener('click', event => {
   const copy = event.target.closest('.copy'), keyed = event.detail === 0;
   const card = event.target.closest('.card.pickable');
   if (pick) {
-    // The step you are on, picked again, closes its answer.
-    if (+pick.dataset.at === at) { close(); return; }
+    // The step you are on, picked again, hides its answer or brings it back.
+    if (+pick.dataset.at === at) {
+      shutDock(!shut);
+      if (keyed && !shut) dock.focus();
+      return;
+    }
     if (keyed) back = pick;
     go(+pick.dataset.at).then(() => { if (keyed && at !== null) dock.focus(); });
   } else if (next) follow(next.dataset.label, parse(next.dataset.to));
   else if (card && !event.target.closest('a, button') && getSelection().isCollapsed) {
-    // The whole card picks its step, as its number does, and closes it when it is the one
-    // open; its links keep their own way, and a click that ends a text selection selects
-    // rather than picks. The number stays the key's way in.
+    // The whole card picks its step, as its number does, and hides or brings back the answer
+    // when it is the step you are on; its links keep their own way, and a click that ends a
+    // text selection selects rather than picks. The number stays the key's way in.
     const number = +card.id.slice(5);
-    if (number === at) close(); else go(number);
+    if (number === at) shutDock(!shut); else go(number);
   }
   else if (copy) {
     // A browser can refuse the clipboard (a denied permission): say so rather than stay silent.
@@ -543,11 +568,11 @@ document.addEventListener('click', event => {
     navigator.clipboard.writeText(at === 'done' ? answers.end_copy : answers.steps[at].copy)
       .then(() => said('Copied'), () => said('Not copied'));
   } else if (event.target.closest('.dock-close')) close();
-  // A click anywhere else on the page closes the answer too, unless it is on a control with
-  // a job of its own (a link, a button, a fold, the appearance menu, a word's definition),
-  // ends a text selection, or opened a folded row (which marks it handled).
-  else if (at !== null && !dock.contains(event.target) && !event.defaultPrevented && getSelection().isCollapsed
-           && !event.target.closest('a, button, summary, label, input, select, textarea, .appearance, .term-pop')) close();
+  // A click anywhere else on the page hides the answer and keeps the step, unless it is on a
+  // control with a job of its own (a link, a button, a fold, the appearance menu, a word's
+  // definition), ends a text selection, or opened a folded row (which marks it handled).
+  else if (at !== null && !shut && !dock.contains(event.target) && !event.defaultPrevented && getSelection().isCollapsed
+           && !event.target.closest('a, button, summary, label, input, select, textarea, .appearance, .term-pop')) shutDock(true);
 });
 // A glossary word shows its definition where it is read: under the pointer after a moment,
 // on focus, or pinned by a click or tap, which then needs a click elsewhere or Escape to go.
@@ -609,7 +634,7 @@ if (typeof termPop.showPopover === 'function') {
 }
 // Escape closes the dock from anywhere, unless it is closing the appearance menu.
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && at !== null && !event.defaultPrevented && !panel.matches(':popover-open')) close();
+  if (event.key === 'Escape' && at !== null && !shut && !event.defaultPrevented && !panel.matches(':popover-open')) close();
 });
 addEventListener('popstate', () => {
   moves = [];
@@ -620,7 +645,7 @@ addEventListener('popstate', () => {
 // Arrow keys only, never with a modifier: nothing scrolls sideways here, and ↑ ↓ are taken
 // only while choosing.
 document.addEventListener('keydown', event => {
-  if (at === null || busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (at === null || shut || busy || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (panel.matches(':popover-open') || event.target.closest('input, textarea, select')) return;
   const ways = at === 'done' ? [] : answers.steps[at].next;
   const take = way => follow(way.label, way.to || 'done', true);

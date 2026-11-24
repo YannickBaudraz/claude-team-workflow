@@ -4,7 +4,8 @@ The build and the other suites read the sources and the Python that writes the p
 never run page.js, so one error in it can leave every card and the step answer dead while
 they all pass. This test builds the page, loads it with nothing after # in the address, and
 checks that the script ran without an error, that every card's number became its step
-button, and that a click on a card opens the step's answer and a second click closes it.
+button, and that a click on a card opens the step's answer, a second click hides it and keeps
+the step, and a third brings it back.
 
 Run: python3 -m unittest discover tests/page-script
 Chrome must run outside the Claude Code sandbox; CHROME sets its path. With no Chrome found,
@@ -23,9 +24,9 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Put first in the page's <head>, so it hears an error from any script after it. Once the page
-# has loaded, it clicks the first card twice, then writes what it saw into the page, where
+# has loaded, it clicks the first card three times, then writes what it saw into the page, where
 # Chrome's --dump-dom shows it. Animations are finished by hand: headless Chrome does not
-# always run them to their end, and closing the answer waits for its slide-out.
+# always run them to their end, and hiding the answer waits for its slide-out.
 PROBE = """<script>
 window.__errors = [];
 addEventListener('error', event => __errors.push(String(event.message || event.error)));
@@ -42,7 +43,10 @@ addEventListener('load', () => setTimeout(async () => {
     report.opened = !dock.hidden;
     if (report.opened) {
       await click(text);
-      report.closed = dock.hidden;
+      report.hidden = dock.hidden;
+      report.kept = cards[0].classList.contains('here') && new URL(location.href).searchParams.has('at');
+      await click(text);
+      report.shown = !dock.hidden;
     }
   }
   report.errors = __errors;
@@ -103,8 +107,14 @@ class PageScript(unittest.TestCase):
     def test_a_click_on_a_card_opens_its_answer(self):
         self.assertTrue(self.report.get('opened'))
 
-    def test_a_second_click_on_the_card_closes_it(self):
-        self.assertTrue(self.report.get('closed'))
+    def test_a_second_click_on_the_card_hides_its_answer(self):
+        self.assertTrue(self.report.get('hidden'))
+
+    def test_hiding_the_answer_keeps_the_step(self):
+        self.assertTrue(self.report.get('kept'))
+
+    def test_a_third_click_brings_the_answer_back(self):
+        self.assertTrue(self.report.get('shown'))
 
 
 if __name__ == '__main__':
